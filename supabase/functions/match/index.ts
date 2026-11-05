@@ -25,11 +25,11 @@ class SupabaseStore {
     const { data, error } = await this.db.from('rooms').select('*').eq('code', code).maybeSingle();
     if (error) throw new Error(error.message);
     if (!data) return null;
-    return { code: data.code, host: data.host_deck.player, hostDeck: data.host_deck.deck, guest: data.guest_deck?.player ?? null, guestDeck: data.guest_deck?.deck ?? null,
+    return { code: data.code, mode: data.host_deck.mode === 'practice' ? 'practice' : 'friend', host: data.host_deck.player, hostDeck: data.host_deck.deck, guest: data.guest_deck?.player ?? null, guestDeck: data.guest_deck?.deck ?? null,
       status: data.status, matchId: data.match_id, createdAt: Date.parse(data.created_at), expiresAt: Date.parse(data.expires_at) };
   }
   async putRoom(r: any) {
-    const row = { code: r.code, host: r.host.userId, guest: r.guest?.userId ?? null, host_deck: { player: r.host, deck: r.hostDeck }, guest_deck: r.guest ? { player: r.guest, deck: r.guestDeck } : null,
+    const row = { code: r.code, host: r.host.userId, guest: r.guest?.userId ?? null, host_deck: { player: r.host, deck: r.hostDeck, mode: r.mode || 'friend' }, guest_deck: r.guest ? { player: r.guest, deck: r.guestDeck } : null,
       status: r.status, match_id: r.matchId, created_at: new Date(r.createdAt).toISOString(), expires_at: new Date(r.expiresAt).toISOString() };
     const { error } = await this.db.from('rooms').upsert(row, { onConflict: 'code' });
     if (error) throw new Error(error.message);
@@ -59,7 +59,7 @@ class SupabaseStore {
       result: m.result?.winner ?? (m.result ? 'tie' : null), end_reason: m.result?.reason ?? null, turns: m.state?.turn ?? 0, updated_at: new Date().toISOString(), ended_at: m.endedAt ? new Date(m.endedAt).toISOString() : null };
   }
   async insertMatch(m: any) {
-    const { error } = await this.db.from('matches').insert({ id: m.id, mode: 'friend', room_code: m.roomCode, player_a: m.players.a.userId, player_b: m.players.b.userId, engine_version: m.engineVersion, created_at: new Date(m.createdAt).toISOString(), ...this.columns(m) });
+    const { error } = await this.db.from('matches').insert({ id: m.id, mode: m.mode || 'friend', room_code: m.roomCode, player_a: m.players.a.userId, player_b: m.players.b.userId, engine_version: m.engineVersion, created_at: new Date(m.createdAt).toISOString(), ...this.columns(m) });
     if (error) throw new Error(error.message);
   }
   async updateMatch(m: any, expectedSeq: number) {
@@ -86,6 +86,25 @@ class SupabaseStore {
     const { error } = await this.db.rpc('pvp_finish', { p_match: m.id, p_winner: winner, p_result: m.result?.winner ?? 'tie', p_end_reason: m.result?.reason ?? 'win', p_turns: m.state?.turn ?? 0, p_summary_a: summaries.a, p_summary_b: summaries.b });
     if (error) { console.error('pvp_finish', error.message); return false; } // idempotent; the service retries on the next call for this match
     return true;
+  }
+  // Nov 5 (modes): the queue and the ratings live in the database (pvp_queue_* and pvp_rank_of are service-role doors)
+  async queueJoin(user: any, mode: 'ranked' | 'unranked', deck: any, _now?: number) {
+    const { data, error } = await this.db.rpc('pvp_queue_join', { p_user: user.userId, p_mode: mode, p_player: user, p_deck: deck });
+    if (error) throw new Error(error.message);
+    return { rating: Number(data?.rating) || 1000, since: Date.parse(data?.since) || Date.now(), others: Number(data?.others) || 0 };
+  }
+  async queuePair(userId: string, _now?: number) {
+    const { data, error } = await this.db.rpc('pvp_queue_pair', { p_user: userId });
+    if (error) throw new Error(error.message);
+    if (!data || !data.other) return null;
+    const o = data.other;
+    return { mode: data.mode, myRating: Number(data.my_rating) || 1000, other: { user: o.player, deck: o.deck, mode: data.mode, rating: Number(o.rating) || 1000, since: Date.parse(o.since) || Date.now() } };
+  }
+  async queueLeave(userId: string) { const { error } = await this.db.rpc('pvp_queue_leave', { p_user: userId }); if (error) throw new Error(error.message); }
+  async rankOf(userId: string) {
+    const { data, error } = await this.db.rpc('pvp_rank_of', { p_user: userId });
+    if (error) throw new Error(error.message);
+    return data;
   }
   async seen(matchId: string, userId: string) { const { error } = await this.db.rpc('pvp_seen', { p_match: matchId, p_user: userId }); if (error) console.error('pvp_seen', error.message); }
   newId() { return crypto.randomUUID(); }

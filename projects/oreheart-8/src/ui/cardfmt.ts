@@ -1,7 +1,28 @@
 import FORMAT from '../../public/art/card-format/format.json';
 import { makeOHRenderer } from './ohrender';
 import HOLO from '../content/holo-masks.json';
+import UPG from '../content/upgrade-art.json';
 import './ohcard.css';
+
+/** Upgraded cards (Nov 5): five tiers, looks only. Tier 1 is the card as painted; tiers 2-5 have their own picture (Brush) and coloured stars. */
+export const TIER_NAMES = ['', 'Original', 'Enhanced', 'Overcharged', 'Legendary', 'Mythic'];
+const UPG_IDS = new Set<string>((UPG as any).ids || []);
+export const hasUpgradeArt = (id: string) => UPG_IDS.has(id);
+/** The picture for a card at a tier: its upgrade art when painted, else the normal one. */
+export function tierArt(card: any, tier: number | undefined, normal: string | null): string | null {
+  const t = Math.max(1, Math.min(5, Number(tier) || 1));
+  return t > 1 && card && UPG_IDS.has(card.id) ? `/art/upgrades/${card.id}/${t}.webp` : normal;
+}
+/** The star row for a tier (one dim star on an Original, 2-5 coloured ones), for the bottom edge of a card face. */
+export function tierStars(tier: number | undefined): HTMLElement {
+  const t = Math.max(1, Math.min(5, Number(tier) || 1));
+  const el = document.createElement('div');
+  el.className = 'oh-stars';
+  el.setAttribute('data-tier', String(t));
+  el.setAttribute('aria-label', TIER_NAMES[t]);
+  el.innerHTML = Array.from({ length: t }, () => '<i></i>').join('');
+  return el;
+}
 
 /** The owner's card format (Art Studio, "Card format final 1.0") drawn by his own renderer: every card face in the game goes through here. */
 const R = makeOHRenderer(FORMAT as any);
@@ -32,7 +53,8 @@ export function ohCardEl(card: any, artUrl: string | null): HTMLElement {
   el.className = 'ohcard';
   el.setAttribute('data-layout', card.type === 'back' ? 'back' : card.type === 'spell' ? (card.spellKind === 'regular' ? 'spell' : 'instant') : card.type === 'crystal' ? 'crystal' : card.type === 'commander' ? 'commander' : 'unit');
   el.setAttribute('data-card-format', 'Card format final 1.0');
-  el.innerHTML = ohCardHTML(card, artUrl);
+  el.innerHTML = ohCardHTML(card, tierArt(card, card.tier, artUrl));
+  if (card.type !== 'back' && card.type !== 'crystal') el.querySelector('.cardc')?.append(tierStars(card.tier)); // every card shows its tier, the Original with one dim star
   const fit = () => R.fitText(el);
   const ro = new ResizeObserver(() => {
     if (!el.clientHeight) return;

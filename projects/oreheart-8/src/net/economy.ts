@@ -18,7 +18,14 @@ type El = HTMLElement;
 export interface PackSlot { slot_no: number; count: number; odds: Record<string, number> }
 export interface PackInfo { id: string; name: string; blurb: string; price_coins: number; faction: string | null; art: string | null; max_per_day: number; opened_today: number; slots: PackSlot[] }
 export interface ShopInfo { packs: PackInfo[]; coins: number; free_packs: number }
-export interface PulledCard { card_id: string; rarity: string; is_new: boolean }
+export interface PulledCard { card_id: string; rarity: string; is_new: boolean; tier?: number }
+/** Upgraded cards (Nov 5): thresholds = copies for tiers 2..5; cards = per card id its best tier, owned copies and upgraded copies. */
+export interface UpgradeInfo { thresholds: Record<string, number>; drop_bp: Record<string, number>; drop_tiers: Record<string, number>; cards: Record<string, { best: number; owned: number; upgraded: number }> }
+export interface CardCopy { id: string; tier: number; worth: number; since: string }
+export interface UpgradeResult { event_id: string; target: string; card_id: string; spent: number; worth_before: number; worth_after: number; tier_before: number; tier_after: number; next_worth: number | null; repeat: boolean }
+export const TIER_NAMES = ['', 'Original', 'Enhanced', 'Overcharged', 'Legendary', 'Mythic'];
+export const DEFAULT_THRESHOLDS: Record<string, number> = { '2': 2, '3': 5, '4': 10, '5': 20 };
+export const tierOfWorth = (worth: number, th: Record<string, number> = DEFAULT_THRESHOLDS) => { for (let t = 5; t >= 2; t--) if (worth >= (th[String(t)] || Infinity)) return t; return 1; };
 export interface OpenResult { opening_id: string; pack_type: string; price_paid: number; free: boolean; cards: PulledCard[]; coins_after: number; free_packs_after: number; odds: PackSlot[] }
 export interface Quest { id: string; quest_id: string; name: string; text: string; tier: 'easy' | 'medium' | 'hard'; reward: number; progress: number; target: number; done: boolean; expires_on: string }
 export interface QuestsInfo { quests: Quest[]; reroll_left: number; streak_days: number; free_packs: number; today: string }
@@ -47,6 +54,7 @@ const STUB = {
     stubPack('dwarf', 'Deepforge Pack', 'Dwarf cards and neutral finds. Forged, not stirred.', 'dwarves'),
   ] as PackInfo[],
   owned: {} as Record<string, number>,
+  copies: {} as Record<string, CardCopy[]>, // test page: each owned card's copies with tiers
   opens: 0,
   rerolled: false,
   quests: null as QuestsInfo | null,
@@ -66,12 +74,17 @@ function stubInit() {
   ] };
 }
 const pickOf = (pool: any[], n: number) => pool[Math.floor(Math.random() * pool.length) % Math.max(1, n)];
+let stubUid = 0;
+function stubCopy(id: string, tier = 1) { (STUB.copies[id] ||= []).push({ id: 'stub-c' + (++stubUid), tier, worth: tier > 1 ? DEFAULT_THRESHOLDS[String(tier)] : 1, since: new Date().toISOString() }); }
+function stubCopies(id: string): CardCopy[] { const n = STUB.owned[id] || 0; const list = (STUB.copies[id] ||= []); while (list.length < n) stubCopy(id); return list; }
 function stubRoll(pack: PackInfo, force?: string): PulledCard[] {
   const pool = Object.values(CARDS as any).filter((c: any) => !c.disabled && (c.type === 'creature' || c.type === 'spell') && (!pack.faction || c.faction === pack.faction || c.faction === 'any')) as any[];
   const of = (r: string) => { for (let i = RARITIES.indexOf(r); i >= 0; i--) { const p = pool.filter((c) => c.rarity === RARITIES[i]); if (p.length) return p; } return pool; };
   const out: PulledCard[] = [];
   const seen: Record<string, number> = { ...STUB.owned };
-  const add = (r: string) => { const p = of(r); const c = pickOf(p, p.length); out.push({ card_id: c.id, rarity: c.rarity, is_new: !seen[c.id] }); seen[c.id] = (seen[c.id] || 0) + 1; };
+  // a test page can force an upgraded drop: force 'tier5' (Mythic) .. 'tier2' puts it on the first card
+  const forcedTier = force && /^tier[2-5]$/.test(force) ? Number(force.slice(4)) : 0;
+  const add = (r: string) => { const p = of(r); const c = pickOf(p, p.length); const tier = forcedTier && !out.length ? forcedTier : 1; out.push({ card_id: c.id, rarity: c.rarity, is_new: !seen[c.id], tier }); seen[c.id] = (seen[c.id] || 0) + 1; stubCopy(c.id, tier); };
   for (let i = 0; i < 5; i++) add('Common');
   for (let i = 0; i < 2; i++) add('Uncommon');
   // the rare slot walks Rare -> Ultra Rare -> Collector on a test page, so every glow can be seen
@@ -112,6 +125,35 @@ export const api = {
     const out: Record<string, number> = {};
     for (const r of rows || []) out[r.card_id] = Number(r.count) || 0;
     return out;
+  },
+  async myUpgradeInfo(): Promise<UpgradeInfo> {
+    if (stubMode()) {
+      stubInit();
+      const cards: UpgradeInfo['cards'] = {};
+      for (const id of Object.keys(STUB.owned)) { const cs = stubCopies(id); if (cs.length) cards[id] = { best: Math.max(...cs.map((c) => c.tier)), owned: cs.length, upgraded: cs.filter((c) => c.tier > 1).length }; }
+      return { thresholds: { ...DEFAULT_THRESHOLDS }, drop_bp: { Common: 200, Uncommon: 100, Rare: 50, 'Ultra Rare': 20, Collector: 5 }, drop_tiers: { '2': 8000, '3': 1500, '4': 400, '5': 100 }, cards };
+    }
+    return await rpc<UpgradeInfo>('my_upgrade_info');
+  },
+  async myCardCopies(cardId: string): Promise<CardCopy[]> {
+    if (stubMode()) { stubInit(); return stubCopies(cardId).map((c) => ({ ...c })); }
+    return (await rpc<CardCopy[]>('my_card_copies', { p_card: cardId })) || [];
+  },
+  async upgradeCard(target: string, sources: string[], idemKey: string): Promise<UpgradeResult> {
+    if (stubMode()) {
+      stubInit();
+      const id = Object.keys(STUB.copies).find((k) => STUB.copies[k].some((c) => c.id === target));
+      if (!id) throw new Error('That card is not yours.');
+      const list = STUB.copies[id], t = list.find((c) => c.id === target)!;
+      const srcs = list.filter((c) => sources.includes(c.id) && c.id !== target);
+      if (!srcs.length) throw new Error('Pick at least one copy to combine.');
+      if (t.tier >= 5) throw new Error('That card is already Mythic.');
+      const before = { worth: t.worth, tier: t.tier };
+      t.worth += srcs.reduce((s, c) => s + c.worth, 0); t.tier = tierOfWorth(t.worth);
+      STUB.copies[id] = list.filter((c) => !srcs.includes(c)); STUB.owned[id] = STUB.copies[id].length;
+      return { event_id: 'stub-e' + (++stubUid), target, card_id: id, spent: srcs.length, worth_before: before.worth, worth_after: t.worth, tier_before: before.tier, tier_after: t.tier, next_worth: t.tier < 5 ? DEFAULT_THRESHOLDS[String(t.tier + 1)] : null, repeat: false };
+    }
+    return await retryOnce(() => rpc<UpgradeResult>('upgrade_card', { p_target: target, p_sources: sources, p_idem_key: idemKey }));
   },
   async myQuests(): Promise<QuestsInfo> {
     if (stubMode()) { stubInit(); return JSON.parse(JSON.stringify({ ...STUB.quests!, free_packs: STUB.free_packs })); }

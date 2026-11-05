@@ -5,7 +5,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-const FULL_PREFIXES = ['/models/', '/audio/music/', '/audio/voice/'];
+const FULL_PREFIXES = ['/models/', '/audio/music/', '/audio/voice/', '/art/upgrades/']; // Nov 5: the upgraded cards' pictures (33 MB) load as used, never on first load
 const SKIP = (p) => p === '/sw.js' || p.endsWith('.map') || p.startsWith('/screenshots/');
 
 export function listBuild(dist) {

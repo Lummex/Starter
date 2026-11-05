@@ -336,6 +336,90 @@ select pg_temp.ok('every security definer function pins search_path',
               where n.nspname in ('public', 'private') and p.prosecdef
                 and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')));
 
+-- ========== 15. Upgraded cards (Nov 5: looks only; worth = copies spent; append-only) ==========
+select pg_temp.ok('upgrades: settings exist with their defaults and are editable',
+  private.setting('upgrade_thresholds') = '{"2": 2, "3": 5, "4": 10, "5": 20}'::jsonb
+  and (private.setting('upgrade_drop_bp') ->> 'Common')::int = 200 and (private.setting('upgrade_drop_tiers') ->> '2')::int = 8000
+  and 'upgrade_thresholds' = any (private.editable_settings()));
+select pg_temp.ok('upgrades: the tier follows the worth (2, 5, 10, 20 copies)',
+  private.tier_of_worth(1) = 1 and private.tier_of_worth(2) = 2 and private.tier_of_worth(4) = 2 and private.tier_of_worth(5) = 3
+  and private.tier_of_worth(19) = 4 and private.tier_of_worth(20) = 5 and private.tier_of_worth(99) = 5 and private.worth_of_tier(1) = 1 and private.worth_of_tier(4) = 10);
+select pg_temp.ok('open_pack: every dealt card carries a tier, and the instances have it (tier 1, worth 1 as a rule)',
+  (select bool_and(c ? 'tier' and (c ->> 'tier')::int between 1 and 5) from o1, jsonb_array_elements(j -> 'cards') c)
+  and (select count(*) from public.card_instances ci where ci.owner_id = :P1 and ci.origin = 'pack' and ci.tier = 1 and ci.worth = 1) >= 7);
+update public.settings set value = '{"Common": 10000, "Uncommon": 0, "Rare": 0, "Ultra Rare": 0, "Collector": 0}' where key = 'upgrade_drop_bp';
+update public.settings set value = '{"2": 0, "3": 0, "4": 0, "5": 10000}' where key = 'upgrade_drop_tiers';
+create temp table o5 as select pg_temp.json_as(:P1, 'aal1', $q$ select public.open_pack('standard', 'k5-upgrade-drop-1', false) $q$) as j;
+select pg_temp.ok('upgrades: with the odds forced, the 5 Commons drop as Mythic (tier 5, worth 20) and the other 3 stay tier 1; history says so',
+  (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' = 'Common' and (c ->> 'tier')::int = 5) = 5
+  and (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' <> 'Common' and (c ->> 'tier')::int = 1) = 3
+  and (select count(*) from public.card_instances ci where ci.owner_id = :P1 and ci.origin_ref = (select j ->> 'opening_id' from o5) and ci.tier = 5 and ci.worth = 20) = 5
+  and (select count(*) from public.card_history h join public.card_instances ci on ci.id = h.card_instance_id
+       where ci.origin_ref = (select j ->> 'opening_id' from o5) and h.event = 'created' and h.reason = 'pack (tier 5)') = 5,
+  (select j::text from o5));
+update public.settings set value = '{"Common": 200, "Uncommon": 100, "Rare": 50, "Ultra Rare": 20, "Collector": 5}' where key = 'upgrade_drop_bp';
+update public.settings set value = '{"2": 8000, "3": 1500, "4": 400, "5": 100}' where key = 'upgrade_drop_tiers';
+-- combining: Side B gets six Shiv Rats
+select private.card_grant(:P2, 'shiv-rat', 6, 'admin_grant', 'test-upg', null);
+create temp table rats as select id, row_number() over (order by created_at, id) as n from public.card_instances where owner_id = :P2 and card_id = 'shiv-rat' and status = 'owned' and origin_ref = 'test-upg';
+create temp table rat0 as select count(*) as c from public.card_instances where owner_id = :P2 and card_id = 'shiv-rat' and status = 'owned'; -- packs may have dealt some too
+create temp table u1 as select pg_temp.json_as(:P2, 'aal1', format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-1-aaaaaaaa') $q$, (select id from rats where n = 1), (select id from rats where n = 2))) as r;
+select pg_temp.ok('upgrade_card: two copies make one Enhanced (worth 2, 1 spent, next at 5)',
+  (select r ->> 'tier_after' = '2' and r ->> 'worth_after' = '2' and r ->> 'spent' = '1' and r ->> 'next_worth' = '5' and (r ->> 'repeat')::boolean = false from u1), (select r::text from u1));
+select pg_temp.ok('upgrade_card: the source is combined, history on both, the event is stored',
+  (select tier = 2 and worth = 2 and status = 'owned' from public.card_instances where id = (select id from rats where n = 1))
+  and (select status = 'combined' and owner_id = :P2 from public.card_instances where id = (select id from rats where n = 2))
+  and (select count(*) from public.card_history where card_instance_id = (select id from rats where n = 2) and event = 'combined') = 1
+  and (select count(*) from public.card_history where card_instance_id = (select id from rats where n = 1) and event = 'upgraded' and reason = 'worth 1 -> 2, tier 1 -> 2') = 1
+  and (select count(*) from public.upgrade_events where user_id = :P2 and idem_key = 'u-rat-1-aaaaaaaa' and tier_after = 2) = 1,
+  (select string_agg(event || ':' || coalesce(reason, ''), ' | ') from public.card_history where card_instance_id in (select id from rats where n in (1, 2))));
+select pg_temp.ok('upgrade_card: the same key again gives the same answer and spends nothing twice',
+  (select (r ->> 'repeat')::boolean and r ->> 'worth_after' = '2'
+   from pg_temp.json_as(:P2, 'aal1', format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-1-aaaaaaaa') $q$, (select id from rats where n = 1), (select id from rats where n = 2))) r)
+  and (select count(*) from public.card_instances where owner_id = :P2 and card_id = 'shiv-rat' and status = 'owned') = (select c - 1 from rat0));
+select pg_temp.ok('the spent copy is out of the collection; my_upgrade_info shows best 2, one fewer owned, upgraded 1; my_card_copies lists them with tiers',
+  (select count from pg_temp.collection_of(:P2) where card_id = 'shiv-rat') = (select c - 1 from rat0)
+  and (select (r -> 'cards' -> 'shiv-rat' ->> 'best')::int = 2 and (r -> 'cards' -> 'shiv-rat' ->> 'owned')::int = (select c - 1 from rat0) and (r -> 'cards' -> 'shiv-rat' ->> 'upgraded')::int = 1
+         and (r -> 'thresholds' ->> '5')::int = 20 from pg_temp.json_as(:P2, 'aal1', 'select public.my_upgrade_info()') r)
+  and (select jsonb_array_length(r) = (select c - 1 from rat0) and (r -> 0 ->> 'tier')::int = 2 and (r -> 0 ->> 'worth')::int = 2 and (r -> 1 ->> 'tier')::int = 1
+       from pg_temp.json_as(:P2, 'aal1', $q$ select public.my_card_copies('shiv-rat') $q$) r));
+select pg_temp.works('a second Enhanced from rats 3 and 4', :P2, 'aal1',
+  format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-2-aaaaaaaa') $q$, (select id from rats where n = 3), (select id from rats where n = 4)));
+create temp table u3 as select pg_temp.json_as(:P2, 'aal1', format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-3-aaaaaaaa') $q$, (select id from rats where n = 1), (select id from rats where n = 3))) as r;
+select pg_temp.ok('Ken: two Enhanced make one Enhanced worth 4 (not an Overcharged), 1 short of the next tier',
+  (select r ->> 'tier_after' = '2' and r ->> 'worth_after' = '4' and r ->> 'next_worth' = '5' from u3)
+  and (select count(*) from public.card_instances where owner_id = :P2 and card_id = 'shiv-rat' and status = 'owned') = (select c - 3 from rat0), (select r::text from u3));
+insert into public.decks (user_id, name, commander, cards) select :P2, 'Rat deck', 'grubnak', array_fill('shiv-rat'::text, array[(select (c - 3)::int from rat0)]);
+select pg_temp.refused('upgrade_card: never leaves a deck short (a deck uses every owned Shiv Rat)', :P2, 'aal1',
+  format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-4-aaaaaaaa') $q$, (select id from rats where n = 1), (select id from rats where n = 5)), 'Keep');
+delete from public.decks where user_id = :P2 and name = 'Rat deck';
+select pg_temp.ok('upgrade_card: worth 5 is Overcharged (tier 3), next 10',
+  (select r ->> 'tier_after' = '3' and r ->> 'worth_after' = '5' and r ->> 'next_worth' = '10'
+   from pg_temp.json_as(:P2, 'aal1', format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-4-aaaaaaaa') $q$, (select id from rats where n = 1), (select id from rats where n = 5))) r));
+select pg_temp.refused('upgrade_card: a copy that is not the same card is refused', :P2, 'aal1',
+  format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-5-aaaaaaaa') $q$, (select id from rats where n = 1),
+         (select id from public.card_instances where owner_id = :P1 and status = 'owned' limit 1)), 'Only your own');
+select pg_temp.refused('upgrade_card: a card that is not yours is refused', :P1, 'aal1',
+  format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-6-aaaaaaaa') $q$, (select id from rats where n = 1), (select id from rats where n = 6)), 'not yours');
+select pg_temp.refused('upgrade_card: a spent copy cannot be spent again', :P2, 'aal1',
+  format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-7-aaaaaaaa') $q$, (select id from rats where n = 1), (select id from rats where n = 2)), 'Only your own');
+select pg_temp.refused('upgrade_card: nothing to combine is refused', :P2, 'aal1',
+  format($q$ select public.upgrade_card(%L, '{}'::uuid[], 'u-rat-8-aaaaaaaa') $q$, (select id from rats where n = 1)), 'at least one');
+update public.card_instances set tier = 5, worth = 20 where id = (select id from rats where n = 1);
+select pg_temp.refused('upgrade_card: a Mythic takes no more', :P2, 'aal1',
+  format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-9-aaaaaaaa') $q$, (select id from rats where n = 1), (select id from rats where n = 6)), 'already Mythic');
+select pg_temp.ok('four upgrade events stored', (select count(*) from public.upgrade_events where user_id = :P2) = 4);
+select pg_temp.refused('upgrade_events: players cannot touch the table', :P2, 'aal1', format($q$ delete from public.upgrade_events where user_id = %L $q$, :P2), 'permission denied');
+select pg_temp.refused('settings: upgrade_thresholds must rise', :A1, 'aal2',
+  $q$ select public.admin_set_setting('upgrade_thresholds', '{"2": 2, "3": 2, "4": 10, "5": 20}', 'test') $q$, 'rise');
+select pg_temp.refused('settings: upgrade_drop_tiers must add up to 10000', :A1, 'aal2',
+  $q$ select public.admin_set_setting('upgrade_drop_tiers', '{"2": 8000, "3": 1500, "4": 400, "5": 1000}', 'test') $q$, '10000');
+select pg_temp.refused('settings: upgrade_drop_bp takes rarity names only', :A1, 'aal2',
+  $q$ select public.admin_set_setting('upgrade_drop_bp', '{"Common": 200, "Shiny": 5}', 'test') $q$, 'rarity');
+select pg_temp.works('settings: admin raises the Common drop chance to 3%', :A1, 'aal2',
+  $q$ select public.admin_set_setting('upgrade_drop_bp', '{"Common": 300, "Uncommon": 100, "Rare": 50, "Ultra Rare": 20, "Collector": 5}', 'more excitement') $q$);
+select pg_temp.ok('... stored', (private.setting('upgrade_drop_bp') ->> 'Common')::int = 300);
+
 -- ---------- report ----------
 \set QUIET off
 select n, case when ok then 'PASS' else 'FAIL' end as result, name, case when ok then '' else detail end as detail

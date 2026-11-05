@@ -61,6 +61,28 @@ html body .econ-screen .shop-pack .net-btn{padding-inline:calc(var(--sv-cap) * .
 .col-zoom{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:#000b;cursor:zoom-out}
 .col-zoom .col-big{height:min(86vh,640px);aspect-ratio:420/624;position:relative}
 .col-zoom .col-big>.ohcard{position:absolute;inset:0}
+/* Upgraded cards (Nov 5): the tier tag on a tile, and the Upgrade panel beside the close-up (silver kit, no gold) */
+.col-tier{position:absolute;left:-3px;bottom:-3px;z-index:2;padding:1px 7px;color:#eef2f7;font:800 .72rem/1.5 Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;background:linear-gradient(#3a4254,#161a25);border:1px solid #aab2bf;border-radius:5px;box-shadow:0 1px 4px #0009}
+.col-tier[data-tier="3"]{border-color:#6fc3ff}.col-tier[data-tier="4"]{border-color:#c58cff}.col-tier[data-tier="5"]{border-color:#ffb347}
+.col-zoom.with-upg{cursor:default}
+.col-zoom.with-upg .col-big{display:grid;grid-template-columns:calc(min(86vh,640px) * 420 / 624) minmax(300px,380px);gap:18px;aspect-ratio:auto;width:auto;max-width:96vw;align-items:stretch}
+.col-zoom.with-upg .col-big>.ohcard{position:relative;inset:auto;height:100%;width:100%;flex:none;cursor:zoom-out}
+.col-upg{width:auto;min-width:0;max-height:100%;overflow:auto;padding:14px 16px;color:#e9edf3;background:linear-gradient(#232835,#12151d);border:1px solid #aab2bf;border-radius:10px;box-shadow:0 6px 24px #000a;font-family:Arial,sans-serif;text-align:left}
+.col-upg h2{margin:0 0 4px;font:800 1.15rem/1.2 Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#f3f6fa}
+.col-upg-sub,.col-upg-note{margin:0 0 10px;font-size:.85rem;color:#b9c1cd}
+.col-upg-list{display:flex;flex-direction:column;gap:6px;max-height:34vh;overflow:auto}
+.col-upg-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid #3a4254;border-radius:7px;background:#1b1f2a;cursor:pointer}
+.col-upg-row.keep{border-color:#dfe6f0;background:#242a38}
+.col-upg-row.picked{border-color:#6fc3ff}
+.col-upg-stars{font-size:.8rem;letter-spacing:-1px;color:#777c86}
+.col-upg-stars[data-tier="2"]{color:#dfe6f0}.col-upg-stars[data-tier="3"]{color:#6fc3ff}.col-upg-stars[data-tier="4"]{color:#c58cff}.col-upg-stars[data-tier="5"]{color:#ffb347}
+.col-upg-name{flex:1;font-size:.9rem}
+.col-upg-keeptag{font:800 .7rem/1.6 Arial,sans-serif;letter-spacing:.08em;padding:0 6px;border:1px solid #dfe6f0;border-radius:4px}
+.col-upg-keepbtn{padding:2px 8px;font-size:.75rem}
+.col-upg-status{margin:10px 0 6px;font-size:.88rem;min-height:1.2em}
+.col-upg-preview{height:150px;display:flex;justify-content:center;margin-top:8px}
+.col-upg-preview>.ohcard{height:100%;width:auto}
+@media (max-width:760px){.col-zoom.with-upg .col-big{flex-direction:column;height:auto;max-height:92vh;overflow:auto}.col-zoom.with-upg .col-big>.ohcard{height:46vh}.col-upg{width:min(92vw,420px)}}
 
 /* ---------------------------------------------------------------- deck builder, signed in: owned counts */
 .db-tile.unowned .face{opacity:.45;filter:grayscale(.85)}
@@ -147,6 +169,15 @@ html body .econ-screen .shop-pack .net-btn{padding-inline:calc(var(--sv-cap) * .
 .pko-unknown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;background:#1b1f2b;border:2px solid #cfd6e4;border-radius:5%;font-size:.8rem;padding:6px;text-align:center}
 .pko-new{position:absolute;left:-6%;top:-3%;z-index:3;padding:2px 9px;color:#08111f!important;-webkit-text-fill-color:#08111f!important;text-shadow:none!important;font:800 clamp(.65rem,1.6vh,.9rem) Arial,sans-serif;letter-spacing:.08em;background:linear-gradient(#ffffff,#b9d4ff);border:1px solid #fff;border-radius:10px;box-shadow:0 0 10px #b9d4ffcc,0 2px 4px #000c;transform:rotate(-10deg) scale(.4);opacity:0;transition:opacity .25s .45s,transform .35s .45s cubic-bezier(.2,1.6,.4,1)}
 .pko-card.flipped .pko-new{opacity:1;transform:rotate(-10deg) scale(1)}
+/* an UPGRADED drop (Nov 5): the tier tag swings in under the card, the glow is the tier's colour, the screen flashes with it */
+.pko-upg{position:absolute;left:50%;bottom:-7%;z-index:4;transform:translateX(-50%) scale(.2);opacity:0;padding:3px 10px;color:#08111f!important;-webkit-text-fill-color:#08111f!important;text-shadow:none!important;font:800 clamp(.62rem,1.5vh,.85rem) Arial,sans-serif;letter-spacing:.1em;border-radius:6px;background:#dfe6f0;border:1px solid #fff;box-shadow:0 2px 8px #000a;transition:opacity .35s .55s,transform .45s .55s cubic-bezier(.2,1.6,.4,1);white-space:nowrap}
+.pko-upg[data-tier="3"]{background:#6fc3ff}.pko-upg[data-tier="4"]{background:#c58cff}.pko-upg[data-tier="5"]{background:#ffb347}
+.pko-card.flipped .pko-upg{opacity:1;transform:translateX(-50%) scale(1)}
+.pko-card.pko-upgraded .pko-glow{display:block;box-shadow:0 0 0 2px #dfe6f0,0 0 22px 6px #dfe6f0aa}
+.pko-card.pko-upgraded[data-tier="3"] .pko-glow{box-shadow:0 0 0 2px #6fc3ff,0 0 26px 8px #6fc3ffaa}
+.pko-card.pko-upgraded[data-tier="4"] .pko-glow{box-shadow:0 0 0 2px #c58cff,0 0 30px 10px #c58cffbb}
+.pko-card.pko-upgraded[data-tier="5"] .pko-glow{box-shadow:0 0 0 2px #ffb347,0 0 36px 12px #ffb347cc}
+.pko-flash-upg{background:#dfe6f0}.pko-flash-upg[data-tier="3"]{background:#6fc3ff}.pko-flash-upg[data-tier="4"]{background:#c58cff}.pko-flash-upg[data-tier="5"]{background:#ffb347}
 /* rarity glow, bigger for rarer cards (no gold): Common none, Uncommon soft silver rim, Rare blue-white bloom,
    Ultra Rare bright violet bloom with sparkles, Collector rainbow shimmer with a short burst */
 .pko-glow{position:absolute;inset:-3%;border-radius:7%;opacity:0;pointer-events:none;transition:opacity .5s .3s;will-change:opacity}

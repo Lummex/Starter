@@ -1,3 +1,4 @@
+import { hasUpgradeArt } from './ui/cardfmt';
 import './style.css';
 import './ui/theme-silver.css'; // Ken (Oct 30): silver UI theme, loads after style.css so its rules win
 import './ui/leftovers-art.css'; // Ken (Nov 4): Brush's painted leftovers
@@ -95,6 +96,7 @@ if (test) {
     /** Oct 31: the computer's own damage prediction for a hit by `uid` on the creature at target {row, col} (ai.ts predictHit) */
     aiHitPrediction: (uid: string, target: any) => { const s: any = game.state; const c = s?.board.creatures.find((x: any) => x.uid === uid); const t = s?.board.creatures.find((x: any) => x.row === target?.row && x.col === target?.col); return c && t ? predictHit(s, c, t) : null; },
     tutorialAction: () => (game.state ? tutorialAction(game.state) : null),
+    hasUpgradeArt: (id: string) => hasUpgradeArt(id),
     getCard: (id: string) => {
       const c: any = CARDS[id];
       if (!c) return null;
@@ -209,7 +211,7 @@ if (test) {
   }
   // Nov 2 (PvP): window.oreheart.pvp = { create, join, view, act, forfeit, tick, seq } (each one guards itself; added after the wrapper because it is an object)
   const pvpLazy = () => import('./net/pvp').then((m) => m.pvpHooks() as any); // the PvP code stays out of the main bundle; every hook answers a promise
-  hooks.pvp = Object.fromEntries(['create', 'join', 'view', 'act', 'forfeit', 'tick', 'seq', 'matchId', 'code', 'actLog'].map((k) => [k, (...a: any[]) => pvpLazy().then((p) => p[k](...a)).catch(() => null)]));
+  hooks.pvp = Object.fromEntries(['create', 'join', 'view', 'act', 'forfeit', 'tick', 'seq', 'matchId', 'code', 'actLog', 'queue', 'leave', 'rank'].map((k) => [k, (...a: any[]) => pvpLazy().then((p) => p[k](...a)).catch(() => null)]));
 }
 
 // "Please rotate" overlay: shown whenever the window is portrait and narrower than 900px.

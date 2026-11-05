@@ -6,7 +6,7 @@
 // phase, never per frame. prefers-reduced-motion shortens everything and drops most of the shreds.
 import { h, pictureOf, rarityKey } from '../ui/app';
 import { CARDS } from '../engine';
-import { ohCardEl } from '../ui/cardfmt';
+import { ohCardEl, TIER_NAMES } from '../ui/cardfmt';
 import { audio } from '../ui/audio';
 import { packArtName, packArt } from './quest-summary';
 export { packArtName, packArt };
@@ -142,13 +142,17 @@ class Scene {
     this.slots = this.cards.map((c, i) => {
       const card: any = (CARDS as any)[c.card_id];
       const rk = card ? rarityKey({ rarity: c.rarity || card.rarity }) : rarityKey({ rarity: c.rarity });
-      const front = card ? ohCardEl({ ...card, rarity: c.rarity || card.rarity }, pictureOf(card)) : h('div', { class: 'pko-unknown' }, c.card_id);
-      const label = card ? `${card.name}, ${c.rarity}${c.is_new ? ', new' : ''}` : c.card_id;
+      const tier = Math.max(1, Math.min(5, Number(c.tier) || 1)); // Nov 5: an upgraded drop shows its tier art and stars
+      const front = card ? ohCardEl({ ...card, rarity: c.rarity || card.rarity, tier }, pictureOf(card)) : h('div', { class: 'pko-unknown' }, c.card_id);
+      const label = card ? `${card.name}, ${c.rarity}${tier > 1 ? ', ' + TIER_NAMES[tier] + ' (upgraded)' : ''}${c.is_new ? ', new' : ''}` : c.card_id;
       const slot = h('button', { type: 'button', class: `pko-card pko-r-${rk}`, 'data-i': String(i), 'data-card-id': c.card_id, 'data-rarity': rk, 'data-flipped': 'false', 'aria-label': `Card ${i + 1}, face down`, 'data-name': label, style: `--i:${i}` },
         h('div', { class: 'pko-glow', 'aria-hidden': 'true' }),
         h('div', { class: 'pko-flip' }, h('div', { class: 'pko-face pko-back' }, backFace()), h('div', { class: 'pko-face pko-front' }, front)),
-        c.is_new ? h('span', { class: 'pko-new', 'aria-hidden': 'true' }, 'NEW') : null);
-      slot.addEventListener('click', () => { if (slot.dataset.flipped === 'true') { if (card && performance.now() - (+(slot.dataset.flipAt || 0)) > 700) zoomCard({ ...card, rarity: c.rarity || card.rarity }); return; } /* a double tap only flips */ if (this.phase === 'cards') this.flip(i); });
+        c.is_new ? h('span', { class: 'pko-new', 'aria-hidden': 'true' }, 'NEW') : null,
+        tier > 1 ? h('span', { class: 'pko-upg', 'data-tier': String(tier), 'aria-hidden': 'true' }, TIER_NAMES[tier].toUpperCase()) : null);
+      slot.dataset.tier = String(tier);
+      if (tier > 1) slot.classList.add('pko-upgraded');
+      slot.addEventListener('click', () => { if (slot.dataset.flipped === 'true') { if (card && performance.now() - (+(slot.dataset.flipAt || 0)) > 700) zoomCard({ ...card, rarity: c.rarity || card.rarity, tier }); return; } /* a double tap only flips */ if (this.phase === 'cards') this.flip(i); });
       return slot;
     });
     this.row.append(...this.slots);
@@ -259,6 +263,8 @@ class Scene {
     if (!quiet) play('flip', 0.6);
     if (RANK[rk] >= 3 && !quiet) play('sting', 0.55, 0); // Ultra Rare and Collector only (Ken: fewer sounds)
     if (rk === 'collector' || rk === 'ultra-rare') setTimeout(() => this.burst(s, rk === 'collector' ? 16 : 8), 260 * this.T);
+    const tier = Number(s.dataset.tier) || 1;
+    if (tier > 1) this.upgradeMoment(s, tier, quiet); // the rare one: an UPGRADED card
     if (this.flipped >= this.slots.length) this.finish();
   }
   async flipAll() {
@@ -269,6 +275,18 @@ class Scene {
     play('flip', 0.6);
     if (todo.some((i) => RANK[this.slots[i].dataset.rarity || 'common'] >= 3)) play('sting', 0.55, 0.3);
     for (const i of todo) { this.flip(i, true); if (!this.skipping) await wait(110 * this.T); }
+  }
+  /** An upgraded card turned up (Nov 5): the sting, a long sparkle burst, the whole screen flashes in the tier's colour and the hint names it. Transform and opacity only. */
+  private upgradeMoment(s: El, tier: number, quiet: boolean) {
+    if (!quiet) play('sting', 0.7, 0.05);
+    this.hint.textContent = `UPGRADED CARD! A ${TIER_NAMES[tier]} ${s.dataset.name?.split(',')[0] || 'card'}!`;
+    if (reduced()) return;
+    setTimeout(() => this.burst(s, 10 + tier * 8), 200 * this.T);
+    setTimeout(() => this.burst(s, 8 + tier * 6), 650 * this.T);
+    const flash = h('div', { class: 'pko-flash pko-flash-upg', 'data-tier': String(tier), 'aria-hidden': 'true' });
+    this.root.append(flash);
+    flash.animate([{ opacity: 0 }, { opacity: tier >= 4 ? 0.55 : 0.32, offset: 0.25 }, { opacity: 0 }], { duration: 900 * this.T, easing: 'ease-out', fill: 'forwards' }).finished.then(() => flash.remove(), () => flash.remove());
+    s.animate([{ transform: 'none' }, { transform: 'scale(1.12) rotate(-2deg)', offset: 0.3 }, { transform: 'scale(1.06) rotate(1.5deg)', offset: 0.6 }, { transform: 'none' }], { duration: 700 * this.T, easing: 'ease-out' });
   }
   /** A short burst of sparkles from a rare card (transform/opacity only). */
   private burst(s: El, n: number) {
@@ -285,7 +303,8 @@ class Scene {
     this.flipAllBtn.hidden = true;
     const best = Math.max(...this.slots.map((s) => RANK[s.dataset.rarity || 'common'] ?? 0));
     const news = this.cards.filter((c) => c.is_new).length;
-    this.hint.textContent = best >= 4 ? 'A COLLECTOR card! Frame it. Guard it. Name it something heroic.' : best >= 3 ? 'Ultra Rare! The goblins are jealous.' : news ? `${news} new card${news === 1 ? '' : 's'} for your collection!` : 'More friends for your decks!';
+    const bestTier = Math.max(...this.slots.map((s) => Number(s.dataset.tier) || 1));
+    this.hint.textContent = bestTier > 1 ? `An UPGRADED ${TIER_NAMES[bestTier]} card dropped! Combine copies in your Collection to make your own.` : best >= 4 ? 'A COLLECTOR card! Frame it. Guard it. Name it something heroic.' : best >= 3 ? 'Ultra Rare! The goblins are jealous.' : news ? `${news} new card${news === 1 ? '' : 's'} for your collection!` : 'More friends for your decks!';
     this.againBtn.textContent = this.o.againLabel();
     this.againBtn.hidden = !this.o.canAgain();
     this.againBtn.disabled = false;

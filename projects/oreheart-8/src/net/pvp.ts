@@ -385,6 +385,10 @@ let current: NetGame | null = null;
 let activeMatch: string | null = null;
 let roomCode: string | null = null;
 let roomTimer: any = null;
+let queueTimer: any = null;
+let lastRank: any = null;
+const rankText = (r: any) => `Ranked: ${r.rating} ${r.name}${r.place ? ` · #${r.place}` : ''} · season ${r.season}${r.games ? ` · ${r.wins}-${r.losses}` : ''}`;
+function stopQueuePoll() { if (queueTimer) { clearInterval(queueTimer); queueTimer = null; } }
 /** flow.ts (and the mock start in test pages) hand over the App. */
 export function bindPvpApp(a: App) { app = a; }
 export const currentNetGame = () => current;
@@ -416,8 +420,14 @@ function stopRoomPoll() { if (roomTimer) { clearInterval(roomTimer); roomTimer =
 /** Main-menu extras when signed in: "Play a friend", and "Back to your match" while one is active. */
 export function pvpMenu(el: El): void {
   if (!net.active) return;
-  const box = h('div', { class: 'pvp-menu', role: 'group', 'aria-label': 'Play a friend' });
-  box.append(nbtn('Play a friend', () => showFriend(), 'pvp-menu-btn primary', { 'data-testid': 'pvp-play-friend' }));
+  const box = h('div', { class: 'pvp-menu', role: 'group', 'aria-label': 'Play online' });
+  // Nov 5 (Ken: "a ranked match mode. And an unranked match mode. And a practice match mode"): the two queues, friend codes (with Practice inside)
+  const rankLine = h('p', { class: 'pvp-rank', 'data-testid': 'pvp-rank', 'aria-live': 'polite' }, '');
+  box.append(rankLine,
+    nbtn('Ranked match', () => showQueue('ranked'), 'pvp-menu-btn primary', { 'data-testid': 'pvp-ranked' }),
+    nbtn('Unranked match', () => showQueue('unranked'), 'pvp-menu-btn', { 'data-testid': 'pvp-unranked' }),
+    nbtn('Play a friend', () => showFriend(), 'pvp-menu-btn', { 'data-testid': 'pvp-play-friend' }));
+  void transport().call('rank', {}).then((r: any) => { if (r && r.ok && r.rank && box.isConnected) { lastRank = r.rank; rankLine.textContent = rankText(r.rank); } }).catch(() => {});
   const addBack = (id: string) => {
     if (box.querySelector('.pvp-back-btn')) return;
     box.prepend(nbtn('Back to your match', () => { void openMatch(id); }, 'pvp-back-btn primary', { 'data-testid': 'pvp-back-to-match' }));
@@ -451,6 +461,7 @@ export function showFriend() {
     h('p', {}, 'Make a secret code and send it to a friend, or type in the code a friend sent you.'),
     h('div', { class: 'net-actions pvp-choice' },
       nbtn('Make a code', () => showMake(), 'primary pvp-make', { 'data-testid': 'pvp-make' }),
+      nbtn('Practice with a friend', () => showMake(true), 'pvp-practice', { 'data-testid': 'pvp-practice', title: 'A code like any other, but nothing is paid or counted: no coins, no quests, no rank' }),
       nbtn('I have a code', () => showJoin(), 'pvp-join', { 'data-testid': 'pvp-join' })),
     h('div', { class: 'net-actions' }, nbtn('Back', () => app!.showMenu(), 'pvp-back')));
 }
@@ -520,20 +531,65 @@ function picker() {
   };
 }
 
-function showMake() {
+function showMake(practice = false) {
   const p = picker(), err = alertEl();
   const go = nbtn('Make my code', async () => {
     go.disabled = true; err.textContent = '';
-    const r = await makeCode(p.value());
+    const r = await makeCode(p.value(), practice);
     if (!r.ok) { go.disabled = false; err.textContent = r.error || ''; }
   }, 'primary pvp-go', { 'data-testid': 'pvp-create' });
-  screen('make', h('h1', {}, 'Make a code'), p.el, err, h('div', { class: 'net-actions' }, go, nbtn('Back', () => showFriend())));
+  screen('make', h('h1', {}, practice ? 'Practice code' : 'Make a code'),
+    practice ? h('p', { class: 'pvp-practice-note', 'data-testid': 'pvp-practice-note' }, 'Practice: a friendly bout that pays and counts nothing. No coins, no quests, no rank.') : null,
+    p.el, err, h('div', { class: 'net-actions' }, go, nbtn('Back', () => showFriend())));
+}
+
+/** Nov 5: the Ranked / Unranked queue. One call every 2 s keeps the player in it and brings back the match when someone fits. */
+function showQueue(mode: 'ranked' | 'unranked') {
+  const p = picker(), err = alertEl();
+  const waiting = h('p', { class: 'pvp-waiting', role: 'status', 'data-testid': 'pvp-queue-status' }, '');
+  const info = h('p', { class: 'pvp-queue-info' }, mode === 'ranked'
+    ? 'Ranked: you meet players near your rating. Win and it goes up, lose and it goes down; every quarter is a new season.'
+    : 'Unranked: the next player who is looking, whatever their rank. Coins and quests count as usual.');
+  const go = nbtn('Find a match', () => { go.disabled = true; err.textContent = ''; void startQueue(mode, p.value(), waiting, err, go, cancel); }, 'primary pvp-go', { 'data-testid': 'pvp-queue-go' });
+  const cancel = nbtn('Back', () => { stopQueuePoll(); void transport().call('leave', {}).catch(() => {}); app!.showMenu(); }, 'pvp-cancel', { 'data-testid': 'pvp-queue-cancel' });
+  screen('queue', h('h1', {}, mode === 'ranked' ? 'Ranked match' : 'Unranked match'), info,
+    lastRank && mode === 'ranked' ? h('p', { class: 'pvp-rank' }, rankText(lastRank)) : null,
+    p.el, waiting, err, h('div', { class: 'net-actions' }, go, cancel));
+}
+async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string; deckId?: string; cards?: string[] }, waiting: El, err: El, go: El, cancel: El): Promise<{ ok: boolean; matchId?: string; error?: string }> {
+  stopQueuePoll();
+  const body = { mode, commander: pick.commander, ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }) };
+  const dots = () => h('span', { class: 'pvp-dots', 'aria-hidden': 'true' }, h('i', {}, '.'), h('i', {}, '.'), h('i', {}, '.'));
+  let r: any;
+  try { r = await transport().call('queue', body); } catch (e) { (go as HTMLButtonElement).disabled = false; err.textContent = friendlyError(e); return { ok: false, error: friendlyError(e) }; }
+  if (!r || !r.ok) { (go as HTMLButtonElement).disabled = false; err.textContent = friendlyError(r?.error || 'Could not join the queue'); return { ok: false, error: r?.error }; }
+  if (r.matchId) { if (await openMatch(r.matchId, r.view)) return { ok: true, matchId: r.matchId }; err.textContent = `A match started, but the screen did not open${lastOpenError ? ': ' + lastOpenError : ''}.`; return { ok: false }; }
+  waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent (rating ${r.rating})`, dots());
+  (cancel as HTMLButtonElement).textContent = 'Cancel';
+  return await new Promise((resolve) => {
+    const poll = async () => {
+      if (!waiting.isConnected) { stopQueuePoll(); void transport().call('leave', {}).catch(() => {}); resolve({ ok: false, error: 'left' }); return; }
+      try {
+        const x = await transport().call('queue', body);
+        if (!waiting.isConnected) return;
+        if (x && x.ok && x.matchId) {
+          stopQueuePoll();
+          const opened = await openMatch(x.matchId, x.view);
+          if (!opened && waiting.isConnected) { waiting.textContent = ''; err.textContent = `A match started, but the screen did not open${lastOpenError ? ': ' + lastOpenError : ''}. Go back to the menu and press "Back to your match".`; }
+          resolve({ ok: opened, matchId: x.matchId });
+        } else if (x && x.ok && x.waiting) {
+          waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent (rating ${x.rating}, ${x.waited}s${x.others ? `, ${x.others} waiting` : ''})`, dots());
+        } else if (x && !x.ok) { err.textContent = friendlyError(x.error); }
+      } catch { /* keep polling */ }
+    };
+    queueTimer = setInterval(() => { void poll(); }, 2000);
+  });
 }
 
 /** create → the code screen ("Waiting for your friend…", polling `room` every 2 s). */
-export async function makeCode(pick: { commander: string; deckId?: string; cards?: string[] }): Promise<{ ok: boolean; code?: string; error?: string }> {
+export async function makeCode(pick: { commander: string; deckId?: string; cards?: string[] }, practice = false): Promise<{ ok: boolean; code?: string; error?: string }> {
   let r: any;
-  try { r = await transport().call('create', { commander: pick.commander, ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }) }); }
+  try { r = await transport().call('create', { commander: pick.commander, ...(practice ? { practice: true } : {}), ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }) }); }
   catch (e) { return { ok: false, error: friendlyError(e) }; }
   if (!r || !r.ok || !r.code) return { ok: false, error: friendlyError(r?.error || 'Could not make a code') };
   showCode(r.code);
@@ -669,7 +725,11 @@ export function pvpHooks() {
   const pick = (commander?: string, deckId?: string) => { const c = commander && (COMMANDERS as any)[commander] ? commander : 'grubnak'; return { commander: c, deckId: deckId && STARTER_DECK_LIST.some((d) => d.id === deckId) ? deckId : warbandOf((COMMANDERS as any)[c].faction) }; };
   const none = () => Promise.resolve({ ok: false, error: 'No match' });
   return {
-    create: (commander?: string, deckId?: string) => safe(() => makeCode(pick(commander, deckId))),
+    create: (commander?: string, deckId?: string, practice?: boolean) => safe(() => makeCode(pick(commander, deckId), practice === true)),
+    // Nov 5 (modes): the queue through the real screens (the poll runs until a match opens or the screen is left)
+    queue: (mode: 'ranked' | 'unranked', commander?: string, deckId?: string) => safe(() => { showQueue(mode); const w = document.querySelector('[data-testid="pvp-queue-status"]') as El, e = document.querySelector('[data-screen="pvp-queue"] .net-alert') as El, g = document.querySelector('[data-testid="pvp-queue-go"]') as El, c = document.querySelector('[data-testid="pvp-queue-cancel"]') as El; return startQueue(mode, pick(commander, deckId), w, e, g, c); }),
+    leave: () => safe(() => { stopQueuePoll(); return transport().call('leave', {}); }),
+    rank: () => safe(() => transport().call('rank', {})),
     join: (code: string, commander?: string, deckId?: string) => safe(() => joinCode(code, pick(commander, deckId))),
     view: () => safe(() => (current && current.view ? clone({ ...current.view, seq: current.seq, status: current.status }) : null)),
     act: (a: any) => safe(() => (current ? current.actRemote(a) : none())),

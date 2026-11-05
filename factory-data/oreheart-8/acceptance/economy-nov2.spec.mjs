@@ -300,6 +300,65 @@ test('AC652: the Collection shows every card with "×N" for owned ones, unowned 
   expect(new Set(rar)).toEqual(new Set(['collector']));
 });
 
+test('AC680: upgraded cards: a pack can drop one (forced here): its tier art or stars show on the flipped card with an UPGRADED tag, the hint names it; every card face carries its tier stars (one dim star on an Original)', async ({ page }) => {
+  await ripToCards(page, 'standard', 'tier5');
+  await page.evaluate(() => window.oreheart.packs.flipAll());
+  await expect.poll(async () => (await packState(page)).phase, { timeout: 8000 }).toBe('done');
+  const first = page.locator('.pko-card').first();
+  await expect(first).toHaveAttribute('data-tier', '5');
+  expect(await first.evaluate((e) => e.classList.contains('pko-upgraded'))).toBe(true);
+  await expect(first.locator('.pko-upg')).toHaveText('MYTHIC');
+  expect(await first.locator('.oh-stars[data-tier="5"] i').count()).toBe(5);
+  const art = await first.evaluate((e) => { const im = e.querySelector('.pko-front .ly img'); return im ? im.getAttribute('src') : ''; });
+  const id = await first.getAttribute('data-card-id');
+  const painted = await page.evaluate((i) => window.oreheart.hasUpgradeArt ? window.oreheart.hasUpgradeArt(i) : null, id);
+  if (painted) expect(art).toBe(`/art/upgrades/${id}/5.webp`);
+  await expect(page.locator('.pko-hint')).toContainText('UPGRADED');
+  // the other seven are Originals: one dim star each, no tag
+  const others = page.locator('.pko-card:not(.pko-upgraded)');
+  expect(await others.count()).toBe(7);
+  expect(await others.first().locator('.oh-stars[data-tier="1"] i').count()).toBe(1);
+  expect(await others.first().locator('.pko-upg').count()).toBe(0);
+});
+
+test('AC681: the Collection shows each card at its best tier with a tier tag and an Upgraded filter; the close-up of an owned card has the Upgrade panel: keep one copy, tick others, Combine raises the worth and the stars (looks only)', async ({ page }) => {
+  await openEcon(page, 'collection');
+  const tiles = page.locator('.col-card');
+  await expect.poll(() => tiles.count()).toBeGreaterThan(50);
+  // a card with 4 copies (a Common on the stand-in page)
+  const id = await page.locator('.col-card[data-owned="4"]').first().getAttribute('data-card-id');
+  const tile = page.locator(`.col-card[data-card-id="${id}"]`); // by id: its owned count changes below
+  await expect(tile).toHaveAttribute('data-tier', '1');
+  await tile.click();
+  const panel = page.locator('[data-testid="upgrade-panel"]');
+  await expect(panel).toBeVisible();
+  const rows = panel.locator('.col-upg-row');
+  await expect.poll(() => rows.count()).toBe(4);
+  await expect(rows.first()).toHaveClass(/keep/);
+  const btn = panel.locator('.col-upg-btn');
+  await expect(btn).toBeDisabled();
+  await rows.nth(1).locator('.col-upg-pick').check();
+  await expect(panel.locator('.col-upg-status')).toContainText('= 2: Enhanced!');
+  await expect(btn).toBeEnabled();
+  await btn.click();
+  await expect.poll(() => rows.count()).toBe(3);
+  await expect(rows.first()).toHaveAttribute('data-tier', '2');
+  await expect(panel.locator('.col-upg-status')).toContainText('Worth 2');
+  // the close-up card and the tile now show Enhanced: two stars, the tag, the Upgraded filter finds it
+  expect(await page.locator('.col-big > .ohcard .oh-stars[data-tier="2"] i').count()).toBe(2);
+  await page.keyboard.press('Escape');
+  await expect(tile).toHaveAttribute('data-tier', '2');
+  await expect(tile).toHaveAttribute('data-owned', '3');
+  await expect(tile.locator('.col-tier')).toHaveText('Enhanced');
+  await page.getByRole('group', { name: 'Owned' }).getByRole('button', { name: 'Upgraded' }).click();
+  const shown = await page.locator('.col-card:not([hidden])').evaluateAll((els) => els.map((e) => e.dataset.tier));
+  expect(shown.length).toBeGreaterThan(0);
+  expect(shown.every((t) => Number(t) > 1)).toBe(true);
+  // the stat numbers are the card's own (looks only)
+  const card = await page.evaluate((i) => window.oreheart.getCard(i), id);
+  expect(await tile.locator('.ohcard').evaluate((e) => e.textContent)).toContain(card.name);
+});
+
 test('AC653: Daily Quests shows each quest with name, text, a progress bar, the coin reward, a Done tick when paid, days left, one Reroll a day, and the streak line', async ({ page }) => {
   await openEcon(page, 'quests');
   const rows = page.locator('.q-row');

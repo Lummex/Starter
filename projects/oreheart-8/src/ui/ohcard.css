@@ -9,6 +9,14 @@
 /* Ken, Oct 30 playtest: card words use the Card Format's own crisp shadow, not the game-wide blurry 2px glow */
 .ohcard .cardc .ly .ohtx>span.tx{text-shadow:inherit!important}
 .ohcard .ly.hid{display:none}
+/* Upgraded cards (Nov 5): tiny bare stars at the very bottom edge, under the rarity banner; coloured by tier, 1 dim star on an Original */
+.ohcard .oh-stars{position:absolute;left:0;right:0;bottom:0.9%;z-index:9;display:flex;justify-content:center;gap:1.1cqw;pointer-events:none;line-height:0}
+.ohcard .oh-stars i{display:block;width:3.6cqw;height:3.6cqw;background:var(--star,#8a8f98);clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);filter:drop-shadow(0 0 1px #000)}
+.ohcard .oh-stars[data-tier="1"] i{--star:#777c86;opacity:.8}
+.ohcard .oh-stars[data-tier="2"] i{--star:#dfe6f0;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 2px #dfe6f0aa)}
+.ohcard .oh-stars[data-tier="3"] i{--star:#6fc3ff;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 2px #6fc3ffaa)}
+.ohcard .oh-stars[data-tier="4"] i{--star:#c58cff;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 3px #c58cffcc)}
+.ohcard .oh-stars[data-tier="5"] i{--star:#ffb347;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 3px #ffb347dd)}
 .ohcard .ly .sym{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
 /* game integration: the card fills its parent at the format's 420:624 aspect (never stretched) */
 .ohcard{flex:1 1 auto;width:100%;height:100%;min-height:0;align-items:center;pointer-events:none}

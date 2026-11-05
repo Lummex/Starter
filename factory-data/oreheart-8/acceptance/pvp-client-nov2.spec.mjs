@@ -533,7 +533,9 @@ test('AC679: armed counters: in PvP an attack resolves at once with no Respond w
   expect(armed.handAfter, 'the card stays in the hand').toBe(armed.hand);
   expect(armed.fundsAfter, 'arming is free until it fires').toBe(armed.funds);
   expect(armed.set).toBe(1);
-  await expect.poll(() => them.evaluate(() => document.querySelectorAll('.hand-card .armed-badge').length), { timeout: 5000 }).toBeGreaterThan(0);
+  await them.waitForTimeout(1500);
+  const badge = await them.evaluate(() => ({ badges: document.querySelectorAll('.hand-card .armed-badge').length, cards: document.querySelectorAll('.hand-card').length, armed: window.oreheart.getState().armed, hand: window.oreheart.getState().players.player.hand.map((h) => h.uid).join(','), dom: [...document.querySelectorAll('.hand-card')].map((e) => e.dataset.uid + '/' + e.className.replace(/\s+/g, '.')).join(' ') }));
+  expect(badge.badges, 'the SET badge on the hand card: ' + JSON.stringify(badge) + ' log=' + JSON.stringify(await hook(them, 'actLog'))).toBeGreaterThan(0);
   await expect.poll(async () => (await view(them)).state.armed.player.length, { timeout: 8000 }).toBe(1); // the server has it
   expect((await view(me)).state.armed.opponent, 'secret from the attacker').toEqual([]);
   // the defender ends their turn (no Done window: nothing deployed); my turn, straight to Action, attack their unit
@@ -577,6 +579,42 @@ test('AC679: armed counters: in PvP an attack resolves at once with no Respond w
   expect((await hook(me, 'actLog')).filter((e) => !e.ok)).toEqual([]);
   expect((await hook(them, 'actLog')).filter((e) => !e.ok)).toEqual([]);
   await closeAll(a, b);
+});
+
+test('AC682: modes: the menu offers Ranked, Unranked and Play a friend with a rank line; two players who pick Unranked are paired by the queue and land in the same match (seat a = the longer wait); a practice code says it pays nothing', async ({ browser }) => {
+  test.setTimeout(120000);
+  const id = uniq();
+  const a = await openAs(browser, 'alice' + id), b = await openAs(browser, 'bob' + id);
+  await atMenu(a); await atMenu(b);
+  for (const t of ['pvp-ranked', 'pvp-unranked', 'pvp-play-friend']) await expect(a.locator(`[data-testid="${t}"]`)).toBeVisible();
+  await expect(a.locator('[data-testid="pvp-rank"]')).toContainText(/Ranked: 1000 Ore/, { timeout: 10000 });
+  // Alice waits in the unranked queue; Bob joins it 3 s later and the server pairs them
+  const pa = a.evaluate(() => window.oreheart.pvp.queue('unranked', 'grubnak', 'goblin-warband'));
+  await expect(a.locator('[data-testid="pvp-queue-status"]')).toContainText(/Looking for an opponent \(rating 1000/, { timeout: 10000 });
+  await a.waitForTimeout(3000);
+  const rb = await b.evaluate(() => window.oreheart.pvp.queue('unranked', 'borgo', 'dwarf-warband'));
+  expect(rb && rb.ok && rb.matchId, JSON.stringify(rb)).toBeTruthy();
+  const ra = await pa;
+  expect(ra && ra.ok && ra.matchId, JSON.stringify(ra)).toBeTruthy();
+  expect(ra.matchId).toBe(rb.matchId);
+  await inMatch(a); await inMatch(b);
+  const va = await view(a), vb = await view(b);
+  expect(va.state.players.player.commanderId).toBe('grubnak');
+  expect(vb.state.players.player.commanderId).toBe('borgo');
+  expect(va.names.them).toBe(vb.names.me);
+  // the server knows the mode
+  const m = await (await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/views?matchId=${va.matchId}&user=${encodeURIComponent(va.names.me)}`)).json();
+  expect(m.ok).toBe(true);
+  await closeAll(a, b);
+  // a practice code: the screen says so and the server marks the code
+  const c = await openAs(browser, 'carol' + id);
+  await atMenu(c);
+  await c.locator('[data-testid="pvp-play-friend"]').click();
+  await c.locator('[data-testid="pvp-practice"]').click();
+  await expect(c.locator('[data-testid="pvp-practice-note"]')).toContainText(/pays and counts nothing/);
+  const made = await hook(c, 'create', 'grubnak', 'goblin-warband', true);
+  expect(made && made.ok && made.code, JSON.stringify(made)).toBeTruthy();
+  await closeAll(c);
 });
 
 test('AC677: a card dropped from the hand spawns its REAL model at once (models load with the hand), and a model still on its way is a shimmer, never a pawn', async ({ browser }) => {

@@ -20,8 +20,10 @@ export interface Clock {
   timeouts: Record<Seat, number>; // timeouts in a row per player (a timely action resets it)
 }
 export interface MatchResult { winner: Seat | null; reason: 'win' | 'surrender' | 'timeout' | 'abandoned' }
+export type MatchMode = 'friend' | 'ranked' | 'unranked' | 'practice';
 export interface MatchRecord {
   id: string;
+  mode?: MatchMode;       // Nov 5: friend (code), ranked / unranked (queue), practice (code, nothing paid or counted)
   roomCode: string | null;
   players: Record<Seat, PlayerInfo>;
   decks: Record<Seat, DeckChoice>;

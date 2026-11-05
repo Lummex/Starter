@@ -887,7 +887,7 @@ const _embV = new THREE.Vector3();
     };
     if (!stImg[k] && k !== 'armed') { stImg[k] = new Image(); stImg[k].src = `/art/pop/icon-${k}.webp`; }
     const chip = () => { if (x <= 1) return; const g = c.getContext('2d')!; g.font = '900 44px system-ui, sans-serif'; g.textAlign = 'right'; g.textBaseline = 'top'; g.lineWidth = 7; g.strokeStyle = '#000'; g.lineJoin = 'round'; g.strokeText('×' + Math.min(3, x), 126, 2); g.fillStyle = '#fff'; g.fillText('×' + Math.min(3, x), 126, 2); tex.needsUpdate = true; }; // Ken (Oct 30): a crisp white x2 / x3 with a dark outline on the icon's top right
-    if (stImg[k].complete) { draw(); chip(); } else stImg[k].addEventListener('load', () => { draw(); chip(); }, { once: true });
+    if (!stImg[k] || stImg[k].complete) { draw(); chip(); } else stImg[k].addEventListener('load', () => { draw(); chip(); }, { once: true }); // 'armed' has no picture: drawn straight away
     draw(); chip();
     return tex;
   };

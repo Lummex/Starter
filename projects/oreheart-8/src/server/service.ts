@@ -2,16 +2,20 @@
 // interface so the same code runs in the Supabase Edge Function (Deno + Postgres) and in the local mock server
 // (Node + memory) that the hidden checks use. See factory-design/design/oreheart-pvp-nov2-contract.md part 2.5.
 import { validateDeck, STARTER_DECKS, COMMANDERS } from '../engine';
-import { startMatch, playerAction, applyTimeouts, forfeit, viewsFor, viewFor, seatOf, deckProblem, DEFAULT_RULES, type MatchRecord, type PlayerInfo, type DeckChoice, type Rules, type Seat, type View } from './referee';
+import { startMatch, playerAction, applyTimeouts, forfeit, viewsFor, viewFor, seatOf, deckProblem, DEFAULT_RULES, type MatchRecord, type MatchMode, type PlayerInfo, type DeckChoice, type Rules, type Seat, type View } from './referee';
 
 export interface Room {
   code: string;
+  mode?: 'friend' | 'practice'; // Nov 5: a practice code pays and counts nothing
   host: PlayerInfo; hostDeck: DeckChoice;
   guest: PlayerInfo | null; guestDeck: DeckChoice | null;
   status: 'waiting' | 'started' | 'cancelled' | 'expired';
   matchId: string | null;
   createdAt: number; expiresAt: number;
 }
+/** Nov 5 (modes): a player waiting in the ranked or unranked queue. */
+export interface QueueEntry { user: PlayerInfo; deck: DeckChoice; mode: 'ranked' | 'unranked'; rating: number; since: number }
+export interface RankInfo { season: string; rating: number; name: string; games: number; wins: number; losses: number; peak: number; place?: number | null }
 export interface MoveLog { matchId: string; seq: number; userId: string; action: any; ok: boolean; error: string | null; ms: number }
 export interface Summaries { a: any; b: any }
 
@@ -34,6 +38,12 @@ export interface Store {
   finished(m: MatchRecord, summaries: Summaries): Promise<boolean>;
   newId(): string;
   random(): number; // [0,1) from a secure source
+  // Nov 5 (modes): the ranked / unranked queue and the season ratings
+  queueJoin(user: PlayerInfo, mode: 'ranked' | 'unranked', deck: DeckChoice, now: number): Promise<{ rating: number; since: number; others: number }>;
+  /** pairs this player with the longest-waiting fit; both leave the queue in the same step; null when nobody fits */
+  queuePair(userId: string, now: number): Promise<{ mode: 'ranked' | 'unranked'; myRating: number; other: QueueEntry } | null>;
+  queueLeave(userId: string): Promise<void>;
+  rankOf(userId: string): Promise<RankInfo>;
 }
 
 export interface ServiceOptions {
@@ -77,6 +87,9 @@ export class PvpService {
         case 'act': return await this.act(body, user, now);
         case 'tick': return await this.withMatch(body, user, now, async (m) => ({ view: viewFor(m, seatOf(m, user.userId)!, []) }));
         case 'forfeit': return await this.forfeit(body, user, now);
+        case 'queue': return await this.queue(body, user, now);
+        case 'leave': await this.store.queueLeave(user.userId); return { ok: true };
+        case 'rank': return { ok: true, rank: await this.store.rankOf(user.userId) };
         default: return { ok: false, error: `Unknown op "${op}"` };
       }
     } catch (e: any) {
@@ -115,9 +128,9 @@ export class PvpService {
     const deck = await this.deckFor(user, body);
     let code = this.newCode();
     for (let i = 0; i < 20 && (await this.store.getRoom(code)); i++) code = this.newCode();
-    const room: Room = { code, host: user, hostDeck: deck, guest: null, guestDeck: null, status: 'waiting', matchId: null, createdAt: now, expiresAt: now + ROOM_MINUTES * 60 * 1000 };
+    const room: Room = { code, mode: body?.practice === true ? 'practice' : 'friend', host: user, hostDeck: deck, guest: null, guestDeck: null, status: 'waiting', matchId: null, createdAt: now, expiresAt: now + ROOM_MINUTES * 60 * 1000 };
     await this.store.putRoom(room);
-    return { ok: true, code, expiresAt: new Date(room.expiresAt).toISOString() };
+    return { ok: true, code, mode: room.mode, expiresAt: new Date(room.expiresAt).toISOString() };
   }
 
   async cancel(body: any, user: PlayerInfo, now: number) {
@@ -160,11 +173,38 @@ export class PvpService {
     const id = this.store.newId();
     const seed = Math.floor(this.store.random() * 2147483647);
     const m = startMatch(id, room.code, { a: room.host, b: user }, { a: room.hostDeck, b: deck }, now, this.rules, seed, this.engineVersion);
+    m.mode = room.mode === 'practice' ? 'practice' : 'friend';
     room.guest = user; room.guestDeck = deck; room.status = 'started'; room.matchId = id;
     if (!(await this.store.claimRoom(room))) fail('Someone else just joined that code.');
     await this.store.insertMatch(m);
     await this.store.putViews(m, viewsFor(m, [{ type: 'newMatch' }]));
     return { ok: true, matchId: id, view: viewFor(m, 'b', [{ type: 'newMatch' }]) };
+  }
+
+  /** Nov 5 (modes): join the ranked or unranked queue, or poll it. Pairs at once when someone fits; the other player's next
+   *  poll finds the match through my_match. The same call every 2 s keeps the player "seen" (a closed browser drops out). */
+  async queue(body: any, user: PlayerInfo, now: number) {
+    const mode = body?.mode === 'ranked' ? 'ranked' : body?.mode === 'unranked' ? 'unranked' : null;
+    if (!mode) fail('Pick ranked or unranked.');
+    const active = await this.store.activeMatchFor(user.userId);
+    if (active) { await this.store.queueLeave(user.userId); return { ok: true, matchId: active }; }
+    const deck = await this.deckFor(user, body);
+    const pd = deckProblem(deck);
+    if (pd) fail(pd);
+    const q = await this.store.queueJoin(user, mode!, deck, now);
+    const pair = await this.store.queuePair(user.userId, now);
+    if (!pair) return { ok: true, waiting: true, mode, rating: q.rating, since: new Date(q.since).toISOString(), waited: Math.max(0, Math.round((now - q.since) / 1000)), others: q.others };
+    if (await this.store.activeMatchFor(pair.other.user.userId)) return { ok: true, waiting: true, mode, rating: q.rating, since: new Date(q.since).toISOString(), waited: 0, others: 0 };
+    const pa = deckProblem(pair.other.deck), pb = deckProblem(deck);
+    if (pa || pb) fail(pa || pb!);
+    const id = this.store.newId();
+    const seed = Math.floor(this.store.random() * 2147483647);
+    // the one who waited longer is seat a (the host side), like the maker of a code
+    const m = startMatch(id, null, { a: pair.other.user, b: user }, { a: pair.other.deck, b: deck }, now, this.rules, seed, this.engineVersion);
+    m.mode = pair.mode;
+    await this.store.insertMatch(m);
+    await this.store.putViews(m, viewsFor(m, [{ type: 'newMatch' }]));
+    return { ok: true, matchId: id, mode: pair.mode, view: viewFor(m, 'b', [{ type: 'newMatch' }]) };
   }
 
   /** Loads the match, runs due timeouts, saves if anything changed, then `fn`. */

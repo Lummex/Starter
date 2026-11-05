@@ -197,8 +197,8 @@ end $$;
 
 -- ========== 7. Whole-database checks ==========
 -- ========== Abandoned matches (Nov 4) ==========
-\set M2 '''22222222-0000-4000-8000-000000000002'''
-\set M3 '''22222222-0000-4000-8000-000000000003'''
+\set M2 '''22222222-0000-4000-8000-0000000000aa'''
+\set M3 '''22222222-0000-4000-8000-0000000000bb'''
 insert into public.matches (id, player_a, player_b, state, seq, engine_version, created_at, updated_at)
   values (:M2, :PC, :PD, '{"turn": 4}', 9, 'test', now() - interval '20 minutes', now() - interval '10 minutes'),
          (:M3, :PA, :PB, '{"turn": 2}', 5, 'test', now() - interval '20 minutes', now() - interval '10 minutes');
@@ -208,7 +208,7 @@ insert into public.match_views (match_id, user_id, side, seq, view, events, dead
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select public.pvp_seen(:M2, :PC); select public.pvp_seen(:M2, :PD); select public.pvp_seen(:M3, :PA); select public.pvp_seen(:M3, :PB);
 select set_config('request.jwt.claims', '', true);
-select pg_temp.refused('pvp_seen: a player cannot mark presence themselves', :PC, 'aal1', $q$ select public.pvp_seen('22222222-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000023') $q$);
+select pg_temp.refused('pvp_seen: a player cannot mark presence themselves', :PC, 'aal1', $q$ select public.pvp_seen('22222222-0000-4000-8000-0000000000aa', 'c0000000-0000-4000-8000-000000000023') $q$);
 update public.match_presence set seen_at = now() - interval '5 minutes' where match_id = :M2; -- both of M2 gone 5 min
 update public.match_presence set seen_at = now() - interval '5 minutes' where match_id = :M3 and user_id = :PA; -- M3: only A gone
 create temp table sw1 as select private.sweep_abandoned() as n; -- its own statement: a check in the same statement would read the matches as they were before
@@ -219,7 +219,7 @@ select pg_temp.ok('sweeper: first ever run ends the match both players left, and
 select pg_temp.ok('abandoned: both get a loss and an abandon, no coins, no quest, streak reset',
   (select bool_and(losses = 1 and abandons = 1 and games = 1 and win_streak = 0) from public.player_stats where user_id in (:PC, :PD))
   and not exists (select 1 from public.match_rewards where match_id = :M2)
-  and not exists (select 1 from public.transactions where ref = '22222222-0000-4000-8000-000000000002'));
+  and not exists (select 1 from public.transactions where ref = '22222222-0000-4000-8000-0000000000aa'));
 select pg_temp.ok('abandoned: a returning browser sees the match over with nobody winning',
   (select bool_and(seq = 10 and (view ->> 'status') = 'over' and (view -> 'result' ->> 'reason') = 'abandoned' and (view -> 'result' ->> 'won') = 'false' and deadline is null)
    from public.match_views where match_id = :M2)
@@ -274,6 +274,79 @@ select pg_temp.ok('every security definer function pins search_path',
   not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
               where n.nspname in ('public', 'private') and p.prosecdef
                 and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')));
+
+-- ========== Modes (Nov 5): ranked queue + Elo, unranked queue, practice pays nothing ==========
+select pg_temp.ok('modes: settings, the season name, the rank names',
+  (private.setting('ranked_k'))::int = 32 and private.season_now() ~ '^\d{4}-Q[1-4]$'
+  and private.rank_name(899) = 'Scrap' and private.rank_name(1000) = 'Ore' and private.rank_name(1299) = 'Crystal' and private.rank_name(1300) = 'Gem' and private.rank_name(1500) = 'Mythic'
+  and 'ranked_k' = any (private.editable_settings()));
+select pg_temp.refused('queue: players cannot call the referee doors', :PA, 'aal1', $q$ select public.pvp_queue_pair('c0000000-0000-4000-8000-000000000021') $q$);
+select pg_temp.refused('queue: players cannot read the queue table', :PA, 'aal1', 'select * from public.pvp_queue');
+-- (each join is its own statement: inside one SELECT the planner may run the pair before the join)
+create temp table qj1 as select public.pvp_queue_join(:PA, 'ranked', '{"userId": "c0000000-0000-4000-8000-000000000021", "username": "Side_A", "avatar": null}', '{"commander": "grubnak", "deckId": "goblin-warband", "cards": null}') as j;
+select pg_temp.ok('queue: joining ranked gives rating 1000 and nobody else waiting', (select (j ->> 'rating')::int = 1000 and (j ->> 'others')::int = 0 and (j ->> 'waited')::int = 0 from qj1), (select j::text from qj1));
+select pg_temp.ok('queue: pairing alone finds no one', public.pvp_queue_pair(:PA) is null);
+select pg_temp.ok('queue: the row waits', (select count(*) from public.pvp_queue) = 1);
+select public.pvp_queue_join(:PB, 'ranked', '{"userId": "c0000000-0000-4000-8000-000000000022", "username": "Side_B", "avatar": null}', '{"commander": "borgo", "deckId": "dwarf-warband", "cards": null}');
+create temp table qp1 as select public.pvp_queue_pair(:PB) as j;
+select pg_temp.ok('queue: a second ranked player is paired with the first (the longer wait)',
+  (select j ->> 'mode' = 'ranked' and (j ->> 'my_rating')::int = 1000 and (j -> 'other' ->> 'user_id')::uuid = :PA and j -> 'other' -> 'player' ->> 'username' = 'Side_A' and j -> 'other' -> 'deck' ->> 'commander' = 'grubnak' from qp1), (select j::text from qp1));
+select pg_temp.ok('queue: both rows go', (select count(*) from public.pvp_queue) = 0);
+select public.pvp_queue_join(:PA, 'ranked', '{"userId": "c0000000-0000-4000-8000-000000000021"}', '{"commander": "grubnak"}');
+select public.pvp_queue_join(:PB, 'ranked', '{"userId": "c0000000-0000-4000-8000-000000000022"}', '{"commander": "borgo"}');
+update public.pvp_queue set rating = 1300 where user_id = :PA;
+select pg_temp.ok('queue: ranked never pairs across the rating window (1300 vs 1000)', public.pvp_queue_pair(:PB) is null and (select count(*) from public.pvp_queue) = 2);
+update public.pvp_queue set since = now() - interval '50 seconds' where user_id = :PB;
+create temp table qp2 as select public.pvp_queue_pair(:PB) as j;
+select pg_temp.ok('queue: ... until the wait widens it (50 s: window 350)', (select (j -> 'other' ->> 'rating')::int = 1300 from qp2) and (select count(*) from public.pvp_queue) = 0, (select coalesce(j::text, 'null') from qp2));
+select public.pvp_queue_join(:PA, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000021"}', '{"commander": "grubnak"}');
+update public.pvp_queue set seen_at = now() - interval '20 seconds', rating = 1300 where user_id = :PA;
+select public.pvp_queue_join(:PB, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000022"}', '{"commander": "borgo"}');
+select pg_temp.ok('queue: a browser that stopped polling (seen 20 s ago) is not paired', public.pvp_queue_pair(:PB) is null);
+update public.pvp_queue set seen_at = now() where user_id = :PA;
+create temp table qp3 as select public.pvp_queue_pair(:PB) as j;
+select pg_temp.ok('queue: back, it is paired at once; unranked ignores the ratings (1300 vs 1000)', (select (j -> 'other' ->> 'user_id')::uuid = :PA from qp3) and (select count(*) from public.pvp_queue) = 0, (select coalesce(j::text, 'null') from qp3));
+select public.pvp_queue_join(:PC, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000023"}', '{"commander": "grubnak"}');
+select public.pvp_queue_leave(:PC);
+select pg_temp.ok('queue: leave empties the row', (select count(*) from public.pvp_queue) = 0);
+insert into public.matches (id, mode, player_a, player_b, state, seq, status, engine_version)
+  values ('22222222-0000-4000-8000-0000000000ee', 'unranked', :PA, :PD, '{"turn": 1}', 1, 'active', 'test');
+select public.pvp_queue_join(:PA, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000021"}', '{"commander": "grubnak"}');
+select public.pvp_queue_join(:PC, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000023"}', '{"commander": "grubnak"}');
+select pg_temp.ok('queue: a player already in an active match is never paired', public.pvp_queue_pair(:PC) is null);
+update public.matches set status = 'finished', ended_at = now() where id = '22222222-0000-4000-8000-0000000000ee';
+select public.pvp_queue_leave(:PA); select public.pvp_queue_leave(:PC);
+-- a ranked match between A and B, A wins: Elo moves 16 each way (K 32, equal ratings)
+insert into public.matches (id, mode, player_a, player_b, state, seq, status, engine_version)
+  values ('22222222-0000-4000-8000-0000000000cc', 'ranked', :PA, :PB, '{"turn": 7}', 40, 'active', 'test');
+create temp table fin2 as select private.pvp_finish('22222222-0000-4000-8000-0000000000cc', :PA, 'a', 'win', 7, '{"commander": "grubnak", "turns": 7}', '{"commander": "borgo", "turns": 7}') as j;
+select pg_temp.ok('ranked finish: coins as usual, ratings 1016 / 984, rating_events for both, the result says so',
+  (select (j ->> 'finished')::boolean and j ->> 'mode' = 'ranked' and (j -> 'a' -> 'rating' ->> 'before')::int = 1000 and (j -> 'a' -> 'rating' ->> 'after')::int = 1016
+          and (j -> 'b' -> 'rating' ->> 'after')::int = 984 and (j -> 'a' ->> 'coins')::int > 0 from fin2)
+  and (select rating = 1016 and games = 1 and wins = 1 and peak = 1016 from public.ratings where user_id = :PA and season = private.season_now())
+  and (select rating = 984 and games = 1 and losses = 1 and peak = 1000 from public.ratings where user_id = :PB and season = private.season_now())
+  and (select count(*) from public.rating_events where match_id = '22222222-0000-4000-8000-0000000000cc') = 2,
+  (select j::text from fin2));
+select pg_temp.ok('ranked finish: the same match again moves nothing',
+  (select not (j ->> 'finished')::boolean from private.pvp_finish('22222222-0000-4000-8000-0000000000cc', :PA, 'a', 'win', 7, null, null) j)
+  and (select rating from public.ratings where user_id = :PA and season = private.season_now()) = 1016);
+select pg_temp.ok('my_rank: Side A sees 1016 Ore, first place; Side C (never ranked) sees 1000 and no place',
+  (select (r ->> 'rating')::int = 1016 and r ->> 'name' = 'Ore' and (r ->> 'place')::int = 1 and (r ->> 'wins')::int = 1 from pg_temp.json_as(:PA, 'aal1', 'select public.my_rank()') r)
+  and (select (r ->> 'rating')::int = 1000 and r -> 'place' = 'null'::jsonb from pg_temp.json_as(:PC, 'aal1', 'select public.my_rank()') r));
+select pg_temp.refused('my_rank needs a login', null, null, 'select public.my_rank()');
+-- a practice match: nothing paid, nothing counted
+insert into public.matches (id, mode, player_a, player_b, state, seq, status, engine_version)
+  values ('22222222-0000-4000-8000-0000000000dd', 'practice', :PA, :PB, '{"turn": 9}', 50, 'active', 'test');
+create temp table stat0 as select user_id, games, coins_earned from public.player_stats where user_id in (:PA, :PB);
+create temp table fin3 as select private.pvp_finish('22222222-0000-4000-8000-0000000000dd', :PA, 'a', 'win', 9, '{"commander": "grubnak", "turns": 9}', '{"commander": "borgo", "turns": 9}') as j;
+select pg_temp.ok('practice finish: the match ends, 0 coins, no match_rewards, no quest, no rating change, stats untouched',
+  (select (j ->> 'finished')::boolean and j ->> 'mode' = 'practice' and (j -> 'a' ->> 'coins')::int = 0 and (j -> 'b' ->> 'coins')::int = 0 from fin3)
+  and (select status = 'finished' and winner = :PA from public.matches where id = '22222222-0000-4000-8000-0000000000dd')
+  and not exists (select 1 from public.match_rewards where match_id = '22222222-0000-4000-8000-0000000000dd')
+  and not exists (select 1 from public.rating_events where match_id = '22222222-0000-4000-8000-0000000000dd')
+  and (select rating from public.ratings where user_id = :PA and season = private.season_now()) = 1016
+  and coalesce((select bool_and(s.games = p.games and s.coins_earned = p.coins_earned) from stat0 s join public.player_stats p on p.user_id = s.user_id), true),
+  (select j::text from fin3) || ' stats0=' || (select count(*) from stat0) || ' rewards=' || (select count(*) from public.match_rewards where match_id = '22222222-0000-4000-8000-0000000000dd'));
 
 -- ---------- report ----------
 \set QUIET off
