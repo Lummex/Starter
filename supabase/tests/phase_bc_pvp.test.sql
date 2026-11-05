@@ -196,6 +196,57 @@ begin
 end $$;
 
 -- ========== 7. Whole-database checks ==========
+-- ========== Abandoned matches (Nov 4) ==========
+\set M2 '''22222222-0000-4000-8000-000000000002'''
+\set M3 '''22222222-0000-4000-8000-000000000003'''
+insert into public.matches (id, player_a, player_b, state, seq, engine_version, created_at, updated_at)
+  values (:M2, :PC, :PD, '{"turn": 4}', 9, 'test', now() - interval '20 minutes', now() - interval '10 minutes'),
+         (:M3, :PA, :PB, '{"turn": 2}', 5, 'test', now() - interval '20 minutes', now() - interval '10 minutes');
+insert into public.match_views (match_id, user_id, side, seq, view, events, deadline) values
+  (:M2, :PC, 'a', 9, '{"mySide": "a", "status": "active", "state": {"turn": 4}}', '[]', now() + interval '2 minutes'),
+  (:M2, :PD, 'b', 9, '{"mySide": "b", "status": "active", "state": {"turn": 4}}', '[]', now() + interval '2 minutes');
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select public.pvp_seen(:M2, :PC); select public.pvp_seen(:M2, :PD); select public.pvp_seen(:M3, :PA); select public.pvp_seen(:M3, :PB);
+select set_config('request.jwt.claims', '', true);
+select pg_temp.refused('pvp_seen: a player cannot mark presence themselves', :PC, 'aal1', $q$ select public.pvp_seen('22222222-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000023') $q$);
+update public.match_presence set seen_at = now() - interval '5 minutes' where match_id = :M2; -- both of M2 gone 5 min
+update public.match_presence set seen_at = now() - interval '5 minutes' where match_id = :M3 and user_id = :PA; -- M3: only A gone
+create temp table sw1 as select private.sweep_abandoned() as n; -- its own statement: a check in the same statement would read the matches as they were before
+select pg_temp.ok('sweeper: first ever run ends the match both players left, and leaves the one with a player still here',
+  (select n from sw1) = 1
+  and (select status || '/' || end_reason || '/' || result from public.matches where id = :M2) = 'finished/abandoned/tie'
+  and (select status from public.matches where id = :M3) = 'active');
+select pg_temp.ok('abandoned: both get a loss and an abandon, no coins, no quest, streak reset',
+  (select bool_and(losses = 1 and abandons = 1 and games = 1 and win_streak = 0) from public.player_stats where user_id in (:PC, :PD))
+  and not exists (select 1 from public.match_rewards where match_id = :M2)
+  and not exists (select 1 from public.transactions where ref = '22222222-0000-4000-8000-000000000002'));
+select pg_temp.ok('abandoned: a returning browser sees the match over with nobody winning',
+  (select bool_and(seq = 10 and (view ->> 'status') = 'over' and (view -> 'result' ->> 'reason') = 'abandoned' and (view -> 'result' ->> 'won') = 'false' and deadline is null)
+   from public.match_views where match_id = :M2)
+  and (select (state ->> 'rewarded')::boolean and (state -> 'result' ->> 'reason') = 'abandoned' from public.matches where id = :M2));
+select pg_temp.ok('abandoned: the match function will not pay it out (pvp_finish says repeat)',
+  (private.pvp_finish(:M2, null, 'tie', 'abandoned', 4, '{}', '{}') ->> 'repeat') = 'true');
+update public.match_presence set seen_at = now() - interval '5 minutes' where match_id = :M3; -- now B gone too
+update private.sweeper_runs set last_run = now() - interval '10 minutes' where name = 'abandoned';
+create temp table sw2 as select private.sweep_abandoned() as n;
+select pg_temp.ok('sweeper: after a gap in its own runs (our outage) it ends nothing that time',
+  (select n from sw2) = 0 and (select status from public.matches where id = :M3) = 'active'
+  and (select note from private.sweeper_runs where name = 'abandoned') like 'gap of%');
+create temp table sw3 as select private.sweep_abandoned() as n;
+select pg_temp.ok('sweeper: when not one player of any active match has been heard from, it ends nothing (server unreachable, not players gone)',
+  (select n from sw3) = 0 and (select status from public.matches where id = :M3) = 'active');
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+insert into public.matches (id, player_a, player_b, state, seq, engine_version) values ('22222222-0000-4000-8000-000000000004', :PC, :PD, '{"turn": 1}', 1, 'test'); -- a live match elsewhere
+select public.pvp_seen('22222222-0000-4000-8000-000000000004', :PC); -- someone, somewhere, is here
+select set_config('request.jwt.claims', '', true);
+create temp table sw4 as select private.sweep_abandoned() as n;
+select pg_temp.ok('sweeper: the next run ends the match both players left',
+  (select n from sw4) = 1 and (select end_reason from public.matches where id = :M3) = 'abandoned');
+update public.settings set value = '600' where key = 'pvp_abandon_seconds';
+select pg_temp.ok('the wait is one admin setting (pvp_abandon_seconds)',
+  private.setting('pvp_abandon_seconds') = '600'::jsonb and 'pvp_abandon_seconds' = any (private.editable_settings()));
+update public.settings set value = '120' where key = 'pvp_abandon_seconds';
+
 select pg_temp.ok('every new PvP table has row level security on',
   (select bool_and(c.relrowsecurity) from pg_class c join pg_namespace n on n.oid = c.relnamespace
    where n.nspname = 'public' and c.relkind = 'r' and c.relname in ('rooms', 'matches', 'match_views', 'match_moves')));

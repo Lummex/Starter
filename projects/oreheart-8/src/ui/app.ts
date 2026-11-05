@@ -4063,7 +4063,7 @@ export class App {
   netEndBits(): El {
     const ng = this.netGame!, res = ng.result;
     const them = ng.names.them || 'your friend';
-    const why = !res ? '' : res.reason === 'surrender' ? (res.won ? `${them} gave up.` : 'You gave up.') : res.reason === 'timeout' ? (res.won ? `${them} ran out of time.` : 'You ran out of time.') : '';
+    const why = !res ? '' : res.reason === 'surrender' ? (res.won ? `${them} gave up.` : 'You gave up.') : res.reason === 'timeout' ? (res.won ? `${them} ran out of time.` : 'You ran out of time.') : res.reason === 'abandoned' ? 'Both of you left, so the match was dropped. Nobody won, and nobody gets coins for it.' : '';
     return h('div', { class: 'pvp-end', 'data-result': res ? (res.won ? 'won' : 'lost') : '' },
       h('p', { class: 'pvp-end-vs' }, `Friend match vs ${them}`),
       why ? h('p', { class: 'pvp-end-why' }, why) : '',

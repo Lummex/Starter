@@ -87,6 +87,7 @@ class SupabaseStore {
     if (error) { console.error('pvp_finish', error.message); return false; } // idempotent; the service retries on the next call for this match
     return true;
   }
+  async seen(matchId: string, userId: string) { const { error } = await this.db.rpc('pvp_seen', { p_match: matchId, p_user: userId }); if (error) console.error('pvp_seen', error.message); }
   newId() { return crypto.randomUUID(); }
   random() { const u = new Uint32Array(1); crypto.getRandomValues(u); return u[0] / 4294967296; }
   /** Ken's clock numbers from `settings` (admin-editable), with the game's defaults when unset. */
@@ -128,6 +129,9 @@ Deno.serve(async (req: Request) => {
   try { body = text ? JSON.parse(text) : {}; } catch { return json(400, { ok: false, error: 'bad JSON' }); }
   const store = new SupabaseStore(createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } }));
   const service = new PvpService(store, { engineVersion: ENGINE_VERSION, rules: await cachedRules(store), summarize });
+  // Nov 4 (abandoned matches): every call about a match leaves a mark, so the sweeper knows who is still here; it rides alongside the real work
+  const seen = body.matchId && /^[0-9a-f-]{36}$/i.test(String(body.matchId)) ? store.seen(String(body.matchId), user.userId) : Promise.resolve();
   const out = await service.handle(String(body.op || ''), body, user, Date.now());
+  await seen;
   return json(200, out);
 });
