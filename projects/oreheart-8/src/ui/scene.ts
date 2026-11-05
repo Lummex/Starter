@@ -1,6 +1,6 @@
 // Placeholder 3D battlefield (Three.js). Returns null when WebGL is unavailable (the UI then shows a 2D board).
 import { ringColor, getRings } from './fx-settings';
-import { mirrorLook, applyMirrorLook, MIRROR_LOOK } from './mirror-look';
+import { mirrorLook, applyMirrorLook, ownMaterials, countMirrored, MIRROR_LOOK } from './mirror-look';
 import * as THREE from 'three';
 import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf, isMiner } from '../engine';
 import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, standingBox, type C3D } from './creature3d';
@@ -270,7 +270,7 @@ export function createBoardView(container: HTMLElement, low: boolean, arenaFacti
   // glowing crystal mines inside spiked palisades
   const mines: MineArt[] = [];
   const mineFx: MineFx[] = [];
-  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode) o.figuresNow = () => [...figs.values()].map((f) => ({ uid: f.uid, cardId: f.cardId, row: f.row, col: f.col, ghost: !!f.ghost, dying: !!f.dying })); /* checks: the board's figures this instant, no waiting */ if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
+  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode) o.commanderLook = () => ({ player: countMirrored(cmd.player.fig), opponent: countMirrored(cmd.opponent.fig) }); if (testMode) o.figuresNow = () => [...figs.values()].map((f) => ({ uid: f.uid, cardId: f.cardId, row: f.row, col: f.col, ghost: !!f.ghost, dying: !!f.dying })); /* checks: the board's figures this instant, no waiting */ if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
   for (let mi = 0; mi < CONFIG.mineCount; mi++) {
     const m = makeMine(low, mi);
     m.recolor('#ffffff');
@@ -388,7 +388,7 @@ const _embV = new THREE.Vector3();
   }
 
   // strongholds + commanders
-  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; g3d: G3D | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null; baseYaw?: number; yaw?: number; lookUntil?: number; impatient?: number; elog?: string[]; fwdUntil?: number };
+  type Cmd = { ruby?: string; group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; g3d: G3D | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null; baseYaw?: number; yaw?: number; lookUntil?: number; impatient?: number; elog?: string[]; fwdUntil?: number };
   const cmd: Record<string, Cmd> = {};
   for (const side of ['player', 'opponent'] as const) {
     const g = new THREE.Group();
@@ -457,6 +457,10 @@ const _embV = new THREE.Vector3();
     }
     if (cm.g3d) cm.group.scale.setScalar(1);
     cm.baseK = cm.group.scale.y;
+    // Nov 4 (Ken: "the whole team should be ruby red, so the commander also"): same display-only rule as the units. The throne or stronghold stays as it is.
+    const look = side === 'opponent' ? mirrorLook(state) : null;
+    if (look) { ownMaterials(cm.fig); applyMirrorLook(cm.fig, look, faction); }
+    cm.ruby = look ? faction : '';
   }
   loadGrubnak3d().then((a) => { if (a && !disposed) for (const side of ['player', 'opponent'] as const) if (cmd[side].id === 'grubnak' && !cmd[side].g3d) buildCommander(side, cmd[side].faction, 'grubnak'); });
   // Oct 30: only the Commanders in this match download their model (each is ~3 MB); buildCommander asks for it
@@ -1017,7 +1021,7 @@ const _embV = new THREE.Vector3();
     });
     (['player', 'opponent'] as const).forEach((side) => {
       const fct = st.players[side].faction, id = st.players[side].commanderId;
-      if (cmd[side].faction !== fct || cmd[side].id !== id) buildCommander(side, fct, id);
+      if (cmd[side].faction !== fct || cmd[side].id !== id || (cmd[side].ruby || '') !== (side === 'opponent' && mirror ? fct : '')) buildCommander(side, fct, id);
       // heart cracks: more cracks as Health drops (shown on the Stronghold gem)
       const hp = st.players[side].health;
       const k = cmd[side].keep;

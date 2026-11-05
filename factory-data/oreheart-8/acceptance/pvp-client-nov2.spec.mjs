@@ -406,6 +406,9 @@ test('AC671: a holder who clicks "Let it happen" at once looks the same as holdi
   expect((await give.json()).ok).toBe(true);
   await expect.poll(async () => (await view(them)).state.players.player.hand.some((h) => h.cardId === 'hold-it'), { timeout: 8000 }).toBe(true);
   const held = await view(them);
+  const vm = await view(me); // the attacker's random hand may have nothing to summon: give it a creature and crystals too
+  await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/give?matchId=${vm.matchId}&user=${encodeURIComponent(vm.names.me)}&card=goblin-grunt`);
+  await expect.poll(async () => (await me.evaluate(async () => await window.oreheart.legalActions())).some((x) => x.type === 'summon'), { timeout: 8000 }).toBe(true);
   const summon = (await me.evaluate(async () => await window.oreheart.legalActions())).find((x) => x.type === 'summon');
   expect(await me.evaluate(async (x) => await window.oreheart.act(x), summon)).toMatchObject({ ok: true });
   await expect.poll(async () => { const w = await view(me); return !!w.state.pendingResponse; }, { timeout: 8000 }).toBe(true);
@@ -467,8 +470,12 @@ test('AC676: same-faction match: on this screen the opponent units wear ruby rin
   const same = await rings('grubnak');
   expect(same.opponent, 'opponent ring in the mirror look: ' + JSON.stringify(same)).toBe('#ff3b4a');
   expect(same.player).not.toBe('#ff3b4a');
+  // the opponent's Commander too, and only theirs (the two Grubnaks start out sharing one set of materials)
+  await expect.poll(() => page.evaluate(() => window.oreheart.commanderLook().opponent), { timeout: 15000 }).toBeGreaterThan(0);
+  expect((await page.evaluate(() => window.oreheart.commanderLook())).player).toBe(0);
   const diff = await rings('borgo');
   expect(diff.opponent).not.toBe('#ff3b4a');
+  await expect.poll(() => page.evaluate(() => window.oreheart.commanderLook()), { timeout: 15000 }).toEqual({ player: 0, opponent: 0 });
   expect(diff.player).toBe(same.player);
   // the ruby look is a material change on the opponent's figures only
   const marked = await page.evaluate(() => window.oreheart.figuresNow().length);

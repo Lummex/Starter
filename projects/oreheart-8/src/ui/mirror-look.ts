@@ -47,6 +47,19 @@ vec3 mirrorC(vec3 c){
   return max(vec3(y+.956*w.x+.621*w.y, y-.272*w.x-.647*w.y, y-1.106*w.x+1.703*w.y), 0.);
 }`;
 
+/** A Commander's figure shares its materials with the loaded model (and so with the other side's Commander): give this one its own copies first. */
+export function ownMaterials(group: THREE.Object3D) {
+  group.traverse((o: any) => {
+    if (!(o.isMesh || o.isSkinnedMesh) || o.isSprite || !o.material) return;
+    o.material = Array.isArray(o.material) ? o.material.map((m: any) => m.clone()) : o.material.clone();
+  });
+}
+export function countMirrored(group: THREE.Object3D) {
+  let n = 0;
+  group.traverse((o: any) => { for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) if (m.userData?.mirror) n++; });
+  return n;
+}
+
 /** Gives every material under the group the ruby look (once; props included, rings and sprites left alone). */
 export function applyMirrorLook(group: THREE.Object3D, p: MirrorPreset, faction: string) {
   const uniforms = {
