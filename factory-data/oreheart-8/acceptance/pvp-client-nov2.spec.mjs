@@ -152,6 +152,38 @@ test('AC631: room codes in plain words: six letters without I or O; a wrong code
   await closeAll(a, b);
 });
 
+test('AC673: a refused join is never quiet: a wrong code and your own code each put the reason in a box that has to be closed, and the button comes back', async ({ browser }) => {
+  test.setTimeout(60000);
+  const id = uniq();
+  const a = await openAs(browser, 'alice' + id);
+  await atMenu(a);
+  const made = await hook(a, 'create', 'grubnak', 'goblin-warband'); // the hook lands on the code screen; a reload keeps the code live and goes back to the menu
+  expect(made.ok).toBe(true);
+  await a.goto(a.url()); await atMenu(a);
+  await a.click('[data-testid=pvp-play-friend]');
+  await a.click('[data-testid=pvp-join]');
+  const wrong = made.code === 'ZZZZZZ' ? 'YYYYYY' : 'ZZZZZZ';
+  await a.fill('[data-testid=pvp-code-input]', wrong);
+  await a.click('[data-testid=pvp-join-go]');
+  const box = a.locator('[data-testid=pvp-join-refused]');
+  await expect(box).toBeVisible();
+  await expect(box).toContainText(wrong);
+  await expect(box).toContainText(/six letters/i);
+  await expect(a.locator('[data-testid=pvp-join-go]')).toBeEnabled();
+  await a.keyboard.press('Escape');
+  await expect(box).toHaveCount(0);
+  await a.fill('[data-testid=pvp-code-input]', made.code); // my own code, from this same signed-in window
+  await a.click('[data-testid=pvp-join-go]');
+  await expect(box).toBeVisible();
+  await expect(box).toContainText(/same player/i);
+  await expect(box).toContainText(/Incognito/);
+  await expect(a.locator('.net-alert')).toContainText(/same player/i);
+  await a.click('[data-testid=pvp-refused-ok]');
+  await expect(box).toHaveCount(0);
+  await expect(a.locator('[data-testid=pvp-join-go]')).toBeEnabled();
+  await closeAll(a);
+});
+
 test('AC632: the first player\'s Deploy works through the server and the other page sees it (mirrored), at the same seq', async ({ browser }) => {
   test.setTimeout(120000);
   const { a, b } = await pair(browser);

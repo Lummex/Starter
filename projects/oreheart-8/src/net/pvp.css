@@ -64,6 +64,11 @@
 .pvp-deck-item{flex:none;min-height:36px;padding:4px 18px;white-space:nowrap;text-align:left;color:#fff;font:inherit;background:none;border:0 solid transparent;cursor:pointer}
 .pvp-deck-item:hover,.pvp-deck-item:focus-visible,.pvp-deck-item[aria-selected=true]{outline:0;border-image:url(/art/ui/leftovers/chip-chosen.webp) 40 60 fill / 8px 18px stretch;text-shadow:0 1px 2px #000}
 html body .pvp-deck,html body .pvp-deck:focus{appearance:none;-webkit-appearance:none;width:100%;max-width:none;border:0;border-radius:0;box-shadow:none;background:url(/art/ui/match/scroll-right.webp) right 16px center/20px no-repeat,url(/art/ui/match/frame-chip.webp) center/100% 100% no-repeat;padding:6px 44px 6px 26px;color:#fff;cursor:pointer}
+/* a refused join: the reason in a box that has to be closed */
+.pvp-refused{position:fixed;inset:0;z-index:600;display:grid;place-items:center;background:rgba(4,5,9,.66)}
+.pvp-refused .pvp-refused-box{width:min(520px,92vw);margin:0;text-align:center}
+.pvp-refused h2{margin:0 0 8px;color:#fff;font-style:italic}
+.pvp-refused-why{margin:0 0 14px;color:#fff;font-size:1.05rem;line-height:1.45}
 /* PvP, no counter to play: the small note while the browser lets it happen (2 s) */
 .pvp-resp-note{position:fixed;left:50%;top:clamp(46px,9vh,84px);z-index:400;transform:translateX(-50%);max-width:70vw;padding:6px 26px;color:#fff;font:italic 700 clamp(.9rem,2.2vh,1.15rem) "Alegreya SC",Georgia,serif;text-align:center;text-shadow:0 1px 2px #000,0 0 4px #000;pointer-events:none;border:0 solid transparent;border-image:url(/art/ui/match/frame-chip.webp) 40 60 fill / 14px 22px stretch;animation:pvp-note .18s ease-out both}
 @keyframes pvp-note{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translateX(-50%)}}

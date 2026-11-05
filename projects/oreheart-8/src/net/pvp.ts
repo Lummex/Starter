@@ -6,6 +6,7 @@
 import './pvp.css';
 import { applyAction, legalActions as engineLegal, brewActions, hasMovesLeft, COMMANDERS, STARTER_DECK_LIST, warbandOf, deckProblems, CARDS } from '../engine';
 import { net } from './state';
+import { getPlayerName } from '../ui/players';
 import type { App } from '../ui/app';
 
 type El = HTMLElement;
@@ -539,7 +540,10 @@ function showCode(code: string) {
     try {
       const r = await transport().call('room', { code });
       if (!panel.isConnected) return;
-      if (r && r.ok && r.status === 'started' && r.matchId) { stopRoomPoll(); roomCode = null; await openMatch(r.matchId); }
+      if (r && r.ok && r.status === 'started' && r.matchId) {
+        stopRoomPoll(); roomCode = null;
+        if (!(await openMatch(r.matchId)) && panel.isConnected) { waiting.textContent = ''; err.textContent = `Your friend joined, but the match screen did not open${lastOpenError ? ': ' + lastOpenError : ''}. Press Cancel, then "Back to your match" on the menu.`; }
+      }
       else if (r && r.ok && (r.status === 'expired' || r.status === 'cancelled')) {
         stopRoomPoll(); waiting.textContent = '';
         err.textContent = r.status === 'expired' ? 'That code has expired. Make a new one!' : 'That code was cancelled.';
@@ -558,14 +562,38 @@ function showJoin() {
     const code = cleanCode(input.value);
     if (!codeOk(code)) { err.textContent = 'A code is six letters (there is no I or O).'; input.focus(); return; }
     go.disabled = true; err.textContent = '';
-    const r = await joinCode(code, p.value());
-    if (!r.ok) { go.disabled = false; err.textContent = r.error || ''; }
+    // Nov 4 (Ken: "I click join the battle, and it doesn't do anything"): a refusal is never quiet. Whatever goes wrong, the
+    // button comes back and the reason is said in a box the player has to close, with the two usual causes spelled out.
+    let r: { ok: boolean; error?: string };
+    try { r = await joinCode(code, p.value()); } catch (e) { r = { ok: false, error: friendlyError(e) }; }
+    if (!r.ok) { go.disabled = false; joinRefused(err, r.error, code); }
   }, 'primary pvp-go', { 'data-testid': 'pvp-join-go' });
   input.addEventListener('input', () => { const c = cleanCode(input.value); if (c !== input.value) input.value = c; err.textContent = ''; go.disabled = !codeOk(c); });
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go.click(); });
   go.disabled = true;
   screen('join', h('h1', {}, 'I have a code'), h('label', { for: 'pvp-code-input', class: 'pvp-code-label' }, "Your friend's code"), input, p.el, err, h('div', { class: 'net-actions' }, go, nbtn('Back', () => showFriend())));
   setTimeout(() => input.focus(), 0);
+}
+
+/** Why a join was refused, in plain words, both under the Deck row and in a box that has to be closed. */
+function joinRefused(err: El, error: string | undefined, code: string) {
+  const raw = String(error || '');
+  let msg = raw || 'The server said no but gave no reason. Try again in a moment.';
+  if (/own code|own room|yourself|same player/i.test(raw)) {
+    const me = getPlayerName();
+    msg = `This window is signed in as the same player who made the code${me ? ` (${me})` : ''}. A friend match needs two different players: open a private (Incognito) window or another browser, sign in there as the second player, and type the code in that one.`;
+  } else if (/no match with that code|no room has|not found|no (such )?room|unknown code|invalid code|bad code/i.test(raw)) {
+    msg = `No room has the code ${code}. Check the six letters against your friend's screen (there is no I or O), or ask them to make a new code.`;
+  }
+  err.textContent = msg;
+  document.querySelector('.pvp-refused')?.remove();
+  const ok = nbtn('OK', () => box.remove(), 'primary', { 'data-testid': 'pvp-refused-ok' });
+  const box = h('div', { class: 'pvp-refused', role: 'alertdialog', 'aria-modal': 'true', 'aria-label': "Couldn't join", 'data-testid': 'pvp-join-refused' },
+    h('div', { class: 'net-panel pvp-panel pvp-refused-box' }, h('h2', {}, "Couldn't join"), h('p', { class: 'pvp-refused-why' }, msg), h('div', { class: 'net-actions' }, ok)));
+  box.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape') box.remove(); });
+  box.addEventListener('click', (e) => { if (e.target === box) box.remove(); });
+  document.body.append(box);
+  ok.focus();
 }
 
 /** join → straight into the match. */
@@ -577,8 +605,9 @@ export async function joinCode(code: string, pick: { commander: string; deckId?:
   catch (e) { return { ok: false, error: friendlyError(e) }; }
   if (!r || !r.ok || !r.matchId) return { ok: false, error: friendlyError(r?.error || 'Could not join') };
   const ok = await openMatch(r.matchId, r.view);
-  return ok ? { ok: true, matchId: r.matchId } : { ok: false, error: 'Could not open the match' };
+  return ok ? { ok: true, matchId: r.matchId } : { ok: false, error: `You joined, but the match screen did not open${lastOpenError ? ': ' + lastOpenError : ''}. Go back to the menu and press "Back to your match".` };
 }
+let lastOpenError = '';
 
 /** Opens a match on the match screen (the app does not know it is online except through beginNetMatch). */
 export async function openMatch(matchId: string, view?: any): Promise<boolean> {
@@ -595,8 +624,13 @@ export async function openMatch(matchId: string, view?: any): Promise<boolean> {
   current = ng;
   activeMatch = ng.status === 'active' ? matchId : null;
   ng.subscribe(() => { if (ng.status === 'over' && activeMatch === matchId) activeMatch = null; });
-  app.beginNetMatch(ng);
-  ng.start();
+  lastOpenError = '';
+  try { app.beginNetMatch(ng); ng.start(); }
+  catch (e: any) { // Nov 4: a crash while the board is being built must not leave a dead button and a blank screen
+    lastOpenError = String(e?.message || e); console.error('openMatch', e);
+    ng.stop(); if (current === ng) current = null;
+    return false;
+  }
   return true;
 }
 
