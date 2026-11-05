@@ -1,5 +1,6 @@
 import './style.css';
 import './ui/theme-silver.css'; // Ken (Oct 30): silver UI theme, loads after style.css so its rules win
+import './ui/leftovers-art.css'; // Ken (Nov 4): Brush's painted leftovers
 import { startSilverFrames } from './ui/theme-silver';
 import { Game } from './game';
 import { App } from './ui/app';
