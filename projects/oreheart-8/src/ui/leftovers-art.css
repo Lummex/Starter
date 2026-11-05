@@ -32,3 +32,7 @@ html body .heart[data-low=true]{background-image:url(/art/ui/leftovers/heart-hur
 
 /* Mine counter: the plate only backs the ×n that already sits beside the pickaxe; it never goes above the mine (Ken, Oct 29), and sits just up from the unit standing in front so that unit's health number stays readable */
 .site-mark .pk-count{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;font-size:clamp(10px,1.5vh,16px);transform:translateY(-1.15em);min-width:2.9em;height:2em;padding-top:.42em;background:url(/art/ui/leftovers/count-plate.webp) center/100% 100% no-repeat;color:#fff;line-height:1;pointer-events:none}
+
+/* Ken, Nov 4 ("1 and 2 button stance ... don't overlap"): the 1x / 2x speed coins sit just left of the stance boxes when they slide out, not on top of them. The boxes are 160 px wide in every size, so the offset is that plus the slide-out (6 px) and a gap. */
+html body .stance-btn.stance-btn{width:160px!important;max-width:none!important}
+html body .watch-bar.cp-bar.cp-bar{right:calc(160px + 6px + 10px)}
