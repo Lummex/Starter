@@ -156,7 +156,7 @@ export function createMatch(opts: any = {}) {
     turn: 0, activePlayer: 'player', priority: 'player', phase: 'mulligan', winner: null,
     players: {}, board: { creatures: [] },
     sites: [] as any[], strongholds: { player: { ...stronghold('player') }, opponent: { ...stronghold('opponent') } },
-    pendingResponse: null, factionLock: opts.factionLock !== false, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
+    pendingResponse: null, deployed: [] as any[], factionLock: opts.factionLock !== false, rng: (opts.seed ?? 1) | 0, nextUid: 1, firstPlayer: null, firstPlayerOption: opts.firstPlayer ?? null,
     mulliganDone: { player: false, opponent: false }, pvp: opts.pvp === true, tutorial: opts.tutorial ? { step: typeof opts.tutorial === 'string' && TUTORIAL_ORDER.includes(opts.tutorial) ? opts.tutorial : TUTORIAL_ORDER[0], done: false, ...(opts.tutorialInfo || {}) } : null,
     flags: { battleCry: null, battleCryN: { player: 0, opponent: 0 }, crystalsPlayed: { player: 0, opponent: 0 }, swapped: false, discount: { player: 0, opponent: 0 } },
   };
@@ -404,6 +404,7 @@ function startTurn(s: any, ev: any[]) {
 
 function endTurn(s: any, ev: any[]) {
   s.phase = 'end';
+  s.deployed = [];
   const own = s.players[s.activePlayer];
   const per = CONFIG.savingsPerCrystal;
   if (per && own.crystals >= per) {
@@ -950,6 +951,7 @@ export function respondMatches(s: any, responder: Side, pend: any): { h: any; ca
     let opts: any[] = [];
     if (card.spellKind === 'counter') {
       if (card.effect === 'cancelSummon' && pend.kind === 'summon') opts = [{}];
+      else if (card.effect === 'cancelSummon' && pend.kind === 'deploy') opts = (pend.summons || []).map((x: any) => ({ summonUid: x.uid })); // PvP: name the unit to send back
       else if ((card.effect === 'cancelSpell' || card.effect === 'mirror') && pend.kind === 'cast') {
         if (card.params.maxCost && CARDS[pend.card.cardId].cost > card.params.maxCost) continue;
         opts = [{}];
@@ -1039,6 +1041,19 @@ function finishPending(s: any, pend: any, ev: any[], cancelled: boolean) {
       c.summonedThisTurn = true;
       ev.push({ type: 'summon', uid: c.uid, cardId: c.cardId, owner: actor, row: c.row, col: c.col });
     }
+  } else if (pend.kind === 'deploy') {
+    // PvP: the window at the end of the Deploy phase. A counter named one of the units deployed: it goes back to the hand (its cost stays paid, as before)
+    if (cancelled && pend.cancelUid) {
+      const d = (s.deployed || []).find((x: any) => x.uid === pend.cancelUid);
+      const i = s.board.creatures.findIndex((c: any) => c.uid === pend.cancelUid);
+      if (d && i >= 0) {
+        const c = s.board.creatures.splice(i, 1)[0];
+        s.players[actor].hand.push(d.card);
+        ev.push({ type: 'bounce', uid: c.uid, cardId: c.cardId, owner: actor, row: c.row, col: c.col });
+      }
+    }
+    s.deployed = [];
+    if (s.phase === 'deploy') { s.phase = 'action'; ev.push({ type: 'phase', phase: s.phase }); }
   } else if (pend.kind === 'cast') {
     s.players[actor].discard.push(pend.card);
     if (!cancelled) resolveSpell(s, actor, CARDS[pend.card.cardId], pend.target, pend.to, ev);
@@ -1288,7 +1303,8 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       s.priority = s.activePlayer;
       if (card.spellKind === 'counter') {
         ev.push({ type: 'counter', cardId: card.id, player: who, countered: pend.card ? pend.card.cardId : null, ckind: pend.kind });
-        if (card.effect === 'mirror') {
+        if (pend.kind === 'deploy') finishPending(s, { ...pend, cancelUid: l.summonUid }, ev, true);
+        else if (card.effect === 'mirror') {
           finishPending(s, pend, ev, true);
           const orig = CARDS[pend.card.cardId];
           const t = autoTarget(s, who, orig);
@@ -1305,6 +1321,15 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       const card = CARDS[h.cardId];
       payCreature(pl, card.faction, creatureCost(s, who, card));
       if (s.flags.discount[who]) s.flags.discount[who] = 0;
+      if (s.pvp) {
+        // Nov 4 (Ken: "you just put your units out, boom, boom, boom"): against a person the unit lands at once; the other player
+        // gets ONE Respond window for the whole Deploy phase when this player presses Done (see 'done'). Hold It then names a unit.
+        const c = spawn(s, who, card.id, l.row, l.col, 0, h.uid);
+        c.summonedThisTurn = true;
+        ev.push({ type: 'summon', uid: c.uid, cardId: c.cardId, owner: who, row: c.row, col: c.col });
+        (s.deployed ||= []).push({ uid: c.uid, cardId: c.cardId, row: c.row, col: c.col, card: h });
+        break;
+      }
       openWindow(s, { kind: 'summon', actor: who, card: h, row: l.row, col: l.col }, ev);
       break;
     }
@@ -1411,6 +1436,11 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       break;
     }
     case 'done': {
+      if (s.phase === 'deploy' && s.pvp && s.deployed && s.deployed.length) {
+        // PvP: the one Respond window for everything deployed this phase; the phase moves on when it closes (finishPending)
+        openWindow(s, { kind: 'deploy', actor: who, summons: s.deployed.map((d: any) => ({ uid: d.uid, cardId: d.cardId, row: d.row, col: d.col })) }, ev);
+        break;
+      }
       if (s.phase === 'deploy') s.phase = 'action';
       else endTurn(s, ev);
       ev.push({ type: 'phase', phase: s.phase });

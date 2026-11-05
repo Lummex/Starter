@@ -222,7 +222,7 @@ test('AC670 no Respond window closes under 2 s: a quick pass straight to the ser
     if (r.view.respondDeadline) { opened = Date.now(); attacker = me; responder = them; }
     va = await viewOf(matchId, a); vb = await viewOf(matchId, b);
   }
-  expect(opened, 'a summon opened a window').toBeGreaterThan(0);
+  expect(opened, 'Done after a summon opened the Deploy window (no window per unit)').toBeGreaterThan(0);
   const seq = va.seq, seenBefore = await viewOf(matchId, attacker);
   let refused = 0;
   while (Date.now() - opened < 1500) {

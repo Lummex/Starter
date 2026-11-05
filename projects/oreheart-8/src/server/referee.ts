@@ -85,7 +85,7 @@ export function startMatch(id: string, roomCode: string | null, players: Record<
 const holderOf = (s: any): Seat | null => sideSeat(s.priority);
 const phaseMs = (m: MatchRecord, rules: Rules, seat: Seat | null) => (rules.phaseSeconds + (seat ? m.clock.bank[seat] : 0)) * 1000;
 /** Which Respond window this is: a crystal or a side move inside it keeps it the same one. */
-const windowKey = (p: any) => (p ? JSON.stringify([p.kind, p.actor, p.responder, p.creatureUid ?? null, p.card?.uid ?? null, p.target ?? null]) : '');
+const windowKey = (p: any) => (p ? JSON.stringify([p.kind, p.actor, p.responder, p.creatureUid ?? null, p.card?.uid ?? null, p.target ?? null, (p.summons || []).length]) : '');
 
 /** Moves the clock after an accepted action (`timedOut`: the action was the referee's own timeout move for `prevHolder`). */
 function afterChange(m: MatchRecord, prev: any, now: number, rules: Rules, timedOut: boolean) {

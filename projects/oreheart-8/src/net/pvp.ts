@@ -57,7 +57,8 @@ export function supabaseTransport(): Transport {
   const sbc = async () => (await import('./online')).client();
   const call = async (op: string, body: Record<string, unknown> = {}) => {
     const c = await sbc();
-    const { data, error } = await c.functions.invoke('match', { body: { op, ...body } });
+    // Nov 4 (lag): the function runs where asked; next to the database (East US) its 5-7 database hops are local instead of cross-country
+    const { data, error } = await c.functions.invoke('match', { body: { op, ...body }, region: 'us-east-1' as any });
     if (error) {
       // a non-2xx answer: read the server's JSON if it sent one ({ ok:false, error }), else report the transport error
       try { const ctx: any = (error as any).context; if (ctx && typeof ctx.json === 'function') { const j = await ctx.json(); if (j) return j; } } catch { /* fall through */ }
@@ -199,7 +200,7 @@ export class NetGame {
     const st = clone(v.state);
     st.pvp = true; // the local rules must open the Respond window the way the server does (the view drops the flag)
     const pend = st.pendingResponse;
-    const key = pend && pend.responder === 'player' ? JSON.stringify([pend.kind, pend.actor, pend.creatureUid ?? null, pend.card?.uid ?? null, pend.target ?? null]) : '';
+    const key = pend && pend.responder === 'player' ? JSON.stringify([pend.kind, pend.actor, pend.creatureUid ?? null, pend.card?.uid ?? null, pend.target ?? null, (pend.summons || []).length]) : '';
     if (key !== this.windowSeen) { this.windowSeen = key; this.windowSeenAt = key ? this.now() : null; }
     if (this.status === 'over' && st.phase !== 'over') { st.phase = 'over'; if (!st.winner && this.result) st.winner = this.result.won ? 'player' : 'opponent'; }
     this.state = st;

@@ -382,6 +382,8 @@ test('AC610: holding no counter you can play, there is no Respond dialog and no 
     if (!summon) break;
     const r = await me.evaluate(async (x) => await window.oreheart.act(x), summon);
     expect(r && r.ok).toBe(true);
+    await expect.poll(async () => (await view(them)).state.board.creatures.length, { timeout: 10000 }).toBeGreaterThan(0); // Nov 4: the unit lands at once, no window per unit
+    expect(await me.evaluate(async () => await window.oreheart.act({ type: 'done' }))).toMatchObject({ ok: true }); // Done opens the one window for the phase
     await expect.poll(async () => { const v = await view(them); return !!(v.state.pendingResponse && v.state.pendingResponse.responder === 'player'); }, { timeout: 10000 }).toBe(true);
     const t0 = Date.now();
     await expect(them.locator('[data-testid=pvp-auto-pass], .respond-dlg').first()).toBeVisible({ timeout: 5000 });
@@ -421,6 +423,8 @@ test('AC671: a holder who clicks "Let it happen" at once looks the same as holdi
   await expect.poll(async () => (await me.evaluate(async () => await window.oreheart.legalActions())).some((x) => x.type === 'summon'), { timeout: 8000 }).toBe(true);
   const summon = (await me.evaluate(async () => await window.oreheart.legalActions())).find((x) => x.type === 'summon');
   expect(await me.evaluate(async (x) => await window.oreheart.act(x), summon)).toMatchObject({ ok: true });
+  await expect.poll(async () => (await view(me)).state.board.creatures.some((c) => c.uid === summon.uid), { timeout: 8000 }).toBe(true);
+  expect(await me.evaluate(async () => await window.oreheart.act({ type: 'done' }))).toMatchObject({ ok: true }); // the window comes at Done
   await expect.poll(async () => { const w = await view(me); return !!w.state.pendingResponse; }, { timeout: 8000 }).toBe(true);
   const t0 = Date.now();
   const letIt = them.getByRole('button', { name: 'Let it happen' });
@@ -437,35 +441,63 @@ test('AC671: a holder who clicks "Let it happen" at once looks the same as holdi
   await closeAll(a, b);
 });
 
-test('AC675: a placed unit stands on its square at once, on both screens, before the server or the other player has answered; it counts as arriving until the Respond window closes', async ({ browser }) => {
+test('AC675: PvP has no wait per unit: a placed unit lands at once on both screens, the next card is playable immediately, and the one Respond window comes at Done', async ({ browser }) => {
   test.setTimeout(120000);
   const { a, b } = await pair(browser);
   await keepHands(a, b);
   const [me, them] = await whoseTurn(a, b);
   const summon = await sureSummon(me, them);
   expect(summon).toBeTruthy();
-  // act, then read the board in the SAME breath: no answer from anyone can have arrived yet
-  // (figuresNow reads the board this instant; getRenderStats waits for it to settle, which can be after the window)
-  const r = await me.evaluate((x) => { const r = window.oreheart.act(x); const figs = window.oreheart.figuresNow().filter((f) => f.uid === x.uid); const st = window.oreheart.getState(); return { r, figs, pend: !!st.pendingResponse, onBoard: st.board.creatures.some((c) => c.uid === x.uid) }; }, summon);
+  // act, and read the board this instant: the unit is real and there is no window
+  const r = await me.evaluate((x) => { const r = window.oreheart.act(x); const figs = window.oreheart.figuresNow().filter((f) => f.uid === x.uid); const st = window.oreheart.getState(); return { r, figs, pend: !!st.pendingResponse, onBoard: st.board.creatures.some((c) => c.uid === x.uid), next: window.oreheart.legalActions().filter((l) => l.type === 'summon' || l.type === 'done').length }; }, summon);
   expect(r.r.ok).toBe(true);
-  expect(r.pend, 'the window opened locally at once: ' + JSON.stringify(r)).toBe(true);
-  expect(r.figs.length, 'the figure is already on the board').toBe(1);
-  expect(r.figs[0].ghost, 'arriving while the window is open: ' + JSON.stringify(r)).toBe(true);
-  expect(r.figs[0].row).toBe(summon.row); expect(r.figs[0].col).toBe(summon.col);
-  // the other player sees the arriving unit too (mirrored square), while their window is still open
-  const seenByThem = async () => them.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); const st = window.oreheart.getState(); return f ? { ghost: f.ghost, row: f.row, col: f.col, pend: st.pendingResponse && [st.pendingResponse.row, st.pendingResponse.col], onBoard: st.board.creatures.some((c) => c.uid === uid) } : null; }, summon.uid);
-  await expect.poll(seenByThem, { timeout: 8000 }).not.toBeNull();
-  const got = await seenByThem();
-  expect(got, 'arriving unit on the other screen: ' + JSON.stringify(got)).toMatchObject({ ghost: true, row: 8 - summon.row, col: 14 - summon.col });
-  // the window closes (2 s hold): the unit is real and solid on both screens
-  await expect.poll(async () => (await view(me)).state.board.creatures.some((c) => c.uid === summon.uid), { timeout: 10000 }).toBe(true);
-  await expect.poll(() => me.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); return f && f.ghost; }, summon.uid), { timeout: 8000 }).toBe(false);
-  await expect.poll(() => them.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); return f && f.ghost; }, summon.uid), { timeout: 8000 }).toBe(false);
+  expect(r.pend, 'no window per unit: ' + JSON.stringify(r)).toBe(false);
+  expect(r.onBoard).toBe(true);
+  expect(r.figs.length, 'the figure is on the board at the drop').toBe(1);
+  expect(r.figs[0]).toMatchObject({ row: summon.row, col: summon.col, ghost: false });
+  expect(r.next, 'the next play is open at once').toBeGreaterThan(0);
+  // the other player sees it land (mirrored square), with no answer asked of them yet
+  await expect.poll(() => them.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); const st = window.oreheart.getState(); return f ? { row: f.row, col: f.col, pend: !!st.pendingResponse } : null; }, summon.uid), { timeout: 8000 }).toEqual({ row: 8 - summon.row, col: 14 - summon.col, pend: false });
+  // Done: the one window for the phase, with that unit in it
+  expect(await me.evaluate(async () => await window.oreheart.act({ type: 'done' }))).toMatchObject({ ok: true });
+  await expect.poll(async () => { const v = await view(them); return v.state.pendingResponse && v.state.pendingResponse.kind; }, { timeout: 8000 }).toBe('deploy');
+  expect((await view(them)).state.pendingResponse.summons.some((s) => s.uid === summon.uid)).toBe(true);
+  await expect.poll(async () => (await view(me)).state.phase, { timeout: 15000 }).toBe('action'); // the window closes (2 s hold), the phase moves on
   const log = await hook(me, 'actLog');
   expect(log.filter((e) => !e.ok)).toEqual([]);
   await closeAll(a, b);
 });
 
+test('AC678: boom boom boom: three units in a row with no wait between them (drop-to-next-card-playable well under half a second each, nothing on the network), and the server agrees', async ({ browser }) => {
+  test.setTimeout(120000);
+  const { a, b } = await pair(browser);
+  await keepHands(a, b);
+  const [me, them] = await whoseTurn(a, b);
+  const v = await view(me);
+  for (const card of ['goblin-grunt', 'goblin-grunt', 'goblin-grunt']) await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/give?matchId=${v.matchId}&user=${encodeURIComponent(v.names.me)}&card=${card}`);
+  await expect.poll(async () => (await view(me)).seq, { timeout: 8000 }).toBeGreaterThanOrEqual(v.seq + 3);
+  await expect.poll(async () => (await view(them)).seq, { timeout: 8000 }).toBeGreaterThanOrEqual(v.seq + 3);
+  const t = await me.evaluate(() => {
+    const out = [];
+    for (let i = 0; i < 3; i++) {
+      const t0 = performance.now();
+      const s = window.oreheart.legalActions().find((l) => l.type === 'summon');
+      if (!s) { out.push({ i, noSummon: true }); break; }
+      const r = window.oreheart.act(s);
+      const nextOpen = window.oreheart.legalActions().some((l) => l.type === 'summon' || l.type === 'done');
+      out.push({ i, ok: r.ok, ms: Math.round(performance.now() - t0), nextOpen, onBoard: window.oreheart.getState().board.creatures.length });
+    }
+    return out;
+  });
+  expect(t.length, JSON.stringify(t)).toBe(3);
+  for (const x of t) { expect(x.ok, JSON.stringify(t)).toBe(true); expect(x.nextOpen).toBe(true); expect(x.ms, 'local rules only, no network: ' + JSON.stringify(t)).toBeLessThan(400); }
+  expect(t[2].onBoard).toBeGreaterThanOrEqual(3);
+  // the server took all three in order, and the other screen shows all three
+  await expect.poll(async () => (await view(me)).state.board.creatures.length, { timeout: 10000 }).toBeGreaterThanOrEqual(3);
+  await expect.poll(async () => (await view(them)).state.board.creatures.filter((c) => c.owner === 'opponent').length, { timeout: 10000 }).toBeGreaterThanOrEqual(3);
+  expect((await hook(me, 'actLog')).filter((e) => !e.ok)).toEqual([]);
+  await closeAll(a, b);
+});
 
 test('AC677: a card dropped from the hand spawns its REAL model at once (models load with the hand), and a model still on its way is a shimmer, never a pawn', async ({ browser }) => {
   test.setTimeout(120000);
@@ -477,10 +509,8 @@ test('AC677: a card dropped from the hand spawns its REAL model at once (models 
   await expect.poll(() => me.evaluate((id) => window.oreheart.modelsReady([id]), cardId), { timeout: 20000 }).toBe(true); // in the hand = already loaded, nothing on the board yet
   const r = await me.evaluate((x) => { window.oreheart.act(x); return window.oreheart.figuresNow().find((f) => f.uid === x.uid); }, summon);
   expect(r, 'on the board at the drop').toBeTruthy();
-  expect(r).toMatchObject({ real: true, shimmer: false, ghost: true, born: true });
-  // no second spawn when the window closes: the same figure just turns solid
-  await expect.poll(() => me.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); return f && f.ghost; }, summon.uid), { timeout: 10000 }).toBe(false);
-  expect(await me.evaluate((uid) => window.oreheart.figuresNow().find((f) => f.uid === uid), summon.uid)).toMatchObject({ real: true, shimmer: false, born: false });
+  expect(r).toMatchObject({ real: true, shimmer: false, ghost: false, born: true });
+  await expect.poll(() => me.evaluate((uid) => window.oreheart.figuresNow().find((f) => f.uid === uid).born, summon.uid), { timeout: 5000 }).toBe(false); // the spawn hop ends, the figure stays the same one
   // the other player: if the model was not there yet it is a shimmer that becomes the real model, never a pawn
   await expect.poll(() => them.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); return f && (f.real || f.shimmer); }, summon.uid), { timeout: 15000 }).toBe(true);
   await expect.poll(() => them.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); return f && f.real; }, summon.uid), { timeout: 20000 }).toBe(true);

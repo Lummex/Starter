@@ -235,21 +235,31 @@ describe('PvP referee', () => {
     rec.clock.deadline = T0 + 120 * SEC;
     await store.updateMatch(rec, rec.seq);
     let now = T0 + SEC;
-    for (let i = 0; i < 6; i++) { // Alice summons six times; Bob never touches anything, and each 12 s window runs out
+    for (let i = 0; i < 6; i++) { // Nov 4: Alice summons six times with no wait (no window per unit in PvP)
       const v = (await svc.handle('state', { matchId }, alice, now)).view as View;
       const summon = legalActions(v.state).find((a: any) => a.type === 'summon');
       expect(summon, 'a summon is legal').toBeTruthy();
       const r = await svc.handle('act', { matchId, seq: v.seq, action: summon }, alice, now);
       expect(r.ok, r.error).toBe(true);
-      expect(r.view.respondDeadline).toBeTruthy();
-      now += 13 * SEC;
-      expect((await svc.handle('tick', { matchId }, bob, now)).ok).toBe(true);
-      const m = (await store.getMatch(matchId))!;
-      expect(m.status).toBe('active');
-      expect(m.clock.timeouts.b).toBe(0);
-      expect(m.state.pendingResponse).toBeNull();
+      expect(r.view.respondDeadline).toBeNull();
+      expect(r.view.state.board.creatures.length).toBe(i + 1);
+      now += SEC;
     }
-    expect((await store.getMatch(matchId))!.state.board.creatures.length).toBe(6);
+    // Done opens the one window for all six; Bob never touches anything and the 12 s window runs out: no timeout, no forfeit
+    const v = (await svc.handle('state', { matchId }, alice, now)).view as View;
+    const r = await svc.handle('act', { matchId, seq: v.seq, action: { type: 'done' } }, alice, now);
+    expect(r.ok, r.error).toBe(true);
+    expect(r.view.respondDeadline).toBeTruthy();
+    expect(r.view.state.pendingResponse.kind).toBe('deploy');
+    expect(r.view.state.pendingResponse.summons.length).toBe(6);
+    now += 13 * SEC;
+    expect((await svc.handle('tick', { matchId }, bob, now)).ok).toBe(true);
+    const m = (await store.getMatch(matchId))!;
+    expect(m.status).toBe('active');
+    expect(m.clock.timeouts.b).toBe(0);
+    expect(m.state.pendingResponse).toBeNull();
+    expect(m.state.phase).toBe('action');
+    expect(m.state.board.creatures.length).toBe(6);
   });
 
   it('a pass (the browser answers by itself) does not clear the count of whole phases that ran out', async () => {
@@ -262,7 +272,9 @@ describe('PvP referee', () => {
     await store.updateMatch(rec, rec.seq);
     const v = (await svc.handle('state', { matchId }, alice, T0 + SEC)).view as View;
     const summon = legalActions(v.state).find((a: any) => a.type === 'summon');
-    const r = await svc.handle('act', { matchId, seq: v.seq, action: summon }, alice, T0 + SEC);
+    const r0 = await svc.handle('act', { matchId, seq: v.seq, action: summon }, alice, T0 + SEC);
+    expect(r0.ok).toBe(true);
+    const r = await svc.handle('act', { matchId, seq: r0.view.seq, action: { type: 'done' } }, alice, T0 + SEC); // the window comes at Done
     expect(r.ok).toBe(true);
     const vb = store.viewOf(matchId, bob.userId)!;
     const p = await svc.handle('act', { matchId, seq: vb.seq, action: { type: 'pass' } }, bob, T0 + 3 * SEC);
@@ -280,11 +292,31 @@ describe('PvP referee', () => {
       await store.updateMatch(rec, rec.seq);
       const v = (await svc.handle('state', { matchId }, alice, T0 + SEC)).view as View;
       const summon = legalActions(v.state).find((a: any) => a.type === 'summon');
+      const r0 = await svc.handle('act', { matchId, seq: v.seq, action: summon }, alice, T0 + SEC);
+      expect(r0.ok, r0.error).toBe(true);
+      expect(r0.view.respondDeadline, 'no window per unit').toBeNull();
       const opened = T0 + 2 * SEC;
-      const r = await svc.handle('act', { matchId, seq: v.seq, action: summon }, alice, opened);
+      const r = await svc.handle('act', { matchId, seq: r0.view.seq, action: { type: 'done' } }, alice, opened); // Done opens the one window
       expect(r.ok, r.error).toBe(true);
+      expect(r.view.respondDeadline).toBeTruthy();
       return { store, svc, matchId, opened, attacker: r.view as View };
     }
+    it('PvP: a counter in the Deploy window names one unit, which goes back to the hand; the phase moves on', async () => {
+      const { store, svc, matchId, opened } = await windowOpen(65, ['hold-it', 'hold-it']);
+      const m0 = (await store.getMatch(matchId))!;
+      expect(m0.state.board.creatures.length).toBe(1);
+      const vb = store.viewOf(matchId, bob.userId)!;
+      const counter = legalActions(vb.state).find((a: any) => a.type === 'respond');
+      expect(counter && counter.summonUid, JSON.stringify(legalActions(vb.state))).toBeTruthy();
+      const r = await svc.handle('act', { matchId, seq: vb.seq, action: counter }, bob, opened + 2100);
+      expect(r.ok, r.error).toBe(true);
+      const m = (await store.getMatch(matchId))!;
+      expect(m.state.board.creatures.length).toBe(0);
+      expect(m.state.players.player.hand.some((h: any) => h.uid === counter.summonUid)).toBe(true); // back in Alice's hand
+      expect(m.state.phase).toBe('action');
+      expect(m.state.pendingResponse).toBeNull();
+      expect(r.view.events.some((e: any) => e.type === 'bounce' && e.uid === counter.summonUid)).toBe(true);
+    });
     it('refuses a quick pass, however often it is tried, and takes the same pass at 2 s', async () => {
       const { store, svc, matchId, opened, attacker } = await windowOpen(61, []);
       const before = (await store.getMatch(matchId))!;
@@ -325,18 +357,26 @@ describe('PvP referee', () => {
       expect((await store.getMatch(matchId))!.status).toBe('finished');
     });
     it('gives each new window its own 2 s, and a run-out still comes at 12 s', async () => {
-      const { store, svc, matchId, opened } = await windowOpen(63, []);
+      const { store, svc, matchId, opened } = await windowOpen(63, ['shiv-rat']);
       const seq = (await store.getMatch(matchId))!.seq;
       expect((await svc.handle('act', { matchId, seq, action: { type: 'pass' } }, bob, opened + 2500)).ok).toBe(true);
-      const v = store.viewOf(matchId, alice.userId)!;
-      const summon = legalActions(v.state).find((a: any) => a.type === 'summon');
-      const second = opened + 3000;
-      const r = await svc.handle('act', { matchId, seq: v.seq, action: summon }, alice, second);
+      // Alice's Action phase ends; Bob deploys and presses Done: a second window, this time Alice's to answer
+      let v = store.viewOf(matchId, alice.userId)!;
+      expect(v.state.phase).toBe('action');
+      let r = await svc.handle('act', { matchId, seq: v.seq, action: { type: 'done' } }, alice, opened + 2600);
       expect(r.ok, r.error).toBe(true);
-      expect((await svc.handle('act', { matchId, seq: r.view.seq, action: { type: 'pass' } }, bob, second + 1500)).tooSoonMs).toBe(500);
-      await svc.handle('tick', { matchId }, alice, second + 11 * SEC);
+      v = store.viewOf(matchId, bob.userId)!;
+      const summon = legalActions(v.state).find((a: any) => a.type === 'summon');
+      expect(summon, 'bob can summon').toBeTruthy();
+      r = await svc.handle('act', { matchId, seq: v.seq, action: summon }, bob, opened + 2800);
+      expect(r.ok, r.error).toBe(true);
+      const second = opened + 3000;
+      r = await svc.handle('act', { matchId, seq: r.view.seq, action: { type: 'done' } }, bob, second);
+      expect(r.ok, r.error).toBe(true);
+      expect((await svc.handle('act', { matchId, seq: r.view.seq, action: { type: 'pass' } }, alice, second + 1500)).tooSoonMs).toBe(500);
+      await svc.handle('tick', { matchId }, bob, second + 11 * SEC);
       expect((await store.getMatch(matchId))!.state.pendingResponse).toBeTruthy();
-      await svc.handle('tick', { matchId }, alice, second + 12 * SEC);
+      await svc.handle('tick', { matchId }, bob, second + 12 * SEC);
       expect((await store.getMatch(matchId))!.state.pendingResponse).toBeNull();
     });
     it('keeps when the window opened out of both views', async () => {

@@ -3603,7 +3603,7 @@ export class App {
     const mayCounter = legal.length > 0 || legalAll.some((a: any) => a.type === 'ability' && a.ability === 'brew') || (needs.length > 0 && legalAll.some((a: any) => a.type === 'playCrystal'));
     const tgt = pend.target && pend.target.row ? st.board.creatures.find((c: any) => c.row === pend.target.row && c.col === pend.target.col) : null;
     const tname = tgt ? (tgt.owner === 'player' ? `your ${CARDS[tgt.cardId].name}` : `their ${CARDS[tgt.cardId].name}`) : pend.target && pend.target.commander ? 'your Commander' : '';
-    const what = pend.kind === 'summon' ? `Enemy summons ${CARDS[pend.card.cardId].name}.` : pend.kind === 'cast' ? `Enemy casts ${CARDS[pend.card.cardId].name}${tname ? ' at ' + tname : ''}.` : `Enemy attacks ${tname || 'one of your creatures'}.`;
+    const what = pend.kind === 'deploy' ? (pend.summons.length === 1 ? `Enemy deployed ${CARDS[pend.summons[0].cardId].name}.` : `Enemy deployed ${pend.summons.length} units.`) : pend.kind === 'summon' ? `Enemy summons ${CARDS[pend.card.cardId].name}.` : pend.kind === 'cast' ? `Enemy casts ${CARDS[pend.card.cardId].name}${tname ? ' at ' + tname : ''}.` : `Enemy attacks ${tname || 'one of your creatures'}.`;
     if (this.netGame && !mayCounter) { this.autoLetItHappen(what); return; }
     const buttons: El[] = [];
     const finish = () => { this.respDlg && this.respDlg.close(); this.respDlg = null; clearTimeout(this.respondTimer); };
@@ -3623,7 +3623,9 @@ export class App {
           if (tc) chosen = tc;
           else {
             finish();
-            this.pick = { cells: opts.map((o: any) => o.target), done: (cell) => { this.pick = null; this.clearGlow(); this.game.act(opts.find((o: any) => o.target.row === cell.row && o.target.col === cell.col)); } };
+            // PvP Deploy window: the choices are the units deployed (tap the one to send back); otherwise the spell's own squares
+            const sq = (o: any) => o.target || (pend.summons || []).find((x: any) => x.uid === o.summonUid) || null;
+            this.pick = { cells: opts.map(sq).filter(Boolean), done: (cell) => { this.pick = null; this.clearGlow(); this.game.act(opts.find((o: any) => { const q = sq(o); return q && q.row === cell.row && q.col === cell.col; })); } };
             this.setGlow(this.pick.cells, 'glow');
             this.flash('Tap a target');
             return;
@@ -3637,7 +3639,7 @@ export class App {
       const hc = st.players.player.hand.find((x: any) => x.uid === a.uid);
       if (hc) buttons.push(btn(`Play ${CARDS[hc.cardId].name}`, '', () => { const r = this.game.act(a); if (r && !r.ok) this.flash(r.error); }, { 'data-uid': a.uid }));
     }
-    const ec = pend.card ? CARDS[pend.card.cardId] : null;
+    const ec = pend.card ? CARDS[pend.card.cardId] : pend.kind === 'deploy' && pend.summons.length === 1 ? CARDS[pend.summons[0].cardId] : null;
     if (ec) this.dialogCard = ec.id + pend.actor;
     const cardBox = ec ? h('div', { class: `enemy-card hand-card static ${ec.type} f-${ec.faction}` }, ...faceKids(ec)) : null;
     const bar = h('div', { class: 'respond-bar', role: 'progressbar', 'aria-label': 'Respond time left', 'aria-valuemin': '0', 'aria-valuemax': String(CONFIG.respondWindowSeconds), 'aria-valuenow': String(CONFIG.respondWindowSeconds) }, h('div', { class: 'fill' }));

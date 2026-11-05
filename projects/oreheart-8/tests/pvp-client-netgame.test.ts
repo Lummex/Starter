@@ -135,7 +135,8 @@ describe('NetGame acts', () => {
     const r = g.act(summon);
     expect(r.ok).toBe(true);
     expect(g.state.players.player.hand.length, 'the card left the hand before any answer').toBe(handBefore - 1);
-    expect(g.state.pendingResponse && g.state.pendingResponse.kind).toBe('summon');
+    expect(g.state.board.creatures.some((c: any) => c.uid === summon.uid), 'the unit is on the board at once (no window per unit in PvP)').toBe(true);
+    expect(g.state.pendingResponse).toBeNull();
     expect(seen.length).toBe(1);
     await flush(); await flush(); await flush();
     expect(g.seq).toBe(2);
@@ -154,7 +155,7 @@ describe('NetGame acts', () => {
     expect(g.state.players.player.hand.length).toBe(handBefore - 1);
     await flush(); await flush(); await flush();
     expect(g.state.players.player.hand.length, 'back as the server says').toBe(handBefore);
-    expect(g.state.pendingResponse).toBeNull();
+    expect(g.state.board.creatures.some((c: any) => c.uid === summon.uid)).toBe(false);
     expect(errors).toEqual(['It is not your turn.']);
   });
   it('surrender goes to the forfeit op', async () => {
