@@ -88,7 +88,7 @@ begin
     jsonb_array_length(d3) = 1 and d3 -> 0 ->> 'quest_id' = 'hat-trick'
     and (select count(*) from public.transactions where user_id = u and reason = 'quest_reward') = 3
     and (select sum(delta) from public.transactions where user_id = u and reason = 'quest_reward') = 150
-    and (select coins from public.wallets where user_id = u) = 450, d3::text);
+    and (select coins from public.wallets where user_id = u) = 650, d3::text); -- 500 signup + 150 quests
   perform pg_temp.ok('streak: all three of today''s quests done -> 1 day, no free pack yet (goal 7)',
     (select days = 1 and last_day = private.today() from public.quest_streaks where user_id = u)
     and (select free_packs from public.wallets where user_id = u) = 0);

@@ -57,8 +57,8 @@ select pg_temp.ok('4 default packs, each 8 cards (5 Common, 2 Uncommon, 1 Rare o
   and (select bool_and(odds = '{"Rare": 8500, "Ultra Rare": 1300, "Collector": 200}'::jsonb) from public.pack_slots where slot_no = 3));
 
 -- ========== 3. shop_info ==========
-select pg_temp.ok('shop_info: 4 packs, coins 300, no free packs, nothing opened today, odds sum 10000 per slot',
-  (select jsonb_array_length(j -> 'packs') = 4 and (j ->> 'coins')::int = 300 and (j ->> 'free_packs')::int = 0
+select pg_temp.ok('shop_info: 4 packs, coins 500, no free packs, nothing opened today, odds sum 10000 per slot',
+  (select jsonb_array_length(j -> 'packs') = 4 and (j ->> 'coins')::int = 500 and (j ->> 'free_packs')::int = 0
           and (select bool_and((p ->> 'opened_today')::int = 0 and jsonb_array_length(p -> 'slots') = 3) from jsonb_array_elements(j -> 'packs') p)
           and (select bool_and((select sum((v #>> '{}')::int) from jsonb_each(s -> 'odds') e(k, v)) = 10000)
                from jsonb_array_elements(j -> 'packs') p, jsonb_array_elements(p -> 'slots') s)
@@ -71,7 +71,7 @@ select pg_temp.refused('shop_info needs a login', null, null, 'select public.sho
 create temp table o1 as select pg_temp.json_as(:P1, 'aal1', $q$ select public.open_pack('standard', 'k1-aaaaaaaa-1111', false) $q$) as j;
 select pg_temp.ok('open_pack: returns the contract shape',
   (select j ? 'opening_id' and j ->> 'pack_type' = 'standard' and (j ->> 'price_paid')::int = 100 and (j ->> 'free')::boolean = false
-          and jsonb_array_length(j -> 'cards') = 8 and (j ->> 'coins_after')::int = 200 and (j ->> 'free_packs_after')::int = 0
+          and jsonb_array_length(j -> 'cards') = 8 and (j ->> 'coins_after')::int = 400 and (j ->> 'free_packs_after')::int = 0
           and jsonb_array_length(j -> 'odds') = 3
           and (select bool_and(c ? 'card_id' and c ? 'rarity' and jsonb_typeof(c -> 'is_new') = 'boolean') from jsonb_array_elements(j -> 'cards') c)
    from o1), (select j::text from o1));
@@ -89,9 +89,9 @@ select pg_temp.ok('open_pack: 8 card instances made through card_grant (origin p
   (select count(*) from public.card_instances ci where ci.owner_id = :P1 and ci.origin = 'pack' and ci.origin_ref = (select j ->> 'opening_id' from o1)) = 8
   and (select count(*) from public.card_history h join public.card_instances ci on ci.id = h.card_instance_id
        where ci.owner_id = :P1 and ci.origin = 'pack' and h.event = 'created') = 8);
-select pg_temp.ok('open_pack: one pack_purchase ledger row of -100, balance 200',
+select pg_temp.ok('open_pack: one pack_purchase ledger row of -100, balance 400',
   (select count(*) from public.transactions where user_id = :P1 and reason = 'pack_purchase') = 1
-  and (select delta = -100 and balance_after = 200 from public.transactions where user_id = :P1 and reason = 'pack_purchase'));
+  and (select delta = -100 and balance_after = 400 from public.transactions where user_id = :P1 and reason = 'pack_purchase'));
 select pg_temp.ok('open_pack: one pack_openings row with the odds snapshot and the 8 card ids',
   (select count(*) from public.pack_openings where user_id = :P1) = 1
   and (select cardinality(cards) = 8 and jsonb_array_length(odds_snapshot) = 3 and price_paid = 100 and not free from public.pack_openings where user_id = :P1));
@@ -105,7 +105,7 @@ do $$ declare i int; r jsonb; first jsonb := (select j from o1);
 begin
   for i in 1..10 loop
     r := pg_temp.json_as('c0000000-0000-4000-8000-000000000001', 'aal1', $q$ select public.open_pack('standard', 'k1-aaaaaaaa-1111', false) $q$);
-    if r ->> 'opening_id' <> first ->> 'opening_id' or r -> 'cards' <> first -> 'cards' or (r ->> 'coins_after')::int <> 200 then
+    if r ->> 'opening_id' <> first ->> 'opening_id' or r -> 'cards' <> first -> 'cards' or (r ->> 'coins_after')::int <> 400 then
       perform pg_temp.ok('idem: repeat ' || i || ' returned a different opening', false, r::text);
       return;
     end if;
@@ -115,14 +115,14 @@ end $$;
 select pg_temp.ok('idem: still one opening, one charge, 8 pack cards',
   (select count(*) from public.pack_openings where user_id = :P1) = 1
   and (select count(*) from public.transactions where user_id = :P1 and reason = 'pack_purchase') = 1
-  and (select coins from public.wallets where user_id = :P1) = 200
+  and (select coins from public.wallets where user_id = :P1) = 400
   and (select count(*) from public.card_instances where owner_id = :P1 and origin = 'pack') = 8);
 select pg_temp.refused('idem: another player cannot reuse my idem_key', :P2, 'aal1',
   $q$ select public.open_pack('standard', 'k1-aaaaaaaa-1111', false) $q$, 'already used');
 select pg_temp.refused('open_pack: a short idem_key is refused', :P1, 'aal1', $q$ select public.open_pack('standard', 'short', false) $q$, 'idem_key');
 
 -- ========== 6. Coins can't go below zero ==========
-select private.ledger_apply(:P2, -150, 'admin_grant', 'test', 'test-setup-p2-150', null);
+select private.ledger_apply(:P2, -350, 'admin_grant', 'test', 'test-setup-p2-150', null); -- 500 - 350 = 150 coins
 select pg_temp.works('150 coins: the first 100-coin pack opens', :P2, 'aal1', $q$ select public.open_pack('standard', 'k2-bbbbbbbb-0001', false) $q$);
 select pg_temp.refused('150 coins: the second 100-coin pack is refused (not enough coins)', :P2, 'aal1',
   $q$ select public.open_pack('standard', 'k2-bbbbbbbb-0002', false) $q$, 'not enough coins');
@@ -174,7 +174,7 @@ create temp table spread as
   select k.rarity, count(*) n from public.pack_openings o, unnest(o.cards) with ordinality u(c, pos) join public.cards k on k.id = u.c
   where o.user_id = 'c0000000-0000-4000-8000-000000000003' and pos = 8 group by k.rarity;
 select pg_temp.ok('spread: 1,000 openings cost 100,000 coins and made 8,000 cards',
-  (select coins from public.wallets where user_id = :P3) = 300
+  (select coins from public.wallets where user_id = :P3) = 500
   and (select count(*) from public.card_instances where owner_id = :P3 and origin = 'pack') = 8000
   and (select count(*) from public.pack_openings where user_id = :P3) = 1000);
 select pg_temp.ok('spread: the rare slot gave Rare 850 +/- 60 times',
@@ -215,13 +215,16 @@ create temp table wolves as
 select pg_temp.refused('deck: more copies than owned is refused (one more wolf-rider than owned)', :P1, 'aal1',
   format($q$ select public.save_deck(null, 'Wolf Pack', 'grubnak', array(select 'wolf-rider' from generate_series(1, %s))) $q$, (select n + 1 from wolves)),
   format('you own %s of Mangewolf Rider', (select n from wolves)));
-select pg_temp.works('deck: exactly as many copies as owned is fine (4 goblin-grunt)', :P1, 'aal1',
-  $q$ select public.save_deck(null, 'Grunts', 'grubnak', array['goblin-grunt','goblin-grunt','goblin-grunt','goblin-grunt']) $q$);
+select private.card_grant(:P1, 'goblin-grunt', 4, 'admin_grant', 'test-grunts', null); -- zero start: nothing is owned until granted or bought
+create temp table grunts as
+  select count(*)::int as n from public.card_instances where owner_id = :P1 and card_id = 'goblin-grunt' and status = 'owned';
+select pg_temp.works('deck: exactly as many copies as owned is fine (every goblin-grunt owned)', :P1, 'aal1',
+  format($q$ select public.save_deck(null, 'Grunts', 'grubnak', array(select 'goblin-grunt' from generate_series(1, %s))) $q$, (select least(n, 4) from grunts)));
 select pg_temp.works('deck: crystals are unlimited (50 soul-shard, owns 4)', :P1, 'aal1',
   $q$ select public.save_deck(null, 'Shards', 'grubnak', array(select 'soul-shard' from generate_series(1, 50))) $q$);
-select pg_temp.ok('deck: the three starter decks still build for a new player (all cards owned)',
-  pg_temp.json_as(:P1, 'aal1', $q$ select public.import_local_decks('[{"name":"Starter","commander":"grubnak","cards":["goblin-scrounger","goblin-scrounger","fizzle"]}]'::jsonb) $q$) ->> 'imported' = '1');
-select pg_temp.ok('deck: import skips a deck with more copies than owned (61 copies of a 2-copy starter card)',
+select pg_temp.ok('deck: a deck of owned cards imports (zero start: owned here means bought or granted)',
+  pg_temp.json_as(:P1, 'aal1', $q$ select public.import_local_decks('[{"name":"Mine","commander":"grubnak","cards":["goblin-grunt","goblin-grunt"]}]'::jsonb) $q$) ->> 'imported' = '1');
+select pg_temp.ok('deck: import skips a deck with more copies than owned (61 copies of a card the player does not own)',
   (pg_temp.json_as(:P2, 'aal1', $q$ select public.import_local_decks(jsonb_build_array(jsonb_build_object('name', 'Too Many', 'commander', 'grubnak',
       'cards', (select jsonb_agg('wolf-rider'::text) from generate_series(1, 61))))) $q$) -> 'skipped' -> 0 ->> 'problem') like 'you own % of Mangewolf Rider',
   pg_temp.json_as(:P2, 'aal1', $q$ select public.import_local_decks('[]'::jsonb) $q$)::text);

@@ -38,7 +38,7 @@ const STD_SLOTS: PackSlot[] = [
 ];
 const stubPack = (id: string, name: string, blurb: string, faction: string | null): PackInfo => ({ id, name, blurb, price_coins: 100, faction, art: null, max_per_day: 50, opened_today: 0, slots: STD_SLOTS.map((s) => ({ ...s, odds: { ...s.odds } })) });
 const STUB = {
-  coins: 300,
+  coins: 500,
   free_packs: 1,
   packs: [
     stubPack('standard', 'Oreheart Pack', 'Every army, every crystal. Shake well before opening.', null),
@@ -253,6 +253,7 @@ export async function buyPack(pack: PackInfo, onErr?: (msg: string) => void, for
 /** Main-menu extras when signed in: coin chip + Shop / Collection / Quests buttons. */
 export function economyMenu(el: El): void {
   if (!net.active) return;
+  net.openShop = () => { void openScreen('shop'); };
   const b = (label: string, icon: string, kind: EconScreen) => h('button', { type: 'button', class: 'net-btn econ-menu-btn', 'data-econ': kind, onclick: () => { void openScreen(kind); } }, h('img', { src: icon, alt: '' }), h('span', {}, label));
   el.prepend(coinChip());
   el.append(h('div', { class: 'econ-bar', role: 'group', 'aria-label': 'Coins and packs' },
@@ -304,6 +305,8 @@ if (isTestPage() && typeof window !== 'undefined') {
     coins: () => ({ coins, free_packs: freePacks }),
     /** the deck builder's copy limit for a card (signed in: capped by the copies owned) */
     deckLimit: (id: string) => ({ limit: deckLimit(id), owned: ownedOf(id), copyLimit: copyLimit(id) }),
+    /** test pages: pretend to be signed in with exactly these owned counts (zero start checks) */
+    setOwned: (m: Record<string, number>) => { if (params().get('test') !== '1') return false; net.active = true; setOwnedCounts(m); net.openShop = () => { void openScreen('shop'); }; return true; },
   };
   const attach = () => { const w = window as any; w.oreheart = Object.assign(w.oreheart || {}, { packs }); };
   attach(); setTimeout(attach, 0); setTimeout(attach, 500);

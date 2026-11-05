@@ -50,6 +50,8 @@ export const copyLimit = (id: string): number => CONFIG.copyLimits[CARDS[id]?.ra
 // my_collection). Crystal cards are free and unlimited. Offline nothing changes: no counts, every card unlimited as before.
 let ownedCounts: Record<string, number> | null = null;
 export function setOwnedCounts(m: Record<string, number> | null) { ownedCounts = m ? { ...m } : null; }
+/** Signed in and not one card of your own yet (crystals are free and don't count): the Deck Builder has nothing to build with. */
+export const ownsNothing = () => ownedMode() && !Object.entries(ownedCounts!).some(([id, n]) => n > 0 && CARDS[id] && CARDS[id].type !== 'crystal');
 const ownedMode = () => net.active && !!ownedCounts;
 /** Copies owned, or null when ownership doesn't apply (offline, crystal cards). */
 export const ownedOf = (id: string): number | null => (ownedMode() && CARDS[id]?.type !== 'crystal' ? ownedCounts![id] || 0 : null);
@@ -101,7 +103,7 @@ export function autoFill(deck: string[], faction?: string): string[] {
   const tally: Record<string, number> = {};
   for (const id of out) if (CARDS[id].type === 'creature' && CARDS[id].faction !== 'any') tally[CARDS[id].faction] = (tally[CARDS[id].faction] || 0) + 1;
   const main = faction || Object.keys(tally).sort((a, b) => tally[b] - tally[a])[0] || 'goblins';
-  const add = (id: string, cap: number) => { if (room() > 0 && count(id) < Math.min(cap, copyLimit(id))) { out.push(id); return true; } return false; };
+  const add = (id: string, cap: number) => { if (room() > 0 && count(id) < Math.min(cap, deckLimit(id))) { out.push(id); return true; } return false; }; // Nov 4: capped by the copies owned when signed in
   const basic = basicMiner(main);
   while (count(basic) < 5 && add(basic, 5));
   const smith = (ALL.find((c) => c.role === 'Smith' && c.faction === main) || {}).id;
@@ -251,7 +253,13 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   }
   // Owner (Ken, Oct 30): the background hall follows the faction filter, else the deck's Commander; Neutral shows the tavern
   const setHall = () => { const f = fF.sel.value; const hall = f === 'Goblins' ? 'goblins' : f === 'Gnomes' ? 'gnomes' : f === 'Dwarves' ? 'dwarves' : f === 'Neutral' ? 'neutral' : (COMMANDERS[cmdId]?.faction || 'neutral'); const s = app.root.querySelector('.db-screen') as HTMLElement | null; if (s && s.dataset.hall !== hall) s.dataset.hall = hall; };
-  function renderCards() { setHall(); cardsEl.replaceChildren(...ALL.filter((c) => !c.disabled && !lockedFor(c.id) && matches(c)).map(tile)); fitRow(); }
+  // Zero start (Ken, Nov 4): a new player owns no cards, so the builder says where cards come from instead of showing a wall of locks with no way on
+  const emptyNote = () => h('div', { class: 'db-empty', role: 'status', 'data-testid': 'db-empty' },
+    h('p', { class: 'db-empty-head' }, 'Your card chest is empty!'),
+    h('p', {}, "Not a single card of your own yet, just dust and one confused rat. The three starter decks are yours to play any time, but a deck of your own is built from cards you own, and those come out of packs."),
+    h('div', { class: 'row' }, btn('To the Shop', 'primary', () => { if (net.openShop) net.openShop(); else status.textContent = 'The Shop is on the main menu.'; }, { 'data-testid': 'db-empty-shop' }),
+      btn('Play a starter deck', '', () => app.showMenu(), { 'data-testid': 'db-empty-play' })));
+  function renderCards() { setHall(); cardsEl.replaceChildren(...(ownsNothing() ? [emptyNote()] : []), ...ALL.filter((c) => !c.disabled && !lockedFor(c.id) && matches(c)).map(tile)); fitRow(); }
   const slider = h('input', { type: 'range', id: 'cards-per-row', min: '2', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
   slider.addEventListener('input', () => setPerRow(+slider.value));
   const pickCmd = (id: string) => { cmdId = id; fCmd.set(CMD_NAMES[id]); renderCards(); renderDeck(); };

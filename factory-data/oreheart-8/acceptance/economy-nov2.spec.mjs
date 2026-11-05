@@ -242,7 +242,7 @@ test('AC650: the Shop shows the four packs (Oreheart, Junkpile, Gizmo, Deepforge
     await expect(packs.nth(i).locator('.shop-today')).toHaveText(/^\d+ opened today$/);
     await expect(packs.nth(i).locator('.shop-odds')).toHaveText('8 cards: 5 Common, 2 Uncommon, 1 Rare or better: Rare 85%, Ultra Rare 13%, Collector 2%');
   }
-  await expect(page.getByTestId('coin-chip').first()).toContainText('300');
+  await expect(page.getByTestId('coin-chip').first()).toContainText('500');
   await expect(packs.first().locator('.shop-free'), 'the free pack ribbon').toHaveText('FREE');
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.locator('.econ-screen')).toHaveCount(0);
@@ -253,14 +253,14 @@ test('AC651: buying in the Shop plays the opening for that pack (the free pack f
   await page.locator('.shop-pack[data-pack="goblin"] .shop-buy').click();
   await expect(page.locator('[data-screen="econ-pack"] .pko-stage')).toHaveAttribute('data-pack-art', 'goblin');
   await page.evaluate(() => { window.oreheart.packs.skip(); window.oreheart.packs.skip(); });
-  expect(await page.evaluate(() => window.oreheart.packs.coins())).toEqual({ coins: 300, free_packs: 0 });
+  expect(await page.evaluate(() => window.oreheart.packs.coins())).toEqual({ coins: 500, free_packs: 0 });
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.locator('[data-screen="econ-shop"]')).toBeVisible();
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) { // 500 coins (zero start, Nov 4) = five 100-coin packs
     await page.locator('.shop-pack[data-pack="standard"] .shop-buy').click();
     await expect(page.locator('[data-screen="econ-pack"]')).toBeVisible();
     await page.evaluate(() => { window.oreheart.packs.skip(); window.oreheart.packs.skip(); });
-    if (i < 2) await expect(page.getByRole('button', { name: /^Open another \(100\)$/ })).toBeVisible();
+    if (i < 4) await expect(page.getByRole('button', { name: /^Open another \(100\)$/ })).toBeVisible();
     await page.getByRole('button', { name: 'Done', exact: true }).click();
   }
   expect((await page.evaluate(() => window.oreheart.packs.coins())).coins).toBe(0);
@@ -268,7 +268,7 @@ test('AC651: buying in the Shop plays the opening for that pack (the free pack f
   await expect(buy).toBeDisabled();
   await expect(buy).toHaveText('Need 100 coins');
   await expect(page.locator('.shop-pack[data-pack="standard"] .shop-hint')).toHaveText('Finish quests to earn coins');
-  await expect(page.locator('.shop-pack[data-pack="standard"] .shop-today')).toHaveText('3 opened today');
+  await expect(page.locator('.shop-pack[data-pack="standard"] .shop-today')).toHaveText('5 opened today');
 });
 
 test('AC652: the Collection shows every card with "×N" for owned ones, unowned ones greyed with a lock, the counts line, and the faction / rarity / owned filters', async ({ page }) => {
@@ -446,18 +446,18 @@ async function setCoins(u, target) {
   expect(await coinsOf(u.id)).toBe(target);
 }
 
-test('AC657: a new player has 300 coins and the starter collection; the menu shows the coin chip and Shop / Collection / Quests', async ({ page }) => {
+test('AC657: a new player has 500 coins and owns no cards (zero start, Ken Nov 4); the menu shows the coin chip and Shop / Collection / Quests', async ({ page }) => {
   needDb();
   const u = await makeUser();
   const c = await loginApi(u);
-  expect(await coinsOf(u.id)).toBe(300);
-  expect(await ownedTotal(c)).toBeGreaterThan(0);
+  expect(await coinsOf(u.id)).toBe(500);
+  expect(await ownedTotal(c)).toBe(0);
   await gameToMenu(page, u);
   const bar = page.getByRole('group', { name: 'Coins and packs' });
-  await expect(bar.getByTestId('coin-chip')).toContainText('300');
+  await expect(bar.getByTestId('coin-chip')).toContainText('500');
   for (const b of ['Shop', 'Collection', 'Quests']) await expect(bar.getByRole('button', { name: b })).toBeVisible();
   await bar.getByRole('button', { name: 'Collection' }).click();
-  await expect(page.locator('.col-count')).toHaveText(/^You own [1-9]\d* cards/);
+  await expect(page.locator('.col-count')).toHaveText(/^You own 0 cards/);
 });
 
 test('AC658: shop_info lists the 4 active packs, each slot\'s odds summing to exactly 100%; the Shop screen shows them', async ({ page }) => {
@@ -471,7 +471,7 @@ test('AC658: shop_info lists the 4 active packs, each slot\'s odds summing to ex
     expect(p.slots.reduce((n, s) => n + s.count, 0)).toBe(8);
     for (const s of p.slots) expect(Object.values(s.odds).reduce((a, b) => a + b, 0), `${p.id} slot ${s.slot_no}`).toBe(10000);
   }
-  expect(data.coins).toBe(300);
+  expect(data.coins).toBe(500);
   await gameToMenu(page, u);
   await page.getByRole('group', { name: 'Coins and packs' }).getByRole('button', { name: 'Shop' }).click();
   await expect(page.locator('.shop-pack')).toHaveCount(4);
@@ -603,22 +603,37 @@ test('AC665: a 2-turn match report counts for nothing', async () => {
   for (const x of r.data.quests) expect(x.progress).toBe(q0.quests.find((y) => y.id === x.id).progress);
 });
 
-test('AC666: decks can only use the copies a player owns: a 5th copy of a card owned 4 times is refused by the server and the deck builder caps it at 4', async ({ page }) => {
+test('AC666: decks can only use the copies a player owns: a new player owns none, so a deck with one Shiv Rat is refused by the server and the deck builder allows 0', async ({ page }) => {
   needDb();
   const u = await makeUser();
   const c = await loginApi(u);
   const { data: rows } = await c.rpc('my_collection');
-  const owned = Object.fromEntries((rows || []).map((r) => [r.card_id, Number(r.count)]));
-  expect(owned['shiv-rat'], 'starter collection has 4 Shiv Rats').toBe(4);
+  expect((rows || []).length, 'zero start: nothing owned').toBe(0);
   const deck = (n) => Array(30).fill('goblin-scrounger').concat(Array(n).fill('shiv-rat'), Array(4).fill('goblin-grunt'), Array(4).fill('goblin-slinger'), Array(4).fill('skullbasher-rusher'), Array(4).fill('goblin-pebbler'));
-  const bad = await c.rpc('save_deck', { p_id: null, p_name: 'Too many rats', p_commander: 'grubnak', p_cards: deck(5) });
+  const bad = await c.rpc('save_deck', { p_id: null, p_name: 'Too many rats', p_commander: 'grubnak', p_cards: deck(1) });
   expect(bad.error).not.toBeNull();
-  expect(bad.error.message).toMatch(/you own 4 of Shiv Rat/i);
+  expect(bad.error.message).toMatch(/you own 0 of /i);
   await gameToMenu(page, u);
-  await expect.poll(() => page.evaluate(() => window.oreheart.packs.deckLimit('shiv-rat')), { timeout: 10000 }).toMatchObject({ owned: 4 });
-  const lim = await page.evaluate(() => window.oreheart.packs.deckLimit('shiv-rat'));
-  expect(lim.limit).toBeLessThanOrEqual(4);
-  expect(lim.limit).toBe(Math.min(4, lim.copyLimit));
+  await expect.poll(() => page.evaluate(() => window.oreheart.packs.deckLimit('shiv-rat')), { timeout: 10000 }).toMatchObject({ owned: 0, limit: 0 });
+});
+
+test('AC674: zero start in the Deck Builder: with no cards of your own it says so in plain words, Auto-fill adds nothing you do not own, and the Shop is one tap away', async ({ page }) => {
+  await openEcon(page, 'shop'); // loads the economy module and its test hooks
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.locator('[data-screen=econ-shop]')).toHaveCount(0);
+  expect(await page.evaluate(() => window.oreheart.packs.setOwned({}))).toBe(true);
+  for (const w of await page.locator('.overlay.welcome').all()) await w.evaluate((e) => e.remove());
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  const note = page.getByTestId('db-empty');
+  await expect(note).toBeVisible();
+  await expect(note).toContainText(/empty/i);
+  await expect(note).toContainText(/starter decks/i);
+  await expect(page.locator('.db-tile.unowned').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Auto-fill' }).click();
+  await expect.poll(() => page.locator('.db-list li').count()).toBeLessThanOrEqual(20); // only free crystals could go in, never an unowned card
+  expect(await page.evaluate(() => [...document.querySelectorAll('.db-list li')].map((li) => li.textContent).filter((t) => !/Shard|Geode|Cluster|Motherlode|Heart/i.test(t)))).toEqual([]);
+  await page.getByTestId('db-empty-shop').click();
+  await expect(page.locator('[data-screen=econ-shop]')).toBeVisible();
 });
 
 // ---- Gauge's list (Nov 2)

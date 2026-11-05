@@ -9,4 +9,6 @@ export const net = {
   decks: [] as SavedDeck[],
   saveDeck: (async () => { throw new Error('offline'); }) as (id: string | undefined, d: SavedDeck) => Promise<void>,
   removeDeck: (async () => { throw new Error('offline'); }) as (id: string) => Promise<void>,
+  /** opens the Shop from anywhere (set once the economy screens are wired); null offline */
+  openShop: null as (() => void) | null,
 };
