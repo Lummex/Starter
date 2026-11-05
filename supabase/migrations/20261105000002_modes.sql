@@ -163,7 +163,8 @@ create function private.assert_referee() returns void
 language plpgsql set search_path = '' as $$
 begin
   if coalesce(auth.jwt() ->> 'role', '') <> 'service_role' and coalesce(current_setting('role', true), '') not in ('service_role', 'postgres')
-     and not coalesce((select rolsuper from pg_roles where rolname = session_user), false) then -- the local test copy runs as its owner
+     and not coalesce((select rolsuper from pg_roles where rolname = session_user), false) -- the local test copy runs as its owner
+     and current_user <> 'postgres' then -- ... and on a local Supabase the tests run as postgres (an API request never does: it is anon, authenticated or service_role)
     raise exception 'referee only' using errcode = '42501';
   end if;
 end $$;
