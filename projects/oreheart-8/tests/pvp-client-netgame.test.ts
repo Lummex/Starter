@@ -121,6 +121,42 @@ describe('NetGame acts', () => {
     await new Promise((r) => setTimeout(r, 60));
     expect(srv.calls.filter((c) => c.op === 'act').length).toBe(0);
   });
+  it('shows an own summon at once (optimistic) and treats the server\'s view of that move as a refresh, not a replay', async () => {
+    const s = deployState();
+    const summon = legalActions(viewFor(s, 'player')).find((a: any) => a.type === 'summon');
+    expect(summon).toBeTruthy();
+    let answer: () => any = () => null;
+    const srv = fakeServer((op) => (op === 'act' ? answer() : { ok: true }));
+    const g = new NetGame(srv.t, 'm1', makeView(s, 1));
+    const seen: any[][] = [];
+    g.subscribe((_st, ev) => seen.push(ev));
+    const handBefore = g.state.players.player.hand.length;
+    answer = () => ({ ok: true, view: makeView(JSON.parse(JSON.stringify(g.state)), 2, { events: [{ type: 'summonPending' }] }) });
+    const r = g.act(summon);
+    expect(r.ok).toBe(true);
+    expect(g.state.players.player.hand.length, 'the card left the hand before any answer').toBe(handBefore - 1);
+    expect(g.state.pendingResponse && g.state.pendingResponse.kind).toBe('summon');
+    expect(seen.length).toBe(1);
+    await flush(); await flush(); await flush();
+    expect(g.seq).toBe(2);
+    expect(seen.length).toBe(2);
+    expect(seen[1]).toEqual([{ type: 'sync' }]);
+  });
+  it('undoes an optimistic move when the server refuses it', async () => {
+    const s = deployState();
+    const summon = legalActions(viewFor(s, 'player')).find((a: any) => a.type === 'summon');
+    const srv = fakeServer((op) => (op === 'act' ? { ok: false, error: 'It is not your turn.', view: makeView(s, 1) } : { ok: true }));
+    const g = new NetGame(srv.t, 'm1', makeView(s, 1));
+    const errors: string[] = [];
+    g.onError = (m) => errors.push(m);
+    const handBefore = g.state.players.player.hand.length;
+    g.act(summon);
+    expect(g.state.players.player.hand.length).toBe(handBefore - 1);
+    await flush(); await flush(); await flush();
+    expect(g.state.players.player.hand.length, 'back as the server says').toBe(handBefore);
+    expect(g.state.pendingResponse).toBeNull();
+    expect(errors).toEqual(['It is not your turn.']);
+  });
   it('surrender goes to the forfeit op', async () => {
     const s = deployState();
     const srv = fakeServer((op) => (op === 'forfeit' ? { ok: true, view: makeView(s, 2, { status: 'over', result: { won: false, reason: 'surrender' } }) } : { ok: true }));

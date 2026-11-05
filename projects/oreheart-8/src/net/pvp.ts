@@ -115,6 +115,8 @@ export function friendlyError(e: unknown): string {
   return m || 'Something went wrong.';
 }
 /** Six letters A–Z without I and O (the server's room codes). Cleans what the player typed. */
+/** Own moves shown before the server answers: none of these can reveal a hidden card, a die or an answer. */
+const OPTIMISTIC = new Set(['summon', 'move', 'playCrystal', 'attack', 'minerUpgrade']);
 export const cleanCode = (s: string) => String(s || '').toUpperCase().replace(/[^A-HJ-NP-Z]/g, '').slice(0, 6);
 export const codeOk = (s: string) => /^[A-HJ-NP-Z]{6}$/.test(s);
 
@@ -166,6 +168,8 @@ export class NetGame {
   private sending = false;
   /** the state after the moves still on their way (used only to plan the next step of a standing order, never shown) */
   private predicted: any = null;
+  /** Nov 4 (Ken: PvP feels laggy): an own move that reveals nothing hidden is shown at once from the local rules; the server's view for that seq then only refreshes */
+  private optimisticSeq: number | null = null;
   private unwatch: (() => void) | null = null;
   private clock: any = null;
   private lastTickCall = 0;
@@ -189,15 +193,18 @@ export class NetGame {
     this.readClocks(v);
     if (!fresh && !force) return false;
     this.view = v;
+    const confirmsOwn = fresh && this.optimisticSeq === seq;
+    if (fresh) this.optimisticSeq = null;
     this.seq = seq;
     const st = clone(v.state);
+    st.pvp = true; // the local rules must open the Respond window the way the server does (the view drops the flag)
     const pend = st.pendingResponse;
     const key = pend && pend.responder === 'player' ? JSON.stringify([pend.kind, pend.actor, pend.creatureUid ?? null, pend.card?.uid ?? null, pend.target ?? null]) : '';
     if (key !== this.windowSeen) { this.windowSeen = key; this.windowSeenAt = key ? this.now() : null; }
     if (this.status === 'over' && st.phase !== 'over') { st.phase = 'over'; if (!st.winner && this.result) st.winner = this.result.won ? 'player' : 'opponent'; }
     this.state = st;
     if (!this.queue.length && !this.sending) this.predicted = null;
-    this.emit(fresh ? (Array.isArray(v.events) ? clone(v.events) : []) : [{ type: 'sync' }]);
+    this.emit(fresh && !confirmsOwn ? (Array.isArray(v.events) ? clone(v.events) : []) : [{ type: 'sync' }]);
     return true;
   }
   private readClocks(v: any) {
@@ -284,9 +291,15 @@ export class NetGame {
       a = { ...a, player: 'player' };
     }
     // the engine's own check on what this player can see (never shown; the server decides): catches double taps and stale clicks
-    let next: any = null;
-    try { const r: any = applyAction(clone(base), a); if (r && !r.ok) return { ok: false, error: r.error }; next = r && r.ok ? r.state : null; } catch { next = null; }
+    let next: any = null, shown: any[] = [];
+    try { const r: any = applyAction(clone(base), a); if (r && !r.ok) return { ok: false, error: r.error }; next = r && r.ok ? r.state : null; shown = r && r.ok ? r.events : []; } catch { next = null; }
     this.predicted = next;
+    // show it now: the rules ran here on what this player can see, nothing hidden is in it (dice, draws and answers only come from the server)
+    if (next && OPTIMISTIC.has(a.type) && !this.queue.length && !this.sending && base === this.state) {
+      this.optimisticSeq = this.seq + 1;
+      this.state = next;
+      this.emit(shown);
+    }
     this.queue.push(a);
     void this.pump();
     return { ok: true, events: [] };
@@ -322,6 +335,7 @@ export class NetGame {
     const error = String(r?.error || 'Refused');
     this.log({ action: a, ok: false, error, seq: this.seq });
     this.predicted = null;
+    this.optimisticSeq = null; // the view below (or a fresh read) puts the board back
     if (r && r.view) this.applyView(r.view, true); else await this.sync();
     return { ok: false, error };
   }

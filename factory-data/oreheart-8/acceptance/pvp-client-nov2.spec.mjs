@@ -424,6 +424,35 @@ test('AC671: a holder who clicks "Let it happen" at once looks the same as holdi
   await closeAll(a, b);
 });
 
+test('AC675: a placed unit stands on its square at once, see-through, on both screens, before the server or the other player has answered; it turns solid when the Respond window closes', async ({ browser }) => {
+  test.setTimeout(120000);
+  const { a, b } = await pair(browser);
+  await keepHands(a, b);
+  const [me, them] = await whoseTurn(a, b);
+  const summon = (await me.evaluate(async () => await window.oreheart.legalActions())).find((x) => x.type === 'summon');
+  expect(summon).toBeTruthy();
+  // act, then read the board in the SAME breath: no answer from anyone can have arrived yet
+  // (figuresNow reads the board this instant; getRenderStats waits for it to settle, which can be after the window)
+  const r = await me.evaluate((x) => { const r = window.oreheart.act(x); const figs = window.oreheart.figuresNow().filter((f) => f.uid === x.uid); const st = window.oreheart.getState(); return { r, figs, pend: !!st.pendingResponse, onBoard: st.board.creatures.some((c) => c.uid === x.uid) }; }, summon);
+  expect(r.r.ok).toBe(true);
+  expect(r.pend, 'the window opened locally at once: ' + JSON.stringify(r)).toBe(true);
+  expect(r.figs.length, 'the figure is already on the board').toBe(1);
+  expect(r.figs[0].ghost, 'see-through while the window is open: ' + JSON.stringify(r)).toBe(true);
+  expect(r.figs[0].row).toBe(summon.row); expect(r.figs[0].col).toBe(summon.col);
+  // the other player sees the arriving unit too (mirrored square), while their window is still open
+  const seenByThem = async () => them.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); const st = window.oreheart.getState(); return f ? { ghost: f.ghost, row: f.row, col: f.col, pend: st.pendingResponse && [st.pendingResponse.row, st.pendingResponse.col], onBoard: st.board.creatures.some((c) => c.uid === uid) } : null; }, summon.uid);
+  await expect.poll(seenByThem, { timeout: 8000 }).not.toBeNull();
+  const got = await seenByThem();
+  expect(got, 'arriving unit on the other screen: ' + JSON.stringify(got)).toMatchObject({ ghost: true, row: 8 - summon.row, col: 14 - summon.col });
+  // the window closes (2 s hold): the unit is real and solid on both screens
+  await expect.poll(async () => (await view(me)).state.board.creatures.some((c) => c.uid === summon.uid), { timeout: 10000 }).toBe(true);
+  await expect.poll(() => me.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); return f && f.ghost; }, summon.uid), { timeout: 8000 }).toBe(false);
+  await expect.poll(() => them.evaluate((uid) => { const f = window.oreheart.figuresNow().find((f) => f.uid === uid); return f && f.ghost; }, summon.uid), { timeout: 8000 }).toBe(false);
+  const log = await hook(me, 'actLog');
+  expect(log.filter((e) => !e.ok)).toEqual([]);
+  await closeAll(a, b);
+});
+
 test('AC672: the deck list opens as a painted list, not the browser\'s, and picking one changes the deck', async ({ browser }) => {
   test.setTimeout(60000);
   const a = await openAs(browser, 'deck' + uniq());

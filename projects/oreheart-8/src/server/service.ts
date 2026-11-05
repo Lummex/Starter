@@ -207,9 +207,9 @@ export class PvpService {
       const seq = typeof body?.seq === 'number' ? body.seq : Number(body?.seq);
       const before = m.seq;
       const r = playerAction(m, user.userId, seq, body?.action, now, this.rules);
-      await this.store.logMove({ matchId: m.id, seq: before, userId: user.userId, action: body?.action ?? null, ok: r.ok, error: r.ok ? null : r.error ?? null, ms: Date.now() - t0 });
-      if (!r.ok) return { ok: false, error: r.error, tooSoonMs: r.tooSoonMs, view: viewFor(m, seat, []) };
-      const saved = await this.store.updateMatch(m, before);
+      const logged = this.store.logMove({ matchId: m.id, seq: before, userId: user.userId, action: body?.action ?? null, ok: r.ok, error: r.ok ? null : r.error ?? null, ms: Date.now() - t0 });
+      if (!r.ok) { await logged; return { ok: false, error: r.error, tooSoonMs: r.tooSoonMs, view: viewFor(m, seat, []) }; }
+      const [saved] = await Promise.all([this.store.updateMatch(m, before), logged]); // Nov 4: the log line rides alongside the save, one hop less
       if (!saved) {
         const fresh = await this.store.getMatch(m.id);
         return { ok: false, error: 'The match moved on; try again.', view: fresh ? viewFor(fresh, seat, []) : null };

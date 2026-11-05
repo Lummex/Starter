@@ -98,6 +98,15 @@ class SupabaseStore {
   }
 }
 
+// Ken's clock numbers change rarely: read once per half minute per instance instead of on every move
+let rulesCache: { at: number; rules: any } | null = null;
+async function cachedRules(store: SupabaseStore) {
+  if (rulesCache && Date.now() - rulesCache.at < 30_000) return rulesCache.rules;
+  const rules = await store.rules();
+  rulesCache = { at: Date.now(), rules };
+  return rules;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (req.method !== 'POST') return json(405, { ok: false, error: 'POST only' });
@@ -105,9 +114,9 @@ Deno.serve(async (req: Request) => {
   if (!/^Bearer\s+\S+/i.test(auth)) return json(401, { ok: false, error: 'not signed in' });
   // who is asking: the player's own token, checked by Auth; then the player door (ban, consent) as that player
   const asUser = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: auth } }, auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: who, error: whoErr } = await asUser.auth.getUser();
+  // Nov 4 (lag): the function runs at the edge near the player, the database far away, so every hop counts: sign-in check and player door together
+  const [{ data: who, error: whoErr }, gate] = await Promise.all([asUser.auth.getUser(), asUser.rpc('pvp_gate')]);
   if (whoErr || !who?.user) return json(401, { ok: false, error: 'not signed in' });
-  const gate = await asUser.rpc('pvp_gate');
   if (gate.error) return json(200, { ok: false, error: gate.error.message });
   const g: any = gate.data || {};
   const user: PlayerInfo = { userId: who.user.id, username: String(g.username || 'Player'), avatar: g.avatar ?? null };
@@ -118,7 +127,7 @@ Deno.serve(async (req: Request) => {
   let body: any = {};
   try { body = text ? JSON.parse(text) : {}; } catch { return json(400, { ok: false, error: 'bad JSON' }); }
   const store = new SupabaseStore(createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } }));
-  const service = new PvpService(store, { engineVersion: ENGINE_VERSION, rules: await store.rules(), summarize });
+  const service = new PvpService(store, { engineVersion: ENGINE_VERSION, rules: await cachedRules(store), summarize });
   const out = await service.handle(String(body.op || ''), body, user, Date.now());
   return json(200, out);
 });

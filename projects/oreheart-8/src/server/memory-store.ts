@@ -38,7 +38,7 @@ export class MemoryStore implements Store {
     this.views.set(m.id, clone(views));
     for (const seat of ['a', 'b'] as Seat[]) this.viewLog.push({ matchId: m.id, userId: m.players[seat].userId, seq: views[seat].seq });
   }
-  async logMove(mv: MoveLog) { this.moves.push(clone(mv)); }
+  async logMove(mv: MoveLog) { this.moves.push({ ...clone(mv), at: Date.now() } as any); }
   async activeMatchFor(userId: string) {
     let best: MatchRecord | null = null;
     for (const m of this.matches.values()) if (m.status === 'active' && (m.players.a.userId === userId || m.players.b.userId === userId) && (!best || m.createdAt > best.createdAt)) best = m;

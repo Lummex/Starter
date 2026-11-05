@@ -269,7 +269,7 @@ export function createBoardView(container: HTMLElement, low: boolean, arenaFacti
   // glowing crystal mines inside spiked palisades
   const mines: MineArt[] = [];
   const mineFx: MineFx[] = [];
-  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
+  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode) o.figuresNow = () => [...figs.values()].map((f) => ({ uid: f.uid, cardId: f.cardId, row: f.row, col: f.col, ghost: !!f.ghost, dying: !!f.dying })); /* checks: the board's figures this instant, no waiting */ if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
   for (let mi = 0; mi < CONFIG.mineCount; mi++) {
     const m = makeMine(low, mi);
     m.recolor('#ffffff');
@@ -463,7 +463,7 @@ const _embV = new THREE.Vector3();
   // creatures
   type Fig = {
     ringColor?: string; ringGreyed?: boolean; ringObj?: THREE.Object3D | null;
-    group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean;
+    group: THREE.Group; target: THREE.Vector3; born: number; bornAt?: number; dying: number; lunge: THREE.Vector3 | null; lungeT: number; owner: string; acted?: boolean; ghost?: boolean;
     uid: string; cardId: string; row: number; col: number; finished: boolean; mats: THREE.MeshStandardMaterial[]; parts: any; baseScale: number; c3d: C3D | null; lastT?: number; hitT: number; mineT: number; poke: { name: string; t: number } | null; upg: number; moving: number; shootT: number; knockT?: number; bowledT?: number; idleBreakAt?: number; idleBreakT?: number; fidgetAt?: number; fidgetUntil?: number; fidgetBrk?: boolean; yaw?: number; faceWant?: number; faceUntil?: number; faceTo?: number; bowl?: { t0: number; from: THREE.Vector3; to: THREE.Vector3 } | null;
     /** Oct 30: squares still to walk (one per step), running gait, knock-back flight, delayed hit flash, step-in length, when its blow lands */
     flight?: { t0: number; from: THREE.Vector3; to: THREE.Vector3; ms: number; h: number; fxT?: number; smokeT?: number } | null; squashT?: number; /** the Rocket Rider's hover / flight height this frame */ flyY?: number; path?: THREE.Vector3[]; run?: boolean; kb?: Knock | null; atkRole?: 'attack' | 'special'; atkMs?: number; abilT?: number; abilRole?: 'ability' | 'special'; abilMs?: number; kbClip?: { launch: number; dur: number; seeked: boolean } | null; hitAt?: number; lastBlowAt?: number; lungeDur?: number; blowAt?: number;
@@ -1022,10 +1022,24 @@ const _embV = new THREE.Vector3();
       if (k) k.gemMat.emissiveIntensity = hp <= 7 ? 0.5 : hp <= 14 ? 1.1 : 1.8;
     });
     const seen = new Set<string>();
-    for (const c of st.board.creatures) {
+    // Nov 4 (Ken: "when I put out a unit, it takes a long time"): in PvP a summon waits for the other player's Respond window, so the
+    // unit stands on its square at once as a see-through "arriving" figure (both players see it; the card is public already) and turns
+    // solid with its landing when the window closes. Its uid is the one the engine will give it, so the figure is simply kept.
+    const pend = st.pendingResponse;
+    const ghost = pend && pend.kind === 'summon' && pend.card && pend.row != null ? { uid: pend.card.uid, cardId: pend.card.cardId, owner: pend.actor, row: pend.row, col: pend.col, ghost: true, attack: CARDS[pend.card.cardId]?.attack, maxHealth: CARDS[pend.card.cardId]?.health } : null;
+    const setGhost = (f: Fig, on: boolean) => {
+      if (!!f.ghost === on) return;
+      f.ghost = on;
+      f.group.traverse((o: any) => { const m = o.material; if (!m || o.isSprite || o.name === 'acting-ring' || o.name === 'ring-halo') return; if (on) { m.userData.ghostT = m.transparent; m.userData.ghostO = m.opacity; m.transparent = true; m.opacity = 0.42; m.depthWrite = false; } else { m.transparent = !!m.userData.ghostT; m.opacity = m.userData.ghostO ?? 1; m.depthWrite = true; } });
+    };
+    for (const c of ghost ? [...st.board.creatures, ghost] : st.board.creatures) {
       seen.add(c.uid);
       let f = figs.get(c.uid);
       const tgt = world(c.row, c.col);
+      if (f && f.ghost && !c.ghost) { // the arriving unit is real now: solid, dust, the landing hop
+        setGhost(f, false);
+        f.born = now; f.bornAt = now; spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt');
+      }
       if (!f) {
         ensure3d(c.cardId); audio.voicePreload(c.cardId); // Oct 31: its voice lines load once it is on the board
         const m = makeFigure(c);
@@ -1034,10 +1048,12 @@ const _embV = new THREE.Vector3();
         scene.add(m.group);
         f = { group: m.group, target: tgt.clone(), born, bornAt: born || pendingBorn.get(c.uid) || 0, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, row: c.row, col: c.col, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0, c3d: (m.group as any).userData.c3d || null };
         figs.set(c.uid, f);
-        if (born) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }
+        if (born && !c.ghost) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }
+        if (c.ghost) { f.born = 0; f.bornAt = 0; setGhost(f, true); spawnFx('dust', tgt, 3); }
         // creatures keep their stored facing (set below every state update)
         f.yaw = facingYaw(c, c.owner); m.group.rotation.order = 'YXZ'; m.group.rotation.y = f.yaw;
       }
+      if (c.ghost) { f.target.copy(tgt); f.row = c.row; f.col = c.col; applyRing(f, c, true, st); continue; } // no ring, no moves, no status work while it is arriving
       if (f.target.distanceTo(tgt) > 0.01) { f.moving = now; if (f.group.position.distanceTo(tgt) < 6 && audible(f.group.position)) audio.play('step', CARDS[c.cardId].faction); /* Oct 31 (Brush): one footstep per move, none off screen */ }
       f.target.copy(tgt); f.row = c.row; f.col = c.col;
       f.faceWant = facingYaw(c, c.owner);
@@ -1170,6 +1186,7 @@ const _embV = new THREE.Vector3();
       }
     }
     if (blowAt) for (const f of figs.values()) if (f.kb && f.kb.knockMove && f.kb.t0 === now) { f.kb.t0 = blowAt; f.knockT = blowAt + 100; } // ability knocks land with the blow
+    for (const [uid, f] of figs) if (!seen.has(uid) && f.ghost) { scene.remove(f.group); figs.delete(uid); spawnFx('dust', f.group.position, 3); } // an arriving unit that was countered goes back to the hand quietly
     for (const [uid, f] of figs) if (!seen.has(uid) && !f.dying) {
       const ride = events.find((e) => e.type === 'abilityUsed' && e.uid === uid && (e.ability === 'slide' || e.ability === 'rocket')); // Oct 31: a sewer slide / rocket ride that ends in a blast plays out first
       const at = ride && f.c3d?.has?.('special') ? now + Math.max(600, (f.c3d.dur('special') || 1.5) * 1000) : blowAt ? blowAt + (strikers.has(uid) ? 320 : f.kb ? f.kb.fly + 180 : 180) : now;
@@ -1909,7 +1926,7 @@ const _embV = new THREE.Vector3();
             webgl: true, graphics: low ? 'low' : 'high', drawCalls: lastFrame.calls, triangles: lastFrame.tris,
             bloom: false, shadows: renderer.shadowMap.enabled, particles: false, arena: arenaInfo,
             unitRings: [...figs.values()].filter((f) => !f.dying).map((f) => { const rs = getRings(); return { uid: f.uid, side: f.owner, color: f.ringColor || '', greyed: !!f.ringGreyed, thickness: rs.thickness, glow: rs.glow, opacity: rs.opacity }; }),
-            figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ ...figureStats(f), uid: f.uid, cardId: f.cardId, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb), bubble: !!bubbles.get(f.uid)?.on, bubblePops: bubblePops.get(f.uid) || 0, bubbleColor: bubbles.get(f.uid)?.hex || '' })),
+            figures: [...figs.values()].filter((f) => !f.dying).map((f) => ({ ...figureStats(f), uid: f.uid, cardId: f.cardId, ghost: !!f.ghost, model: f.finished ? 'finished' : 'placeholder', bomb: !!(f.group && f.group.userData && f.group.userData.bomb), bubble: !!bubbles.get(f.uid)?.on, bubblePops: bubblePops.get(f.uid) || 0, bubbleColor: bubbles.get(f.uid)?.hex || '' })),
             creatureAnimLog: creatureAnimLog.map((e) => ({ ...e })),
             projectiles: proj.active(), projectileLog: proj.log(), attackLog: attackLog.map((x) => ({ ...x })), aimLog: aimLog.map((x) => ({ ...x })), aimNow: aimNow(),
             canvas: canvasInfo(),
