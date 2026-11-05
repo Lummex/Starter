@@ -63,7 +63,7 @@ html body .econ-screen .shop-pack .net-btn{padding-inline:calc(var(--sv-cap) * .
 .col-zoom .col-big>.ohcard{position:absolute;inset:0}
 /* Upgraded cards (Nov 5): the tier tag on a tile, and the Upgrade panel beside the close-up (silver kit, no gold) */
 .col-tier{position:absolute;left:-3px;bottom:-3px;z-index:2;padding:1px 7px;color:#eef2f7;font:800 .72rem/1.5 Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;background:linear-gradient(#3a4254,#161a25);border:1px solid #aab2bf;border-radius:5px;box-shadow:0 1px 4px #0009}
-.col-tier[data-tier="3"]{border-color:#6fc3ff}.col-tier[data-tier="4"]{border-color:#c58cff}.col-tier[data-tier="5"]{border-color:#ffb347}
+.col-tier[data-tier="2"]{border-color:#5ad86a}.col-tier[data-tier="3"]{border-color:#6fc3ff}.col-tier[data-tier="4"]{border-color:#c58cff}.col-tier[data-tier="5"]{border-color:#ffb347}
 .col-zoom.with-upg{cursor:default}
 .col-zoom.with-upg .col-big{display:grid;grid-template-columns:calc(min(86vh,640px) * 420 / 624) minmax(300px,380px);gap:18px;aspect-ratio:auto;width:auto;max-width:96vw;align-items:stretch}
 .col-zoom.with-upg .col-big>.ohcard{position:relative;inset:auto;height:100%;width:100%;flex:none;cursor:zoom-out}
@@ -75,7 +75,7 @@ html body .econ-screen .shop-pack .net-btn{padding-inline:calc(var(--sv-cap) * .
 .col-upg-row.keep{border-color:#dfe6f0;background:#242a38}
 .col-upg-row.picked{border-color:#6fc3ff}
 .col-upg-stars{font-size:.8rem;letter-spacing:-1px;color:#777c86}
-.col-upg-stars[data-tier="2"]{color:#dfe6f0}.col-upg-stars[data-tier="3"]{color:#6fc3ff}.col-upg-stars[data-tier="4"]{color:#c58cff}.col-upg-stars[data-tier="5"]{color:#ffb347}
+.col-upg-stars[data-tier="1"]{color:#c9d1dc}.col-upg-stars[data-tier="2"]{color:#5ad86a}.col-upg-stars[data-tier="3"]{color:#6fc3ff}.col-upg-stars[data-tier="4"]{color:#c58cff}.col-upg-stars[data-tier="5"]{color:#ffb347}
 .col-upg-name{flex:1;font-size:.9rem}
 .col-upg-keeptag{font:800 .7rem/1.6 Arial,sans-serif;letter-spacing:.08em;padding:0 6px;border:1px solid #dfe6f0;border-radius:4px}
 .col-upg-keepbtn{padding:2px 8px;font-size:.75rem}
@@ -171,13 +171,13 @@ html body .econ-screen .shop-pack .net-btn{padding-inline:calc(var(--sv-cap) * .
 .pko-card.flipped .pko-new{opacity:1;transform:rotate(-10deg) scale(1)}
 /* an UPGRADED drop (Nov 5): the tier tag swings in under the card, the glow is the tier's colour, the screen flashes with it */
 .pko-upg{position:absolute;left:50%;bottom:-7%;z-index:4;transform:translateX(-50%) scale(.2);opacity:0;padding:3px 10px;color:#08111f!important;-webkit-text-fill-color:#08111f!important;text-shadow:none!important;font:800 clamp(.62rem,1.5vh,.85rem) Arial,sans-serif;letter-spacing:.1em;border-radius:6px;background:#dfe6f0;border:1px solid #fff;box-shadow:0 2px 8px #000a;transition:opacity .35s .55s,transform .45s .55s cubic-bezier(.2,1.6,.4,1);white-space:nowrap}
-.pko-upg[data-tier="3"]{background:#6fc3ff}.pko-upg[data-tier="4"]{background:#c58cff}.pko-upg[data-tier="5"]{background:#ffb347}
+.pko-upg[data-tier="2"]{background:#5ad86a}.pko-upg[data-tier="3"]{background:#6fc3ff}.pko-upg[data-tier="4"]{background:#c58cff}.pko-upg[data-tier="5"]{background:#ffb347}
 .pko-card.flipped .pko-upg{opacity:1;transform:translateX(-50%) scale(1)}
-.pko-card.pko-upgraded .pko-glow{display:block;box-shadow:0 0 0 2px #dfe6f0,0 0 22px 6px #dfe6f0aa}
+.pko-card.pko-upgraded .pko-glow{display:block;box-shadow:0 0 0 2px #5ad86a,0 0 22px 6px #5ad86aaa}
 .pko-card.pko-upgraded[data-tier="3"] .pko-glow{box-shadow:0 0 0 2px #6fc3ff,0 0 26px 8px #6fc3ffaa}
 .pko-card.pko-upgraded[data-tier="4"] .pko-glow{box-shadow:0 0 0 2px #c58cff,0 0 30px 10px #c58cffbb}
 .pko-card.pko-upgraded[data-tier="5"] .pko-glow{box-shadow:0 0 0 2px #ffb347,0 0 36px 12px #ffb347cc}
-.pko-flash-upg{background:#dfe6f0}.pko-flash-upg[data-tier="3"]{background:#6fc3ff}.pko-flash-upg[data-tier="4"]{background:#c58cff}.pko-flash-upg[data-tier="5"]{background:#ffb347}
+.pko-flash-upg{background:#5ad86a}.pko-flash-upg[data-tier="3"]{background:#6fc3ff}.pko-flash-upg[data-tier="4"]{background:#c58cff}.pko-flash-upg[data-tier="5"]{background:#ffb347}
 /* rarity glow, bigger for rarer cards (no gold): Common none, Uncommon soft silver rim, Rare blue-white bloom,
    Ultra Rare bright violet bloom with sparkles, Collector rainbow shimmer with a short burst */
 .pko-glow{position:absolute;inset:-3%;border-radius:7%;opacity:0;pointer-events:none;transition:opacity .5s .3s;will-change:opacity}

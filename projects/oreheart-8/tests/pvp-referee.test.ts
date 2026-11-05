@@ -406,6 +406,6 @@ describe('PvP referee', () => {
     const m = (await store.getMatch(matchId))!;
     expect(m.status).toBe('finished');
     expect(m.result).toEqual({ winner: 'a', reason: 'surrender' });
-    expect(r.view.result).toEqual({ won: false, reason: 'surrender' });
+    expect(r.view.result).toMatchObject({ won: false, reason: 'surrender' });
   });
 });

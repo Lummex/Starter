@@ -71,6 +71,7 @@ export interface BoardView {
   cellQuad(row: number, col: number): { x: number; y: number }[];
   screenRects(): any;
   setFlowMode(m: string): void;
+  setTierLookup?(fn: (cardId: string, owner: 'player' | 'opponent') => number): void;
   setFlowTarget?(side: string, el: HTMLElement | null): void;
   flowDestinations?(): any;
   mineBox?(row: number, col: number): { x: number; y: number; width: number; height: number };
@@ -270,7 +271,7 @@ export function createBoardView(container: HTMLElement, low: boolean, arenaFacti
   // glowing crystal mines inside spiked palisades
   const mines: MineArt[] = [];
   const mineFx: MineFx[] = [];
-  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode) o.commanderLook = () => ({ player: countMirrored(cmd.player.fig), opponent: countMirrored(cmd.opponent.fig) }); if (testMode) o.modelsReady = (ids: string[]) => ids.every((id) => !!creature3dReady(id)); if (testMode) o.figuresNow = () => [...figs.values()].map((f) => ({ uid: f.uid, cardId: f.cardId, row: f.row, col: f.col, ghost: !!f.ghost, dying: !!f.dying, real: !!f.c3d, shimmer: !!f.group.getObjectByName('arriving-shimmer'), born: !!f.born })); /* checks: the board's figures this instant, no waiting */ if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
+  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode) o.commanderLook = () => ({ player: countMirrored(cmd.player.fig), opponent: countMirrored(cmd.opponent.fig) }); if (testMode) o.unitTiers = () => [...figs.values()].map((f: any) => ({ uid: f.uid, tier: f.tier || 1, halo: !!f.group.getObjectByName('tier-halo') })); if (testMode) o.modelsReady = (ids: string[]) => ids.every((id) => !!creature3dReady(id)); if (testMode) o.figuresNow = () => [...figs.values()].map((f) => ({ uid: f.uid, cardId: f.cardId, row: f.row, col: f.col, ghost: !!f.ghost, dying: !!f.dying, real: !!f.c3d, shimmer: !!f.group.getObjectByName('arriving-shimmer'), born: !!f.born })); /* checks: the board's figures this instant, no waiting */ if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
   for (let mi = 0; mi < CONFIG.mineCount; mi++) {
     const m = makeMine(low, mi);
     m.recolor('#ffffff');
@@ -768,6 +769,17 @@ const _embV = new THREE.Vector3();
 
   const creatureAnimLog: { uid: string; cardId: string; anim: string; clip?: string; gait?: string; at?: number }[] = [];
   const asked = new Set<string>();
+  // Nov 5 (upgraded cards): the app says which cards are upgraded this match; a Legendary or Mythic unit keeps a coloured halo ring that breathes
+  let tierLookup: ((cardId: string, owner: 'player' | 'opponent') => number) | null = null;
+  const TIER_HALO: Record<number, number> = { 4: 0xc58cff, 5: 0xffb347 };
+  function addTierHalo(g: THREE.Group, tier: number, baseScale: number) {
+    const col = TIER_HALO[tier]; if (!col) return;
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.05, 8, 32), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.7, depthWrite: false }));
+    halo.name = 'tier-halo'; halo.rotation.x = Math.PI / 2; halo.position.y = 0.05; halo.scale.setScalar(1 / baseScale); halo.renderOrder = 3;
+    const glow = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.16, 8, 32), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.18, depthWrite: false }));
+    glow.name = 'tier-halo-glow'; halo.add(glow);
+    g.add(halo);
+  }
   const pendingBorn = new Map<string, number>(); // summon time carried over when a token is rebuilt as its 3D model
   // each goblin model is fetched once, only when a unit of it is on the board
   const respawn = new Set<string>(); // figures that were a shimmer: their real model spawns up when it arrives
@@ -1084,6 +1096,8 @@ const _embV = new THREE.Vector3();
         scene.add(m.group);
         f = { group: m.group, target: tgt.clone(), born, bornAt: born || pendingBorn.get(c.uid) || 0, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, row: c.row, col: c.col, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0, c3d: (m.group as any).userData.c3d || null };
         figs.set(c.uid, f);
+        (f as any).tier = tierLookup ? tierLookup(c.cardId, c.owner) : 1;
+        if ((f as any).tier >= 4) addTierHalo(f.group, (f as any).tier, m.baseScale);
         if (mirror && c.owner === 'opponent') applyMirrorLook(f.group, mirror, st.players.opponent.faction);
         if (born && !c.ghost) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }
         // Nov 4 (Ken: "when you set the card down, it spawns your unit up"): the drop IS the spawn, same as seeing the other player's card land; only the missing ring says the Respond window is open
@@ -1750,6 +1764,7 @@ const _embV = new THREE.Vector3();
         g.rotation.y = f.yaw;
       }
       if (!f.finished) { const sh = f.group.getObjectByName('arriving-shimmer') as THREE.Mesh | undefined; if (sh) (sh.material as THREE.MeshBasicMaterial).opacity = 0.24 + 0.14 * Math.sin(now / 170); }
+      if ((f as any).tier >= 4) { const hl = f.group.getObjectByName('tier-halo') as THREE.Mesh | undefined; if (hl) { (hl.material as THREE.MeshBasicMaterial).opacity = 0.55 + 0.3 * Math.sin(now / 260); hl.rotation.z = now / 2400; } }
       if (f.born) {
         const k = Math.min(1, (now - f.born) / 450);
         g.position.y = (1 - k) * -0.6;
@@ -1987,7 +2002,7 @@ const _embV = new THREE.Vector3();
     spellShards: (at: { row: number; col: number }, countered: string | null) => spellFx.shatter(at, countered),
     isBusy: () => boardBusy(performance.now()), swingMs: SWING_MS,
     topAt: (row: number, col: number) => thingBox(row, col),
-    is3D: true, setCarry, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setCarry, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setTierLookup(fn: (cardId: string, owner: 'player' | 'opponent') => number) { tierLookup = fn; }, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       spellFx.dispose(); proj.dispose();
       disposed = true; for (const ev of inputEvs) window.removeEventListener(ev, onInput, true); window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);
@@ -2015,6 +2030,7 @@ export function createFlatView(container: HTMLElement): BoardView {
     zoomAt() {}, panBy() {}, recenter() {}, getView: () => ({}), squareCenter() { return null; }, arenaDetails() { return null; }, piecePoses() { return {}; }, playEmote() {}, focusCommander() {}, cellQuad() { return []; },
     screenRects: () => ({ playerCommander: { x: 0, y: 0, width: 0, height: 0 }, opponentCommander: { x: 0, y: 0, width: 0, height: 0 }, board: { x: 0, y: 0, width: 0, height: 0 } }),
     setFlowMode() {},
+    setTierLookup() {},
     setFlowTarget() {},
     pulseFlow() {},
     cellRect(row, col) {

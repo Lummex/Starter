@@ -4,7 +4,7 @@ import { h, pictureOf, rarityKey } from '../ui/app';
 import { ohCardEl, TIER_NAMES, hasUpgradeArt } from '../ui/cardfmt';
 import { collectionCards, countLine } from './quest-summary';
 export { collectionCards, countLine };
-import { econShow, backBtn, coinChip, api, RARITIES, toast, tierOfWorth, DEFAULT_THRESHOLDS } from './economy';
+import { econShow, backBtn, coinChip, api, RARITIES, toast, tierOfWorth, worthOfTier, stepsFor } from './economy';
 import type { UpgradeInfo, CardCopy } from './economy';
 
 const idem = () => 'up-' + (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
@@ -81,7 +81,7 @@ function zoom(c: any, own: { n: number; best: number; upg: UpgradeInfo | null; o
   ov.addEventListener('click', (e) => { if (!(e.target as HTMLElement).closest('.col-upg')) close(); });
   document.addEventListener('keydown', onKey, true); // Escape closes it wherever the focus went (a disabled Combine button drops it)
   if (own) {
-    const th = own.upg?.thresholds || DEFAULT_THRESHOLDS;
+    const steps = stepsFor(c.rarity, own.upg?.steps); // the steps for this card's rarity
     const panel = h('div', { class: 'col-upg', 'data-testid': 'upgrade-panel', role: 'group', 'aria-label': 'Upgrade ' + c.name },
       h('h2', {}, 'Upgrade'), h('p', { class: 'col-upg-sub' }, 'Combine copies of this card into one. Its look and stars go up; its numbers never change.'));
     const list = h('div', { class: 'col-upg-list', role: 'list' });
@@ -106,10 +106,10 @@ function zoom(c: any, own: { n: number; best: number; upg: UpgradeInfo | null; o
       }));
       const t = copies.find((k) => k.id === keep);
       const spent = copies.filter((k) => picked.has(k.id)).reduce((s, k) => s + k.worth, 0);
-      const after = (t?.worth || 1) + spent, tierAfter = tierOfWorth(after, th), next = tierAfter < 5 ? th[String(tierAfter + 1)] : null;
+      const after = (t?.worth || 1) + spent, tierAfter = tierOfWorth(after, steps), next = tierAfter < 5 ? worthOfTier(tierAfter + 1, steps) : null;
       if (!t) status.textContent = 'Pick the copy to keep.';
       else if (t.tier >= 5) status.textContent = 'This one is Mythic already: the top.';
-      else if (!picked.size) status.textContent = `Worth ${t.worth}. ${next ? `${TIER_NAMES[tierOfWorth(t.worth, th) + 1]} at ${th[String(tierOfWorth(t.worth, th) + 1)]}.` : ''} Tick the copies to combine.`;
+      else if (!picked.size) status.textContent = `Worth ${t.worth}. ${next ? `${TIER_NAMES[tierOfWorth(t.worth, steps) + 1]} at ${worthOfTier(tierOfWorth(t.worth, steps) + 1, steps)}.` : ''} Tick the copies to combine.`;
       else status.textContent = `Worth ${t.worth} + ${spent} = ${after}: ${TIER_NAMES[tierAfter]}${tierAfter > t.tier ? '!' : ''}${next ? ` (${TIER_NAMES[tierAfter + 1]} at ${next})` : ''}`;
       btn.disabled = !t || t.tier >= 5 || !picked.size;
       preview.replaceChildren(t && tierAfter > t.tier ? ohCardEl({ ...c, tier: tierAfter }, pictureOf(c)) : h('span'));

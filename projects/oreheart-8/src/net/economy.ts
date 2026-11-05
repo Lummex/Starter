@@ -20,12 +20,16 @@ export interface PackInfo { id: string; name: string; blurb: string; price_coins
 export interface ShopInfo { packs: PackInfo[]; coins: number; free_packs: number }
 export interface PulledCard { card_id: string; rarity: string; is_new: boolean; tier?: number }
 /** Upgraded cards (Nov 5): thresholds = copies for tiers 2..5; cards = per card id its best tier, owned copies and upgraded copies. */
-export interface UpgradeInfo { thresholds: Record<string, number>; drop_bp: Record<string, number>; drop_tiers: Record<string, number>; cards: Record<string, { best: number; owned: number; upgraded: number }> }
+export interface UpgradeInfo { steps: Record<string, number[]>; drop_bp: Record<string, number>; drop_tiers: Record<string, number>; cards: Record<string, { best: number; owned: number; upgraded: number }> }
 export interface CardCopy { id: string; tier: number; worth: number; since: string }
 export interface UpgradeResult { event_id: string; target: string; card_id: string; spent: number; worth_before: number; worth_after: number; tier_before: number; tier_after: number; next_worth: number | null; repeat: boolean }
 export const TIER_NAMES = ['', 'Original', 'Enhanced', 'Overcharged', 'Legendary', 'Mythic'];
-export const DEFAULT_THRESHOLDS: Record<string, number> = { '2': 2, '3': 5, '4': 10, '5': 20 };
-export const tierOfWorth = (worth: number, th: Record<string, number> = DEFAULT_THRESHOLDS) => { for (let t = 5; t >= 2; t--) if (worth >= (th[String(t)] || Infinity)) return t; return 1; };
+/** Extra copies per step (Enhanced, Overcharged, Legendary, Mythic) by rarity (Ken and Forge, Nov 5); the server's setting upgrade_steps is the truth */
+export const DEFAULT_STEPS: Record<string, number[]> = { Common: [5, 15, 30, 50], Uncommon: [4, 12, 24, 40], Rare: [2, 4, 7, 14], 'Ultra Rare': [1, 2, 3, 4], Collector: [1, 1, 1, 1] };
+export const stepsFor = (rarity: string, steps: Record<string, number[]> = DEFAULT_STEPS) => steps[rarity] || steps.Common || DEFAULT_STEPS.Common;
+/** worth needed for a tier: 1 + the steps so far */
+export const worthOfTier = (tier: number, steps: number[]) => (tier <= 1 ? 1 : 1 + steps.slice(0, Math.min(4, tier - 1)).reduce((a, b) => a + b, 0));
+export const tierOfWorth = (worth: number, steps: number[]) => { for (let t = 5; t >= 2; t--) if (worth >= worthOfTier(t, steps)) return t; return 1; };
 export interface OpenResult { opening_id: string; pack_type: string; price_paid: number; free: boolean; cards: PulledCard[]; coins_after: number; free_packs_after: number; odds: PackSlot[] }
 export interface Quest { id: string; quest_id: string; name: string; text: string; tier: 'easy' | 'medium' | 'hard'; reward: number; progress: number; target: number; done: boolean; expires_on: string }
 export interface QuestsInfo { quests: Quest[]; reroll_left: number; streak_days: number; free_packs: number; today: string }
@@ -75,7 +79,9 @@ function stubInit() {
 }
 const pickOf = (pool: any[], n: number) => pool[Math.floor(Math.random() * pool.length) % Math.max(1, n)];
 let stubUid = 0;
-function stubCopy(id: string, tier = 1) { (STUB.copies[id] ||= []).push({ id: 'stub-c' + (++stubUid), tier, worth: tier > 1 ? DEFAULT_THRESHOLDS[String(tier)] : 1, since: new Date().toISOString() }); }
+const STUB_STEPS: Record<string, number[]> = { ...DEFAULT_STEPS, Common: [1, 3, 5, 10] }; // the test page keeps Commons quick to combine (the real numbers come from the server)
+const stubSteps = (id: string) => stepsFor(((CARDS as any)[id] || {}).rarity || 'Common', STUB_STEPS);
+function stubCopy(id: string, tier = 1) { (STUB.copies[id] ||= []).push({ id: 'stub-c' + (++stubUid), tier, worth: worthOfTier(tier, stubSteps(id)), since: new Date().toISOString() }); }
 function stubCopies(id: string): CardCopy[] { const n = STUB.owned[id] || 0; const list = (STUB.copies[id] ||= []); while (list.length < n) stubCopy(id); return list; }
 function stubRoll(pack: PackInfo, force?: string): PulledCard[] {
   const pool = Object.values(CARDS as any).filter((c: any) => !c.disabled && (c.type === 'creature' || c.type === 'spell') && (!pack.faction || c.faction === pack.faction || c.faction === 'any')) as any[];
@@ -131,7 +137,7 @@ export const api = {
       stubInit();
       const cards: UpgradeInfo['cards'] = {};
       for (const id of Object.keys(STUB.owned)) { const cs = stubCopies(id); if (cs.length) cards[id] = { best: Math.max(...cs.map((c) => c.tier)), owned: cs.length, upgraded: cs.filter((c) => c.tier > 1).length }; }
-      return { thresholds: { ...DEFAULT_THRESHOLDS }, drop_bp: { Common: 200, Uncommon: 100, Rare: 50, 'Ultra Rare': 20, Collector: 5 }, drop_tiers: { '2': 8000, '3': 1500, '4': 400, '5': 100 }, cards };
+      return { steps: JSON.parse(JSON.stringify(STUB_STEPS)), drop_bp: { Common: 200, Uncommon: 100, Rare: 50, 'Ultra Rare': 20, Collector: 5 }, drop_tiers: { '2': 8000, '3': 1500, '4': 400, '5': 100 }, cards };
     }
     return await rpc<UpgradeInfo>('my_upgrade_info');
   },
@@ -149,9 +155,9 @@ export const api = {
       if (!srcs.length) throw new Error('Pick at least one copy to combine.');
       if (t.tier >= 5) throw new Error('That card is already Mythic.');
       const before = { worth: t.worth, tier: t.tier };
-      t.worth += srcs.reduce((s, c) => s + c.worth, 0); t.tier = tierOfWorth(t.worth);
+      t.worth += srcs.reduce((s, c) => s + c.worth, 0); t.tier = tierOfWorth(t.worth, stubSteps(id));
       STUB.copies[id] = list.filter((c) => !srcs.includes(c)); STUB.owned[id] = STUB.copies[id].length;
-      return { event_id: 'stub-e' + (++stubUid), target, card_id: id, spent: srcs.length, worth_before: before.worth, worth_after: t.worth, tier_before: before.tier, tier_after: t.tier, next_worth: t.tier < 5 ? DEFAULT_THRESHOLDS[String(t.tier + 1)] : null, repeat: false };
+      return { event_id: 'stub-e' + (++stubUid), target, card_id: id, spent: srcs.length, worth_before: before.worth, worth_after: t.worth, tier_before: before.tier, tier_after: t.tier, next_worth: t.tier < 5 ? worthOfTier(t.tier + 1, stubSteps(id)) : null, repeat: false };
     }
     return await retryOnce(() => rpc<UpgradeResult>('upgrade_card', { p_target: target, p_sources: sources, p_idem_key: idemKey }));
   },

@@ -24,6 +24,8 @@ export type MatchMode = 'friend' | 'ranked' | 'unranked' | 'practice';
 export interface MatchRecord {
   id: string;
   mode?: MatchMode;       // Nov 5: friend (code), ranked / unranked (queue), practice (code, nothing paid or counted)
+  tiers?: Record<Seat, Record<string, number>>; // Nov 5: each player's upgraded cards (card id -> best tier owned), public to both
+  rating?: Record<Seat, { before: number; after: number }>; // Nov 5: a ranked match's rating change, once the store paid it out
   roomCode: string | null;
   players: Record<Seat, PlayerInfo>;
   decks: Record<Seat, DeckChoice>;
@@ -44,7 +46,8 @@ export interface View {
   deadline: string | null; respondDeadline: string | null;
   bank: { me: number; them: number }; timeouts: { me: number; them: number };
   names: { me: string; them: string }; avatars: { me: string | null; them: string | null };
-  result: null | { won: boolean; reason: string };
+  result: null | { won: boolean; reason: string; mode?: string; rating?: { before: number; after: number } };
+  tiers?: { me: Record<string, number>; them: Record<string, number> };
 }
 
 export const seatSide = (seat: Seat): Side => (seat === 'a' ? 'player' : 'opponent');
@@ -242,7 +245,8 @@ export function viewFor(m: MatchRecord, seat: Seat, events: any[]): View {
     deadline: iso(m.clock.deadline), respondDeadline: iso(m.clock.respondDeadline),
     bank: { me: m.clock.bank[seat], them: m.clock.bank[them] }, timeouts: { me: m.clock.timeouts[seat], them: m.clock.timeouts[them] },
     names: { me: m.players[seat].username, them: m.players[them].username }, avatars: { me: m.players[seat].avatar, them: m.players[them].avatar },
-    result: m.result ? { won: m.result.winner === seat, reason: m.result.reason } : null,
+    result: m.result ? { won: m.result.winner === seat, reason: m.result.reason, mode: m.mode || 'friend', ...(m.rating && m.rating[seat] ? { rating: m.rating[seat] } : {}) } : null,
+    tiers: { me: (m.tiers && m.tiers[seat]) || {}, them: (m.tiers && m.tiers[them]) || {} },
   };
 }
 

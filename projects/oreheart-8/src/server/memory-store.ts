@@ -18,6 +18,7 @@ export class MemoryStore implements Store {
   /** every view written, newest last (the mock server's "realtime") */
   viewLog: { matchId: string; userId: string; seq: number }[] = [];
   queue = new Map<string, QueueEntry>();
+  tiers = new Map<string, Record<string, number>>(); // user -> card id -> tier (the mock's /debug/tier sets it)
   ratings = new Map<string, RankInfo>();
   private ids = 0;
   constructor(public rng: () => number = Math.random) {}
@@ -60,6 +61,7 @@ export class MemoryStore implements Store {
       a.games++; b.games++; if (sa === 1) { a.wins++; b.losses++; } else if (sa === 0) { b.wins++; a.losses++; }
       a.peak = Math.max(a.peak, a.rating); b.peak = Math.max(b.peak, b.rating);
       a.name = rankName(a.rating); b.name = rankName(b.rating);
+      return { rating: { a: { before: a.rating - d, after: a.rating }, b: { before: b.rating + d, after: b.rating } } };
     }
     return true;
   }
@@ -92,6 +94,7 @@ export class MemoryStore implements Store {
   }
   async queueLeave(userId: string) { this.queue.delete(userId); }
   async rankOf(userId: string) { return clone(this.rankRow(userId)); }
+  async tiersOf(userId: string, cards: string[] | null) { const t = this.tiers.get(userId) || {}; const out: Record<string, number> = {}; for (const [k, v] of Object.entries(t)) if (v > 1 && (!cards || cards.includes(k))) out[k] = v; return out; }
   newId() { return 'm' + String(++this.ids).padStart(4, '0'); }
   random() { return this.rng(); }
   /** the latest view written for a player in a match (what Realtime would have delivered) */

@@ -35,7 +35,7 @@ export interface Store {
   /** claims a waiting room for this guest and match in one step; false when someone else got there first (or it expired) */
   claimRoom(room: Room): Promise<boolean>;
   /** called when a match ends (rewards, stats, quests); idempotent on the store side; true when it went through (false = retry later) */
-  finished(m: MatchRecord, summaries: Summaries): Promise<boolean>;
+  finished(m: MatchRecord, summaries: Summaries): Promise<boolean | { rating?: Record<Seat, { before: number; after: number }> }>;
   newId(): string;
   random(): number; // [0,1) from a secure source
   // Nov 5 (modes): the ranked / unranked queue and the season ratings
@@ -44,6 +44,8 @@ export interface Store {
   queuePair(userId: string, now: number): Promise<{ mode: 'ranked' | 'unranked'; myRating: number; other: QueueEntry } | null>;
   queueLeave(userId: string): Promise<void>;
   rankOf(userId: string): Promise<RankInfo>;
+  /** Nov 5 (upgraded cards): the best tier this player owns of each of these cards (card id -> 2..5); {} when none */
+  tiersOf(userId: string, cards: string[] | null): Promise<Record<string, number>>;
 }
 
 export interface ServiceOptions {
@@ -174,6 +176,7 @@ export class PvpService {
     const seed = Math.floor(this.store.random() * 2147483647);
     const m = startMatch(id, room.code, { a: room.host, b: user }, { a: room.hostDeck, b: deck }, now, this.rules, seed, this.engineVersion);
     m.mode = room.mode === 'practice' ? 'practice' : 'friend';
+    await this.tiersFor(m);
     room.guest = user; room.guestDeck = deck; room.status = 'started'; room.matchId = id;
     if (!(await this.store.claimRoom(room))) fail('Someone else just joined that code.');
     await this.store.insertMatch(m);
@@ -202,9 +205,18 @@ export class PvpService {
     // the one who waited longer is seat a (the host side), like the maker of a code
     const m = startMatch(id, null, { a: pair.other.user, b: user }, { a: pair.other.deck, b: deck }, now, this.rules, seed, this.engineVersion);
     m.mode = pair.mode;
+    await this.tiersFor(m);
     await this.store.insertMatch(m);
     await this.store.putViews(m, viewsFor(m, [{ type: 'newMatch' }]));
     return { ok: true, matchId: id, mode: pair.mode, view: viewFor(m, 'b', [{ type: 'newMatch' }]) };
+  }
+
+  /** Nov 5: each player's upgraded cards for the match (looks only). Never stops a match from starting. */
+  private async tiersFor(m: MatchRecord) {
+    const cardsOf = (d: DeckChoice): string[] | null => (d.cards && d.cards.length ? d.cards : d.deckId && STARTER_DECKS[d.deckId] ? STARTER_DECKS[d.deckId] : null);
+    try {
+      m.tiers = { a: await this.store.tiersOf(m.players.a.userId, cardsOf(m.decks.a)), b: await this.store.tiersOf(m.players.b.userId, cardsOf(m.decks.b)) };
+    } catch { m.tiers = { a: {}, b: {} }; }
   }
 
   /** Loads the match, runs due timeouts, saves if anything changed, then `fn`. */
@@ -237,7 +249,9 @@ export class PvpService {
     const ok = await this.store.finished(m, { a: this.summarize(m.log, m.state, 'player'), b: this.summarize(m.log, m.state, 'opponent') });
     if (!ok) return;
     m.rewarded = true;
+    if (typeof ok === 'object' && ok.rating) m.rating = ok.rating; // Nov 5: a ranked match tells both players how their rating moved
     await this.store.updateMatch(m, m.seq);
+    if (m.rating) await this.store.putViews(m, viewsFor(m, []));
   }
 
   async act(body: any, user: PlayerInfo, now: number) {

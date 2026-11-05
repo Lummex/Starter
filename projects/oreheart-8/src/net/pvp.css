@@ -8,6 +8,7 @@
 .pvp-choice .net-btn{min-width:200px}
 .pvp-rank{margin:0 0 2px;color:#dfe6f0;font:600 .82rem/1.3 Arial,sans-serif;text-align:right;letter-spacing:.02em;text-shadow:0 1px 3px #000}
 .pvp-queue-info,.pvp-practice-note{color:#c9d1dc;max-width:46ch}
+.pvp-end-rating{color:#eef2f7;font-weight:700}
 .pvp-practice-note{border:1px solid #aab2bf;border-radius:8px;padding:6px 10px;background:#1b1f26cc}
 /* Commander + deck picker */
 .pvp-picker{display:flex;flex-direction:column;gap:8px;align-items:center}

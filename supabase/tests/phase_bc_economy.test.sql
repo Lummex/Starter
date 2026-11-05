@@ -337,13 +337,17 @@ select pg_temp.ok('every security definer function pins search_path',
                 and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')));
 
 -- ========== 15. Upgraded cards (Nov 5: looks only; worth = copies spent; append-only) ==========
-select pg_temp.ok('upgrades: settings exist with their defaults and are editable',
-  private.setting('upgrade_thresholds') = '{"2": 2, "3": 5, "4": 10, "5": 20}'::jsonb
+select pg_temp.ok('upgrades: settings exist with their defaults (steps by rarity) and are editable',
+  private.setting('upgrade_steps') -> 'Common' = '[5, 15, 30, 50]'::jsonb and private.setting('upgrade_steps') -> 'Collector' = '[1, 1, 1, 1]'::jsonb
   and (private.setting('upgrade_drop_bp') ->> 'Common')::int = 200 and (private.setting('upgrade_drop_tiers') ->> '2')::int = 8000
-  and 'upgrade_thresholds' = any (private.editable_settings()));
-select pg_temp.ok('upgrades: the tier follows the worth (2, 5, 10, 20 copies)',
-  private.tier_of_worth(1) = 1 and private.tier_of_worth(2) = 2 and private.tier_of_worth(4) = 2 and private.tier_of_worth(5) = 3
-  and private.tier_of_worth(19) = 4 and private.tier_of_worth(20) = 5 and private.tier_of_worth(99) = 5 and private.worth_of_tier(1) = 1 and private.worth_of_tier(4) = 10);
+  and 'upgrade_steps' = any (private.editable_settings()) and not exists (select 1 from public.settings where key = 'upgrade_thresholds'));
+select pg_temp.ok('upgrades: the tier follows the worth by rarity (Common 6 / 21 / 51 / 101, Collector 2 / 3 / 4 / 5, Rare 3 / 7 / 14 / 28)',
+  private.tier_of_worth(1, 'Common') = 1 and private.tier_of_worth(5, 'Common') = 1 and private.tier_of_worth(6, 'Common') = 2 and private.tier_of_worth(20, 'Common') = 2
+  and private.tier_of_worth(21, 'Common') = 3 and private.tier_of_worth(51, 'Common') = 4 and private.tier_of_worth(100, 'Common') = 4 and private.tier_of_worth(101, 'Common') = 5
+  and private.tier_of_worth(2, 'Collector') = 2 and private.tier_of_worth(5, 'Collector') = 5 and private.worth_of_tier(5, 'Rare') = 28 and private.worth_of_tier(1, 'Common') = 1
+  and private.worth_of_tier(3, 'Ultra Rare') = 4);
+-- the combine checks below use small Common steps (1 / 3 / 5 / 10: Enhanced at worth 2, Overcharged 5, Legendary 10, Mythic 20)
+update public.settings set value = value || '{"Common": [1, 3, 5, 10]}'::jsonb where key = 'upgrade_steps';
 select pg_temp.ok('open_pack: every dealt card carries a tier, and the instances have it (tier 1, worth 1 as a rule)',
   (select bool_and(c ? 'tier' and (c ->> 'tier')::int between 1 and 5) from o1, jsonb_array_elements(j -> 'cards') c)
   and (select count(*) from public.card_instances ci where ci.owner_id = :P1 and ci.origin = 'pack' and ci.tier = 1 and ci.worth = 1) >= 7);
@@ -359,6 +363,9 @@ select pg_temp.ok('upgrades: with the odds forced, the 5 Commons drop as Mythic 
   (select j::text from o5));
 update public.settings set value = '{"Common": 200, "Uncommon": 100, "Rare": 50, "Ultra Rare": 20, "Collector": 5}' where key = 'upgrade_drop_bp';
 update public.settings set value = '{"2": 8000, "3": 1500, "4": 400, "5": 100}' where key = 'upgrade_drop_tiers';
+select pg_temp.ok('pvp_tiers_of: the referee sees the best tier of each card a player owns (Side A: the five Mythic Commons)',
+  (select count(*) from jsonb_each(public.pvp_tiers_of(:P1, null)) e where (e.value #>> '{}')::int = 5) >= 1
+  and public.pvp_tiers_of(:P1, array['no-such-card']) = '{}'::jsonb);
 -- combining: Side B gets six Shiv Rats
 select private.card_grant(:P2, 'shiv-rat', 6, 'admin_grant', 'test-upg', null);
 create temp table rats as select id, row_number() over (order by created_at, id) as n from public.card_instances where owner_id = :P2 and card_id = 'shiv-rat' and status = 'owned' and origin_ref = 'test-upg';
@@ -380,7 +387,7 @@ select pg_temp.ok('upgrade_card: the same key again gives the same answer and sp
 select pg_temp.ok('the spent copy is out of the collection; my_upgrade_info shows best 2, one fewer owned, upgraded 1; my_card_copies lists them with tiers',
   (select count from pg_temp.collection_of(:P2) where card_id = 'shiv-rat') = (select c - 1 from rat0)
   and (select (r -> 'cards' -> 'shiv-rat' ->> 'best')::int = 2 and (r -> 'cards' -> 'shiv-rat' ->> 'owned')::int = (select c - 1 from rat0) and (r -> 'cards' -> 'shiv-rat' ->> 'upgraded')::int = 1
-         and (r -> 'thresholds' ->> '5')::int = 20 from pg_temp.json_as(:P2, 'aal1', 'select public.my_upgrade_info()') r)
+         and r -> 'steps' -> 'Common' = '[1, 3, 5, 10]'::jsonb from pg_temp.json_as(:P2, 'aal1', 'select public.my_upgrade_info()') r)
   and (select jsonb_array_length(r) = (select c - 1 from rat0) and (r -> 0 ->> 'tier')::int = 2 and (r -> 0 ->> 'worth')::int = 2 and (r -> 1 ->> 'tier')::int = 1
        from pg_temp.json_as(:P2, 'aal1', $q$ select public.my_card_copies('shiv-rat') $q$) r));
 select pg_temp.works('a second Enhanced from rats 3 and 4', :P2, 'aal1',
@@ -410,8 +417,13 @@ select pg_temp.refused('upgrade_card: a Mythic takes no more', :P2, 'aal1',
   format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-9-aaaaaaaa') $q$, (select id from rats where n = 1), (select id from rats where n = 6)), 'already Mythic');
 select pg_temp.ok('four upgrade events stored', (select count(*) from public.upgrade_events where user_id = :P2) = 4);
 select pg_temp.refused('upgrade_events: players cannot touch the table', :P2, 'aal1', format($q$ delete from public.upgrade_events where user_id = %L $q$, :P2), 'permission denied');
-select pg_temp.refused('settings: upgrade_thresholds must rise', :A1, 'aal2',
-  $q$ select public.admin_set_setting('upgrade_thresholds', '{"2": 2, "3": 2, "4": 10, "5": 20}', 'test') $q$, 'rise');
+select pg_temp.refused('settings: upgrade_steps needs four whole numbers per rarity', :A1, 'aal2',
+  $q$ select public.admin_set_setting('upgrade_steps', '{"Common": [5, 15, 30], "Uncommon": [4, 12, 24, 40], "Rare": [2, 4, 7, 14], "Ultra Rare": [1, 2, 3, 4], "Collector": [1, 1, 1, 1]}', 'test') $q$, 'four whole');
+select pg_temp.refused('settings: upgrade_steps needs every rarity', :A1, 'aal2',
+  $q$ select public.admin_set_setting('upgrade_steps', '{"Common": [5, 15, 30, 50]}', 'test') $q$, 'missing');
+select pg_temp.works('settings: admin sets the steps', :A1, 'aal2',
+  $q$ select public.admin_set_setting('upgrade_steps', '{"Common": [6, 15, 30, 50], "Uncommon": [4, 12, 24, 40], "Rare": [2, 4, 7, 14], "Ultra Rare": [1, 2, 3, 4], "Collector": [1, 1, 1, 1]}', 'tuning') $q$);
+select pg_temp.ok('... and a Common is now Enhanced at worth 7', private.worth_of_tier(2, 'Common') = 7);
 select pg_temp.refused('settings: upgrade_drop_tiers must add up to 10000', :A1, 'aal2',
   $q$ select public.admin_set_setting('upgrade_drop_tiers', '{"2": 8000, "3": 1500, "4": 400, "5": 1000}', 'test') $q$, '10000');
 select pg_temp.refused('settings: upgrade_drop_bp takes rarity names only', :A1, 'aal2',

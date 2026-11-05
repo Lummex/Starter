@@ -65,4 +65,15 @@ describe('modes: the ranked / unranked queue', () => {
     expect(plain.mode).toBe('friend');
     void legalActions;
   });
+  it("a match carries each player's upgraded cards (best tier per card), shown to both players as me / them", async () => {
+    const { store, svc } = rig();
+    store.tiers.set('u-alice', { 'goblin-grunt': 5, 'shiv-rat': 2, 'not-in-deck': 4 });
+    await svc.handle('queue', { mode: 'unranked', ...pick }, alice, T0);
+    const r = await svc.handle('queue', { mode: 'unranked', commander: 'borgo', deckId: 'dwarf-warband' }, bob, T0 + 500);
+    const m = (await store.getMatch(r.matchId))!;
+    expect(m.tiers!.a).toEqual({ 'goblin-grunt': 5, 'shiv-rat': 2 }); // only cards of the deck
+    expect(m.tiers!.b).toEqual({});
+    expect(r.view.tiers).toEqual({ me: {}, them: { 'goblin-grunt': 5, 'shiv-rat': 2 } }); // Bob's view
+    expect((await svc.handle('state', { matchId: r.matchId }, alice, T0 + 600)).view.tiers.me['goblin-grunt']).toBe(5);
+  });
 });

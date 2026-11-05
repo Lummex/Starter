@@ -1,5 +1,5 @@
 import { arenaOpts } from './arena-fx';
-import { mineEmblemUrl, ohCardEl, ohBackEl, commanderCard } from './cardfmt';
+import { mineEmblemUrl, ohCardEl, ohBackEl, commanderCard, TIER_NAMES } from './cardfmt';
 import { recapLines, type RecapTurn } from './recap';
 import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
@@ -932,7 +932,7 @@ export class App {
 
   showCard(cardId: string, creature?: any, hc?: any) {
     this.clearPops(); this.openHand(false, true);
-    const c = CARDS[cardId];
+    const c = this.withTier(CARDS[cardId], creature && creature.owner === 'opponent' ? 'opponent' : 'player');
     const rows: [string, string][] = [];
     rows.push(['Type', c.type === 'creature' ? `${FSYM(c.faction)} ${FACTIONS[c.faction].name} creature` : c.type === 'spell' ? ({ regular: 'Spell', instant: 'Instant', counter: 'Counterspell' } as any)[c.spellKind] : 'Crystal card']);
     rows.push(['Rarity', c.rarity]);
@@ -1151,6 +1151,36 @@ export class App {
     this.setGlow(smith, 'glow-swap');
     this.pick = { cells: all, done: (c) => { this.pick = null; this.clearGlow(); this.dropCard(hc, card, c); setTimeout(() => this.tuckHand(), 0); } };
     this.flash(card.type === 'spell' ? 'Tap a target' : 'Tap a glowing square');
+  }
+  /** Nov 5 (upgraded cards in a match): the tier of a card for a side, from the server's view (1 when none or offline). */
+  tierOf(cardId: string, owner: 'player' | 'opponent' = 'player'): number {
+    const ng: any = this.netGame;
+    const t = ng && ng.tiers ? ng.tiers[owner === 'player' ? 'me' : 'them'][cardId] : 0;
+    return Math.max(1, Math.min(5, Number(t) || 1));
+  }
+  withTier(c: any, owner: 'player' | 'opponent' = 'player'): any { if (!c) return c; const t = this.tierOf(c.id, owner); return t > 1 ? { ...c, tier: t } : c; }
+  /** Ken (Nov 5): "It should be impressive when someone drops a mythic out." The board darkens, the card slams in with lightning, KA-BOOM, its sound and
+   *  the player's name, all under 1.5 s and never in the way of the next play (an overlay with pointer-events none; the engine already moved on).
+   *  Smaller for lower tiers. In test mode without real FX only the marker element appears. */
+  tierEntrance(e: any, tier: number) {
+    const host = this.root.querySelector('.match') as El | null;
+    if (!host) return;
+    const c = CARDS[e.cardId];
+    const ng: any = this.netGame;
+    const name = e.owner === 'player' ? (ng?.names?.me || 'You') : (ng?.names?.them || 'Your friend');
+    const quiet = (this.test && !this.fxReal) || matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const ov = h('div', { class: 'tier-entrance' + (quiet ? ' quiet' : ''), 'data-tier': String(tier), 'data-owner': e.owner, 'data-card-id': e.cardId, 'aria-hidden': 'true' },
+      h('div', { class: 'te-dark' }),
+      tier >= 4 ? h('div', { class: 'te-bolt' }) : null, tier >= 5 ? h('div', { class: 'te-bolt te-bolt2' }) : null,
+      c ? h('div', { class: 'te-card' }, ohCardEl({ ...c, tier }, pictureOf(c))) : null,
+      h('div', { class: 'te-label' }, h('b', {}, name), ` plays a ${TIER_NAMES[tier].toUpperCase()}${tier === 5 ? '!' : ''}`));
+    host.append(ov);
+    const ms = tier === 5 ? 1450 : tier === 4 ? 1100 : tier === 3 ? 800 : 600;
+    if (!quiet) {
+      if (tier === 5) { audio.play('kaboom'); if (e.row) this.burst('KA-BOOM!', e.row, e.col); }
+      else if (tier === 4 && e.row) this.burst('WHAM!', e.row, e.col);
+    }
+    setTimeout(() => ov.remove(), quiet ? Math.min(ms, 700) : ms);
   }
   /** Deck builder close-up: the card fills the screen top to bottom; no Close button, no scrollbar; click anywhere or Esc dismisses. */
   closeUp(cardId: string, withViewer = false) {
@@ -1449,6 +1479,7 @@ export class App {
     r.view = null;
     try { this.view = createBoardView(r.board, this.low, this.arenaFaction || this.pickMatchArena()); } catch { this.view = null; } /* Oct 31: the picked faction's arena */
     if (!this.view) this.view = createFlatView(r.board);
+    (this.view as any).setTierLookup?.((id: string, owner: 'player' | 'opponent') => this.tierOf(id, owner)); // Nov 5: a Mythic's unit keeps a glow
     this.view.onViewChange = () => this.layoutSoon();
     for (let row = 1; row <= BH; row++) for (let col = 1; col <= BW; col++) {
       const c = h('div', { class: 'cell', 'data-row': row, 'data-col': col });
@@ -2738,7 +2769,7 @@ export class App {
   reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player'): Promise<void> {
     if ((this.test && !this.fxReal) || !this.r.board) return Promise.resolve();
     if (side === 'player') return Promise.resolve(); // round 11: only the opponent's played cards pop up
-    const c = CARDS[cardId];
+    const c = this.withTier(CARDS[cardId], side);
     if (!c) return Promise.resolve();
     let gone: () => void = () => {};
     const goneP = new Promise<void>((res) => { gone = res; });
@@ -3469,9 +3500,9 @@ export class App {
     if (hidden) return;
     let dealN = 0;
     for (const hc of shown) {
-      const c = CARDS[hc.cardId];
+      const c = this.withTier(CARDS[hc.cardId], 'player'); // Nov 5: an upgraded card shows its tier picture and stars in the hand too
       const cost = costOf(c);
-      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'} ${armedUids.has(hc.uid) ? 'armed' : ''}`, 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), 'data-cost': String(cost), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
+      const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'} ${armedUids.has(hc.uid) ? 'armed' : ''}`, 'data-tier': String(c.tier || 1), 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), 'data-cost': String(cost), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
         c.role === 'Smith' ? h('span', { class: 'smith-banner', 'aria-hidden': 'true' }, 'SMITH') : null,
         armedUids.has(hc.uid) ? h('span', { class: 'armed-badge', 'data-armed': '', 'aria-label': 'set as a counter' }, 'SET') : null,
@@ -4005,6 +4036,7 @@ export class App {
       }
       else if (e.type === 'summon') {
         if (e.owner === 'player') audio.play('cardPlay'); /* Oct 31 (Brush): own cards only; the summon sound follows 0.35 s later */
+        if (this.netGame) { const tr = this.tierOf(e.cardId, e.owner); if (tr > 1) this.tierEntrance(e, tr); } // Nov 5: an upgraded card makes an entrance, a Mythic a big one
       } else if (e.type === 'playCrystal') { if (e.player === 'player') audio.play('cardPlay'); }
       else if (e.type === 'minerUpgrade') {
         this.floatText(`+${e.attack ? '1 ATK ' : ''}+1 HP ✨`, 'heal', e.row, e.col);
@@ -4071,8 +4103,9 @@ export class App {
     const them = ng.names.them || 'your friend';
     const why = !res ? '' : res.reason === 'surrender' ? (res.won ? `${them} gave up.` : 'You gave up.') : res.reason === 'timeout' ? (res.won ? `${them} ran out of time.` : 'You ran out of time.') : res.reason === 'abandoned' ? 'Both of you left, so the match was dropped. Nobody won, and nobody gets coins for it.' : '';
     return h('div', { class: 'pvp-end', 'data-result': res ? (res.won ? 'won' : 'lost') : '' },
-      h('p', { class: 'pvp-end-vs' }, `Friend match vs ${them}`),
+      h('p', { class: 'pvp-end-vs' }, `${res && res.mode === 'ranked' ? 'Ranked' : res && res.mode === 'practice' ? 'Practice' : res && res.mode === 'unranked' ? 'Unranked' : 'Friend'} match vs ${them}`),
       why ? h('p', { class: 'pvp-end-why' }, why) : '',
+      res && res.rating ? h('p', { class: 'pvp-end-rating', 'data-testid': 'pvp-end-rating' }, `Rating ${res.rating.before} → ${res.rating.after} (${res.rating.after - res.rating.before >= 0 ? '+' : ''}${res.rating.after - res.rating.before})`) : '',
       res && res.coins ? h('p', { class: 'pvp-end-coins' }, `+${res.coins} coins`) : '');
   }
   showEnd(winner: string) {

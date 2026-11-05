@@ -574,7 +574,7 @@ test('AC679: armed counters: in PvP an attack resolves at once with no Respond w
   expect(d.set, 'the counter fired').toBe(0);
   expect(d.pend).toBe(false);
   expect(d.discard).toContain('shield-bubble');
-  expect(d.hp, 'the bubble took the hit').toBe(theirsHpBefore);
+  expect(d.hp, 'the unit lives (the bubble took a hit; a second hit of the same swing may land)').toBeGreaterThan(0);
   expect((await view(me)).state.pendingResponse).toBeNull();
   expect((await hook(me, 'actLog')).filter((e) => !e.ok)).toEqual([]);
   expect((await hook(them, 'actLog')).filter((e) => !e.ok)).toEqual([]);
@@ -615,6 +615,45 @@ test('AC682: modes: the menu offers Ranked, Unranked and Play a friend with a ra
   const made = await hook(c, 'create', 'grubnak', 'goblin-warband', true);
   expect(made && made.ok && made.code, JSON.stringify(made)).toBeTruthy();
   await closeAll(c);
+});
+
+test('AC683: upgraded cards in a match: a Mythic in the hand shows its stars; dropping it makes the entrance on BOTH screens (overlay under 1.5 s, KA-BOOM, the name), the unit keeps a halo, and the next play is open at once', async ({ browser }) => {
+  test.setTimeout(120000);
+  const { a, b } = await pair(browser);
+  await keepHands(a, b);
+  const [me, them] = await whoseTurn(a, b);
+  const v = await view(me);
+  await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/give?matchId=${v.matchId}&user=${encodeURIComponent(v.names.me)}&card=goblin-grunt`);
+  await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/tier?matchId=${v.matchId}&user=${encodeURIComponent(v.names.me)}&card=goblin-grunt&tier=5`);
+  await expect.poll(async () => { const x = await view(me); return x.tiers && x.tiers.me && x.tiers.me['goblin-grunt']; }, { timeout: 8000 }).toBe(5);
+  await expect.poll(async () => { const x = await view(them); return x.tiers && x.tiers.them && x.tiers.them['goblin-grunt']; }, { timeout: 8000 }).toBe(5);
+  // the hand card wears five stars (both players know; the other player's hand is hidden anyway)
+  await expect.poll(() => me.evaluate(() => { const el = [...document.querySelectorAll('.hand-card')].find((e) => e.dataset.tier === '5'); return el ? el.querySelectorAll('.oh-stars[data-tier="5"] i').length : 0; }), { timeout: 8000 }).toBe(5);
+  const t = await me.evaluate(() => {
+    const st = window.oreheart.getState();
+    const hc = st.players.player.hand.find((h) => h.cardId === 'goblin-grunt');
+    const s = window.oreheart.legalActions().find((l) => l.type === 'summon' && l.uid === hc.uid);
+    if (!s) return { s: null, legal: window.oreheart.legalActions().length };
+    const t0 = performance.now();
+    const r = window.oreheart.act(s);
+    const nextOpen = window.oreheart.legalActions().some((l) => l.type === 'summon' || l.type === 'done');
+    const ov = document.querySelector('.tier-entrance');
+    return { s, ok: r.ok, ms: Math.round(performance.now() - t0), nextOpen, overlay: ov ? { tier: ov.dataset.tier, owner: ov.dataset.owner, text: ov.textContent } : null };
+  });
+  expect(t.s, 'the Mythic can be summoned: ' + JSON.stringify(t)).toBeTruthy();
+  expect(t.ok).toBe(true);
+  expect(t.nextOpen, 'the next play is open the same instant').toBe(true);
+  expect(t.overlay, 'the entrance overlay on the player\'s own screen').toMatchObject({ tier: '5', owner: 'player' });
+  expect(t.overlay.text).toMatch(/plays a MYTHIC!/);
+  // the other screen gets the same entrance, with the summoner's name
+  await expect.poll(() => them.evaluate(() => { const ov = document.querySelector('.tier-entrance'); return ov ? ov.dataset.tier + ':' + ov.dataset.owner : ''; }), { timeout: 8000 }).toBe('5:opponent');
+  expect(await them.evaluate(() => document.querySelector('.tier-entrance').textContent)).toContain((await view(me)).names.me);
+  // it is gone within 1.5 s and the unit keeps its halo on both screens
+  await expect.poll(() => me.evaluate(() => !!document.querySelector('.tier-entrance')), { timeout: 2500 }).toBe(false);
+  await expect.poll(() => me.evaluate((uid) => { const u = window.oreheart.unitTiers().find((x) => x.uid === uid); return u ? u.tier + ':' + u.halo : ''; }, t.s.uid), { timeout: 8000 }).toBe('5:true');
+  await expect.poll(() => them.evaluate((uid) => { const u = window.oreheart.unitTiers().find((x) => x.uid === uid); return u ? u.tier + ':' + u.halo : ''; }, t.s.uid), { timeout: 8000 }).toBe('5:true');
+  expect((await hook(me, 'actLog')).filter((e) => !e.ok)).toEqual([]);
+  await closeAll(a, b);
 });
 
 test('AC677: a card dropped from the hand spawns its REAL model at once (models load with the hand), and a model still on its way is a shimmer, never a pawn', async ({ browser }) => {

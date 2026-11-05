@@ -68,6 +68,19 @@ const server = http.createServer(async (req, res) => {
     await store.putViews(m, viewsFor(m, []));
     return json(res, 200, { ok: true, uid: c.uid });
   }
+  if (url.pathname === '/debug/tier' && req.method === 'GET') { // checks only: one of a player's cards is an upgraded one (tier 2..5) in this match
+    const m = await store.getMatch(url.searchParams.get('matchId'));
+    const u = users.get(url.searchParams.get('user'));
+    const seat = m && u ? (m.players.a.userId === u.userId ? 'a' : m.players.b.userId === u.userId ? 'b' : null) : null;
+    if (!seat) return json(res, 200, { ok: false });
+    const tier = Math.max(1, Math.min(5, Number(url.searchParams.get('tier')) || 5)), card = url.searchParams.get('card');
+    m.tiers = m.tiers || { a: {}, b: {} }; m.tiers[seat][card] = tier;
+    const t = store.tiers.get(u.userId) || {}; t[card] = tier; store.tiers.set(u.userId, t);
+    const before = m.seq++;
+    await store.updateMatch(m, before);
+    await store.putViews(m, viewsFor(m, []));
+    return json(res, 200, { ok: true });
+  }
   if (url.pathname === '/debug/moves' && req.method === 'GET') return json(res, 200, { ok: true, moves: store.moves.filter((m) => m.matchId === url.searchParams.get('matchId')) });
   if (url.pathname !== '/match' || req.method !== 'POST') return json(res, 404, { ok: false, error: 'not found' });
   const user = userOf(req.headers['x-mock-user'] || url.searchParams.get('user'));

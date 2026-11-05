@@ -85,7 +85,8 @@ class SupabaseStore {
     const winner = m.result?.winner ? m.players[m.result.winner].userId : null;
     const { error } = await this.db.rpc('pvp_finish', { p_match: m.id, p_winner: winner, p_result: m.result?.winner ?? 'tie', p_end_reason: m.result?.reason ?? 'win', p_turns: m.state?.turn ?? 0, p_summary_a: summaries.a, p_summary_b: summaries.b });
     if (error) { console.error('pvp_finish', error.message); return false; } // idempotent; the service retries on the next call for this match
-    return true;
+    const ra = data?.a?.rating, rb = data?.b?.rating; // Nov 5: a ranked match's rating change, for the end screen
+    return ra && rb ? { rating: { a: { before: Number(ra.before), after: Number(ra.after) }, b: { before: Number(rb.before), after: Number(rb.after) } } } : true;
   }
   // Nov 5 (modes): the queue and the ratings live in the database (pvp_queue_* and pvp_rank_of are service-role doors)
   async queueJoin(user: any, mode: 'ranked' | 'unranked', deck: any, _now?: number) {
@@ -105,6 +106,11 @@ class SupabaseStore {
     const { data, error } = await this.db.rpc('pvp_rank_of', { p_user: userId });
     if (error) throw new Error(error.message);
     return data;
+  }
+  async tiersOf(userId: string, cards: string[] | null) {
+    const { data, error } = await this.db.rpc('pvp_tiers_of', { p_user: userId, p_cards: cards });
+    if (error) throw new Error(error.message);
+    return (data && typeof data === 'object') ? data : {};
   }
   async seen(matchId: string, userId: string) { const { error } = await this.db.rpc('pvp_seen', { p_match: matchId, p_user: userId }); if (error) console.error('pvp_seen', error.message); }
   newId() { return crypto.randomUUID(); }

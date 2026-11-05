@@ -158,7 +158,7 @@ export class NetGame {
   timeouts = { me: 0, them: 0 };
   names = { me: '', them: '' };
   avatars: { me: string | null; them: string | null } = { me: null, them: null };
-  result: null | { won: boolean; reason: string; coins?: number } = null;
+  result: null | { won: boolean; reason: string; coins?: number; mode?: string; rating?: { before: number; after: number } } = null;
   view: any = null;
   /** the screen shows these (a refused move, a lost connection) */
   onError: ((msg: string) => void) | null = null;
@@ -173,6 +173,8 @@ export class NetGame {
   /** Own moves shown on this screen before the server confirmed them, oldest first (Nov 4, boom boom boom: every drop shows at once, however many are still on their way). */
   private shownAhead: any[] = [];
   private inflight: { action: any; sentSeq: number } | null = null;
+  /** Nov 5 (upgraded cards): card id -> tier for my cards and my friend's, from the server's view; both players see both */
+  tiers: { me: Record<string, number>; them: Record<string, number> } = { me: {}, them: {} };
   private unwatch: (() => void) | null = null;
   private clock: any = null;
   private lastTickCall = 0;
@@ -196,6 +198,7 @@ export class NetGame {
     this.readClocks(v);
     if (!fresh && !force) return false;
     this.view = v;
+    if (v.tiers && typeof v.tiers === 'object') this.tiers = { me: v.tiers.me || {}, them: v.tiers.them || {} };
     // a view at or past the seq our in-flight move was sent against means the server took it (a refusal comes back through send() and resets everything)
     const inf = this.inflight;
     const confirmsOwn = fresh && !!inf && seq >= inf.sentSeq + 1 && this.shownAhead[0] === inf.action;
@@ -730,6 +733,7 @@ export function pvpHooks() {
     queue: (mode: 'ranked' | 'unranked', commander?: string, deckId?: string) => safe(() => { showQueue(mode); const w = document.querySelector('[data-testid="pvp-queue-status"]') as El, e = document.querySelector('[data-screen="pvp-queue"] .net-alert') as El, g = document.querySelector('[data-testid="pvp-queue-go"]') as El, c = document.querySelector('[data-testid="pvp-queue-cancel"]') as El; return startQueue(mode, pick(commander, deckId), w, e, g, c); }),
     leave: () => safe(() => { stopQueuePoll(); return transport().call('leave', {}); }),
     rank: () => safe(() => transport().call('rank', {})),
+    tiers: () => (current ? clone(current.tiers) : null),
     join: (code: string, commander?: string, deckId?: string) => safe(() => joinCode(code, pick(commander, deckId))),
     view: () => safe(() => (current && current.view ? clone({ ...current.view, seq: current.seq, status: current.status }) : null)),
     act: (a: any) => safe(() => (current ? current.actRemote(a) : none())),
