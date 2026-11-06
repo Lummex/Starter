@@ -13,7 +13,7 @@ setDiceMode('live'); // every die and shuffle is a fresh secure roll on the serv
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const CORS: Record<string, string> = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type', 'access-control-allow-methods': 'POST, OPTIONS' };
+const CORS: Record<string, string> = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type, x-region', // Nov 5: the game asks for the East US region (x-region); without it here a browser's preflight fails and every call reads "can't reach the server" 'access-control-allow-methods': 'POST, OPTIONS' };
 const json = (code: number, body: unknown) => new Response(JSON.stringify(body), { status: code, headers: { ...CORS, 'content-type': 'application/json' } });
 
 interface PlayerInfo { userId: string; username: string; avatar: string | null }
