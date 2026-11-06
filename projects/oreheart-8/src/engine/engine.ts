@@ -1128,6 +1128,13 @@ export function readyMiners(s: any, p: Side) {
 export function readyMinersAt(s: any, p: Side, x: { row: number; col: number }) {
   return readyMiners(s, p).filter((c: any) => cheb(c, x) <= 1).sort((a: any, b: any) => a.row - b.row || a.col - b.col);
 }
+/** Nov 5 (PvP mulligan at the same time): the opening-hand choices of one side while the other still picks. */
+export function mulliganActions(s: any, who: Side): any[] {
+  if (!s.pvp || s.phase !== 'mulligan' || s.mulliganDone[who]) return [];
+  const out: any[] = [{ type: 'mulligan', uids: [], player: who }];
+  if (canRedraw(s, who)) out.push({ type: 'mulligan', redraw: true, uids: [], player: who });
+  return out;
+}
 export function legalActions(s: any): any[] {
   if (s.phase === 'over' || !s.priority) return [];
   const who: Side = s.priority;
@@ -1308,7 +1315,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
   }
   const l = matchLegal(s, act);
   if (!l) return fail(`Illegal action: ${act.type}`);
-  const who: Side = s.priority;
+  const who: Side = (s.pvp && s.phase === 'mulligan' && act.type === 'mulligan' && (act.player === 'player' || act.player === 'opponent')) ? act.player : s.priority; // Nov 5 (PvP): both players pick their opening hand at the same time
   const pl = s.players[who];
   const hand = (uid: string) => pl.hand.find((h: any) => h.uid === uid);
   const takeHand = (uid: string) => pl.hand.splice(pl.hand.findIndex((h: any) => h.uid === uid), 1)[0];
@@ -1325,7 +1332,8 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       }
       ev.push({ type: 'mulligan', player: who, count: n, redraw: n > 0, mulligans: pl.mulligans || 0 });
       s.mulliganDone[who] = true;
-      if (who === 'player') s.priority = 'opponent';
+      if (s.pvp) { if (s.mulliganDone.player && s.mulliganDone.opponent) finishSetup(s, ev); else s.priority = s.mulliganDone.player ? 'opponent' : 'player'; } // Nov 5 (Ken): against a person both pick at the same time (either side acts with `player` set); priority points at whoever still has to pick
+      else if (who === 'player') s.priority = 'opponent';
       else finishSetup(s, ev);
       break;
     }

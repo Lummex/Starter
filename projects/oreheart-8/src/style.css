@@ -93,6 +93,7 @@ h2.section{font-size:1.5rem;color:var(--gold);margin:6px 0 14px;text-align:cente
 .hand-card.spell{background:linear-gradient(#3a2a5a,#22183a)}.hand-card.crystal{background:linear-gradient(#124a3a,#0d2a24)}
 .hand-card.unaff{filter:saturate(.4) brightness(.8)}
 /* Nov 5 (Ken: "impressive when someone drops a mythic out"): the entrance overlay. Transform and opacity only; pointer-events none, so the next play is never blocked. */
+.mull-wait{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:5500;padding:10px 18px;color:#eef2f7;background:#1b1f26e6;border:1px solid #aab2bf;border-radius:10px;font:700 clamp(1rem,2.6vh,1.4rem) Arial,sans-serif;letter-spacing:.04em;pointer-events:none;text-shadow:0 1px 3px #000}
 .tier-entrance{position:absolute;inset:0;z-index:6000;pointer-events:none;overflow:hidden}
 .tier-entrance .te-dark{position:absolute;inset:0;background:#000;opacity:0;animation:te-dark 1.4s ease-out forwards}
 .tier-entrance[data-tier="2"] .te-dark{animation-duration:.6s;--te-dark:.12}.tier-entrance[data-tier="3"] .te-dark{animation-duration:.8s;--te-dark:.22}.tier-entrance[data-tier="4"] .te-dark{animation-duration:1.1s;--te-dark:.38}.tier-entrance[data-tier="5"] .te-dark{--te-dark:.6}

@@ -4,9 +4,9 @@
 // off around its right end, throws foil shreds, then the eight cards slide out face down into a row; the player flips them.
 // Smooth on PC and phones: only transform and opacity move (Web Animations + CSS transitions), layout is read once per
 // phase, never per frame. prefers-reduced-motion shortens everything and drops most of the shreds.
-import { h, pictureOf, rarityKey } from '../ui/app';
+import { h, pictureOf, rarityKey, commanderPortrait } from '../ui/app';
 import { CARDS } from '../engine';
-import { ohCardEl, TIER_NAMES } from '../ui/cardfmt';
+import { ohCardEl, TIER_NAMES, cardFor, rarityLabel } from '../ui/cardfmt';
 import { audio } from '../ui/audio';
 import { packArtName, packArt } from './quest-summary';
 export { packArtName, packArt };
@@ -87,7 +87,7 @@ class Scene {
   private backBtn: HTMLButtonElement;
   private T: number;
   constructor(private o: Opts) {
-    this.cards = o.result.cards.slice(0, 8);
+    this.cards = o.result.cards.slice(0, 11); // Nov 5 (Ken): 11 cards (3 cheap Miners + the 8 as before)
     this.T = reduced() ? 0.3 : 1;
     const p = o.pack;
     const name = packArtName(p);
@@ -140,11 +140,12 @@ class Scene {
 
   private buildRow() {
     this.slots = this.cards.map((c, i) => {
-      const card: any = (CARDS as any)[c.card_id];
+      const card: any = cardFor(c.card_id); // Nov 5: pack Commanders too
       const rk = card ? rarityKey({ rarity: c.rarity || card.rarity }) : rarityKey({ rarity: c.rarity });
       const tier = Math.max(1, Math.min(5, Number(c.tier) || 1)); // Nov 5: an upgraded drop shows its tier art and stars
-      const front = card ? ohCardEl({ ...card, rarity: c.rarity || card.rarity, tier }, pictureOf(card)) : h('div', { class: 'pko-unknown' }, c.card_id);
-      const label = card ? `${card.name}, ${c.rarity}${tier > 1 ? ', ' + TIER_NAMES[tier] + ' (upgraded)' : ''}${c.is_new ? ', new' : ''}` : c.card_id;
+      const art = card && card.type === 'commander' && card.commanderId ? commanderPortrait(card.commanderId) : pictureOf(card);
+      const front = card ? ohCardEl({ ...card, rarity: c.rarity || card.rarity, tier }, art) : h('div', { class: 'pko-unknown' }, c.card_id);
+      const label = card ? `${card.name}, ${rarityLabel(c.rarity || card.rarity)}${tier > 1 ? ', ' + TIER_NAMES[tier] + ' (upgraded)' : ''}${c.is_new ? ', new' : ''}` : c.card_id;
       const slot = h('button', { type: 'button', class: `pko-card pko-r-${rk}`, 'data-i': String(i), 'data-card-id': c.card_id, 'data-rarity': rk, 'data-flipped': 'false', 'aria-label': `Card ${i + 1}, face down`, 'data-name': label, style: `--i:${i}` },
         h('div', { class: 'pko-glow', 'aria-hidden': 'true' }),
         h('div', { class: 'pko-flip' }, h('div', { class: 'pko-face pko-back' }, backFace()), h('div', { class: 'pko-face pko-front' }, front)),
@@ -304,7 +305,7 @@ class Scene {
     const best = Math.max(...this.slots.map((s) => RANK[s.dataset.rarity || 'common'] ?? 0));
     const news = this.cards.filter((c) => c.is_new).length;
     const bestTier = Math.max(...this.slots.map((s) => Number(s.dataset.tier) || 1));
-    this.hint.textContent = bestTier > 1 ? `An UPGRADED ${TIER_NAMES[bestTier]} card dropped! Combine copies in your Collection to make your own.` : best >= 4 ? 'A COLLECTOR card! Frame it. Guard it. Name it something heroic.' : best >= 3 ? 'Ultra Rare! The goblins are jealous.' : news ? `${news} new card${news === 1 ? '' : 's'} for your collection!` : 'More friends for your decks!';
+    this.hint.textContent = bestTier > 1 ? `An UPGRADED ${TIER_NAMES[bestTier]} card dropped! Combine copies in your Collection to make your own.` : best >= 4 ? 'A LEGENDARY card! Frame it. Guard it. Name it something heroic.' : best >= 3 ? 'Ultra Rare! The goblins are jealous.' : news ? `${news} new card${news === 1 ? '' : 's'} for your collection!` : 'More friends for your decks!';
     this.againBtn.textContent = this.o.againLabel();
     this.againBtn.hidden = !this.o.canAgain();
     this.againBtn.disabled = false;

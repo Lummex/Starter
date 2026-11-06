@@ -20,17 +20,16 @@ insert into public.roles (user_id, role, granted_by) select id, 'admin', id from
 \set P3 '''c0000000-0000-4000-8000-000000000003'''
 
 -- ========== 1. The cards copy and the rarity tiers ==========
-select pg_temp.ok('cards: 66 cards copied from cards.json',
-  (select count(*) from public.cards) = 66);
-select pg_temp.ok('cards: every card id is also in settings card_ids',
-  not exists (select 1 from public.cards c where not (c.id = any (private.setting_text_list('card_ids')))));
-select pg_temp.ok('cards: crystals and disabled cards are never in packs; every other card is',
-  (select bool_and(in_packs = (type in ('creature', 'spell') and not disabled)) from public.cards)
-  and (select count(*) from public.cards where in_packs) = 60);
+select pg_temp.ok('cards: 66 cards copied from cards.json + the 3 pack Commanders (Nov 5)',
+  (select count(*) from public.cards) = 69);
+select pg_temp.ok('cards: every deck card id is also in settings card_ids (Commanders are not deck cards)',
+  not exists (select 1 from public.cards c where c.type <> 'commander' and not (c.id = any (private.setting_text_list('card_ids')))));
+select pg_temp.ok('cards: disabled cards are never in packs; every other card (crystals too, Nov 5) is',
+  not exists (select 1 from public.cards where disabled and in_packs) and not exists (select 1 from public.cards where not disabled and not in_packs));
 select pg_temp.ok('rarities: the 5 tiers in order',
   (select array_agg(name order by sort) from public.rarities) = array['Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector']);
 select pg_temp.ok('player can read cards and rarities',
-  pg_temp.count_as(:P1, 'aal1', 'select * from public.cards') = 66 and pg_temp.count_as(:P1, 'aal1', 'select * from public.rarities') = 5);
+  pg_temp.count_as(:P1, 'aal1', 'select * from public.cards') = 69 and pg_temp.count_as(:P1, 'aal1', 'select * from public.rarities') = 5);
 
 -- ========== 2. Pack odds ==========
 do $$ declare err text;
@@ -51,15 +50,16 @@ begin
   exception when others then err := sqlerrm; end;
   perform pg_temp.ok('odds that add up to 10000 are accepted', err is null, coalesce(err, ''));
 end $$;
-select pg_temp.ok('4 default packs, each 8 cards (5 Common, 2 Uncommon, 1 Rare or better), 100 coins, 50 a day',
+select pg_temp.ok('4 default packs, each 11 cards (3 cheap Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better), 100 coins, 50 a day',
   (select count(*) from public.pack_types where active and price_coins = 100 and max_per_day = 50) = 4
-  and (select count(*) from (select pack_type, sum(count) n from public.pack_slots group by pack_type having sum(count) = 8) x) = 4
-  and (select bool_and(odds = '{"Rare": 8500, "Ultra Rare": 1300, "Collector": 200}'::jsonb) from public.pack_slots where slot_no = 3));
+  and (select count(*) from (select pack_type, sum(count) n from public.pack_slots group by pack_type having sum(count) = 11) x) = 4
+  and (select bool_and(odds = '{"Rare": 10000}'::jsonb) from public.pack_slots where slot_no = 3)
+  and (select bool_and(odds = '{"Rare": 8500, "Ultra Rare": 1300, "Collector": 200}'::jsonb) from public.pack_slots where slot_no = 4));
 
 -- ========== 3. shop_info ==========
 select pg_temp.ok('shop_info: 4 packs, coins 500, no free packs, nothing opened today, odds sum 10000 per slot',
   (select jsonb_array_length(j -> 'packs') = 4 and (j ->> 'coins')::int = 500 and (j ->> 'free_packs')::int = 0
-          and (select bool_and((p ->> 'opened_today')::int = 0 and jsonb_array_length(p -> 'slots') = 3) from jsonb_array_elements(j -> 'packs') p)
+          and (select bool_and((p ->> 'opened_today')::int = 0 and jsonb_array_length(p -> 'slots') = 5 and p -> 'slots' -> 0 ->> 'pool' = 'miners' and (p -> 'slots' -> 0 ->> 'count')::int = 3 and p -> 'slots' -> 3 -> 'odds' = '{"Rare": 10000}'::jsonb) from jsonb_array_elements(j -> 'packs') p)
           and (select bool_and((select sum((v #>> '{}')::int) from jsonb_each(s -> 'odds') e(k, v)) = 10000)
                from jsonb_array_elements(j -> 'packs') p, jsonb_array_elements(p -> 'slots') s)
           and j -> 'packs' -> 0 ->> 'id' = 'standard'
@@ -71,30 +71,31 @@ select pg_temp.refused('shop_info needs a login', null, null, 'select public.sho
 create temp table o1 as select pg_temp.json_as(:P1, 'aal1', $q$ select public.open_pack('standard', 'k1-aaaaaaaa-1111', false) $q$) as j;
 select pg_temp.ok('open_pack: returns the contract shape',
   (select j ? 'opening_id' and j ->> 'pack_type' = 'standard' and (j ->> 'price_paid')::int = 100 and (j ->> 'free')::boolean = false
-          and jsonb_array_length(j -> 'cards') = 8 and (j ->> 'coins_after')::int = 400 and (j ->> 'free_packs_after')::int = 0
-          and jsonb_array_length(j -> 'odds') = 3
+          and jsonb_array_length(j -> 'cards') = 11 and (j ->> 'coins_after')::int = 400 and (j ->> 'free_packs_after')::int = 0
+          and jsonb_array_length(j -> 'odds') = 5
           and (select bool_and(c ? 'card_id' and c ? 'rarity' and jsonb_typeof(c -> 'is_new') = 'boolean') from jsonb_array_elements(j -> 'cards') c)
    from o1), (select j::text from o1));
-select pg_temp.ok('open_pack: 5 Common, 2 Uncommon, then one Rare or better, in slot order',
-  (select (select array_agg(c ->> 'rarity' order by o) from jsonb_array_elements(j -> 'cards') with ordinality x(c, o) where o <= 7)
-            = array['Common', 'Common', 'Common', 'Common', 'Common', 'Uncommon', 'Uncommon']
-          and (j -> 'cards' -> 7 ->> 'rarity') in ('Rare', 'Ultra Rare', 'Collector')
-   from o1));
+select pg_temp.ok('open_pack: 3 cheap Miners, 4 Common, 2 Uncommon, one Rare, then one Rare or better, in slot order',
+  (select (select bool_and(c ->> 'card_id' = any (private.setting_text_list('pack_miner_ids'))) from jsonb_array_elements(j -> 'cards') with ordinality x(c, o) where o <= 3)
+          and (select array_agg(c ->> 'rarity' order by o) from jsonb_array_elements(j -> 'cards') with ordinality x(c, o) where o between 4 and 10)
+            = array['Common', 'Common', 'Common', 'Common', 'Uncommon', 'Uncommon', 'Rare']
+          and (j -> 'cards' -> 10 ->> 'rarity') in ('Rare', 'Ultra Rare', 'Collector')
+   from o1), (select j::text from o1));
 select pg_temp.ok('open_pack: every dealt card is a real pack card and the rarity matches the cards table',
   (select bool_and(k.in_packs and k.rarity = c ->> 'rarity') from o1, jsonb_array_elements(j -> 'cards') c join public.cards k on k.id = c ->> 'card_id'));
 select pg_temp.ok('open_pack: is_new is true exactly for cards the player did not own before (the starter collection)',
   (select bool_and((c ->> 'is_new')::boolean = not ((select value from public.settings where key = 'starter_collection') ? (c ->> 'card_id')))
    from o1, jsonb_array_elements(j -> 'cards') c));
-select pg_temp.ok('open_pack: 8 card instances made through card_grant (origin pack, ref = opening id, own ids, history rows)',
-  (select count(*) from public.card_instances ci where ci.owner_id = :P1 and ci.origin = 'pack' and ci.origin_ref = (select j ->> 'opening_id' from o1)) = 8
+select pg_temp.ok('open_pack: 11 card instances made through card_grant (origin pack, ref = opening id, own ids, history rows)',
+  (select count(*) from public.card_instances ci where ci.owner_id = :P1 and ci.origin = 'pack' and ci.origin_ref = (select j ->> 'opening_id' from o1)) = 11
   and (select count(*) from public.card_history h join public.card_instances ci on ci.id = h.card_instance_id
-       where ci.owner_id = :P1 and ci.origin = 'pack' and h.event = 'created') = 8);
+       where ci.owner_id = :P1 and ci.origin = 'pack' and h.event = 'created') = 11);
 select pg_temp.ok('open_pack: one pack_purchase ledger row of -100, balance 400',
   (select count(*) from public.transactions where user_id = :P1 and reason = 'pack_purchase') = 1
   and (select delta = -100 and balance_after = 400 from public.transactions where user_id = :P1 and reason = 'pack_purchase'));
-select pg_temp.ok('open_pack: one pack_openings row with the odds snapshot and the 8 card ids',
+select pg_temp.ok('open_pack: one pack_openings row with the odds snapshot and the 11 card ids',
   (select count(*) from public.pack_openings where user_id = :P1) = 1
-  and (select cardinality(cards) = 8 and jsonb_array_length(odds_snapshot) = 3 and price_paid = 100 and not free from public.pack_openings where user_id = :P1));
+  and (select cardinality(cards) = 11 and jsonb_array_length(odds_snapshot) = 5 and price_paid = 100 and not free from public.pack_openings where user_id = :P1));
 select pg_temp.ok('open_pack: player_stats packs_opened 1, coins_spent 100',
   (select packs_opened = 1 and coins_spent = 100 from public.player_stats where user_id = :P1));
 select pg_temp.ok('shop_info: opened_today is 1 for the standard pack now',
@@ -112,11 +113,11 @@ begin
   end loop;
   perform pg_temp.ok('idem: the same idem_key 10 times returns the same opening, same cards, coins still 200', true);
 end $$;
-select pg_temp.ok('idem: still one opening, one charge, 8 pack cards',
+select pg_temp.ok('idem: still one opening, one charge, 11 pack cards',
   (select count(*) from public.pack_openings where user_id = :P1) = 1
   and (select count(*) from public.transactions where user_id = :P1 and reason = 'pack_purchase') = 1
   and (select coins from public.wallets where user_id = :P1) = 400
-  and (select count(*) from public.card_instances where owner_id = :P1 and origin = 'pack') = 8);
+  and (select count(*) from public.card_instances where owner_id = :P1 and origin = 'pack') = 11);
 select pg_temp.refused('idem: another player cannot reuse my idem_key', :P2, 'aal1',
   $q$ select public.open_pack('standard', 'k1-aaaaaaaa-1111', false) $q$, 'already used');
 select pg_temp.refused('open_pack: a short idem_key is refused', :P1, 'aal1', $q$ select public.open_pack('standard', 'short', false) $q$, 'idem_key');
@@ -129,7 +130,7 @@ select pg_temp.refused('150 coins: the second 100-coin pack is refused (not enou
 select pg_temp.ok('150 coins: exactly one opening, 50 coins left, no cards from the refused one',
   (select count(*) from public.pack_openings where user_id = :P2) = 1
   and (select coins from public.wallets where user_id = :P2) = 50
-  and (select count(*) from public.card_instances where owner_id = :P2 and origin = 'pack') = 8);
+  and (select count(*) from public.card_instances where owner_id = :P2 and origin = 'pack') = 11);
 
 -- ========== 7. Daily limit, inactive pack, free packs ==========
 update public.pack_types set max_per_day = 1 where id = 'goblin';
@@ -150,7 +151,7 @@ select pg_temp.refused('unknown pack is refused', :P1, 'aal1', $q$ select public
 update public.wallets set free_packs = 1 where user_id = :P2;
 select pg_temp.ok('free pack: opens without coins, free = true, price_paid 0, free_packs_after 0',
   (select (j ->> 'free')::boolean and (j ->> 'price_paid')::int = 0 and (j ->> 'coins_after')::int = 50 and (j ->> 'free_packs_after')::int = 0
-          and jsonb_array_length(j -> 'cards') = 8
+          and jsonb_array_length(j -> 'cards') = 11
    from pg_temp.json_as(:P2, 'aal1', $q$ select public.open_pack('standard', 'k2-ffffffff-0001', true) $q$) j));
 select pg_temp.ok('free pack: no ledger row, the opening says free',
   (select count(*) from public.transactions where user_id = :P2 and reason = 'pack_purchase') = 1
@@ -172,10 +173,10 @@ end $$;
 update public.pack_types set max_per_day = 50 where id = 'standard';
 create temp table spread as
   select k.rarity, count(*) n from public.pack_openings o, unnest(o.cards) with ordinality u(c, pos) join public.cards k on k.id = u.c
-  where o.user_id = 'c0000000-0000-4000-8000-000000000003' and pos = 8 group by k.rarity;
-select pg_temp.ok('spread: 1,000 openings cost 100,000 coins and made 8,000 cards',
+  where o.user_id = 'c0000000-0000-4000-8000-000000000003' and pos = 11 group by k.rarity;
+select pg_temp.ok('spread: 1,000 openings cost 100,000 coins and made 11,000 cards',
   (select coins from public.wallets where user_id = :P3) = 500
-  and (select count(*) from public.card_instances where owner_id = :P3 and origin = 'pack') = 8000
+  and (select count(*) from public.card_instances where owner_id = :P3 and origin = 'pack') = 11000
   and (select count(*) from public.pack_openings where user_id = :P3) = 1000);
 select pg_temp.ok('spread: the rare slot gave Rare 850 +/- 60 times',
   coalesce((select n from spread where rarity = 'Rare'), 0) between 790 and 910,
@@ -185,11 +186,11 @@ select pg_temp.ok('spread: Ultra Rare about 130 (70..200) and Collector about 20
   and coalesce((select n from spread where rarity = 'Collector'), 0) between 3 and 50
   and not exists (select 1 from spread where rarity in ('Common', 'Uncommon')),
   (select string_agg(rarity || '=' || n, ', ') from spread));
-select pg_temp.ok('spread: slots 1-5 always Common, 6-7 always Uncommon',
-  (select bool_and(case when pos <= 5 then k.rarity = 'Common' when pos <= 7 then k.rarity = 'Uncommon' else true end)
+select pg_temp.ok('spread: slots 1-3 always cheap Miners, 4-7 always Common, 8-9 always Uncommon, 10 always Rare',
+  (select bool_and(case when pos <= 3 then u.c = any (private.setting_text_list('pack_miner_ids')) when pos <= 7 then k.rarity = 'Common' when pos <= 9 then k.rarity = 'Uncommon' when pos = 10 then k.rarity = 'Rare' else true end)
    from public.pack_openings o, unnest(o.cards) with ordinality u(c, pos) join public.cards k on k.id = u.c where o.user_id = :P3));
-select pg_temp.ok('spread: every pack card came up at least once in 8,000 draws (no card is unreachable)',
-  not exists (select 1 from public.cards k where k.in_packs
+select pg_temp.ok('spread: every pack card below the top rarity came up at least once in 11,000 draws (the top rarity is 2% of one slot over 6 cards: too rare to demand)',
+  not exists (select 1 from public.cards k where k.in_packs and k.rarity <> 'Collector'
               and not exists (select 1 from public.card_instances ci where ci.owner_id = :P3 and ci.card_id = k.id)));
 select pg_temp.ok('random_below stays inside 0..n-1 over 2,000 draws',
   (select bool_and(private.random_below(7) between 0 and 6) from generate_series(1, 2000)));
@@ -197,13 +198,13 @@ select pg_temp.ok('random_below stays inside 0..n-1 over 2,000 draws',
 -- ========== 9. Fallback to the next lower rarity ==========
 insert into public.pack_types (id, name, price_coins, faction, max_per_day) values ('testfb', 'Fallback Test', 0, 'dwarves', 1000);
 insert into public.pack_slots (pack_type, slot_no, count, odds) values ('testfb', 1, 1, '{"Collector": 10000}');
-update public.cards set in_packs = false where faction = 'dwarves' and rarity = 'Collector';
+update public.cards set in_packs = false where faction in ('dwarves', 'any') and rarity = 'Collector'; -- Nov 5: the neutral Collector crystals are in the pool too
 select pg_temp.ok('fallback: a Collector slot with no Collector card in the pool deals an Ultra Rare',
   (select j -> 'cards' -> 0 ->> 'rarity' from pg_temp.json_as(:P1, 'aal1', $q$ select public.open_pack('testfb', 'k1-fallback-0001', false) $q$) j) = 'Ultra Rare');
 update public.cards set in_packs = false where faction in ('dwarves', 'any') and rarity in ('Ultra Rare', 'Rare', 'Uncommon');
 select pg_temp.ok('fallback: ... all the way down to Common when nothing else is left',
   (select j -> 'cards' -> 0 ->> 'rarity' from pg_temp.json_as(:P1, 'aal1', $q$ select public.open_pack('testfb', 'k1-fallback-0002', false) $q$) j) = 'Common');
-update public.cards set in_packs = (type in ('creature', 'spell') and not disabled);
+update public.cards set in_packs = (type in ('creature', 'spell', 'crystal', 'commander') and not disabled); -- Nov 5: crystals and the Commanders included
 select pg_temp.ok('a free (0 coin) pack makes no ledger row',
   (select count(*) from public.transactions where user_id = :P1 and reason = 'pack_purchase' and ref in
      (select id::text from public.pack_openings where pack_type = 'testfb')) = 0);
@@ -220,7 +221,7 @@ create temp table grunts as
   select count(*)::int as n from public.card_instances where owner_id = :P1 and card_id = 'goblin-grunt' and status = 'owned';
 select pg_temp.works('deck: exactly as many copies as owned is fine (every goblin-grunt owned)', :P1, 'aal1',
   format($q$ select public.save_deck(null, 'Grunts', 'grubnak', array(select 'goblin-grunt' from generate_series(1, %s))) $q$, (select least(n, 4) from grunts)));
-select pg_temp.works('deck: crystals are unlimited (50 soul-shard, owns 4)', :P1, 'aal1',
+select pg_temp.refused('deck: crystals are owned cards now (Nov 5): 50 soul-shard with none owned is refused', :P1, 'aal1',
   $q$ select public.save_deck(null, 'Shards', 'grubnak', array(select 'soul-shard' from generate_series(1, 50))) $q$);
 select pg_temp.ok('deck: a deck of owned cards imports (zero start: owned here means bought or granted)',
   pg_temp.json_as(:P1, 'aal1', $q$ select public.import_local_decks('[{"name":"Mine","commander":"grubnak","cards":["goblin-grunt","goblin-grunt"]}]'::jsonb) $q$) ->> 'imported' = '1');
@@ -336,6 +337,27 @@ select pg_temp.ok('every security definer function pins search_path',
               where n.nspname in ('public', 'private') and p.prosecdef
                 and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')));
 
+select pg_temp.ok('packs v2: the Miner pool is the five cheap Miners (all for the standard pack; a faction pack gets its own plus neutral)',
+  private.pack_pool_miners(null) = array['dwarf-smith-miner', 'gnome-prospector', 'gnome-smith-miner', 'goblin-scrounger', 'goblin-smith-miner']
+  and private.pack_pool_miners('goblins') = array['goblin-scrounger', 'goblin-smith-miner'] and 'pack_miners' = any (private.editable_settings()));
+select pg_temp.ok('packs v2: crystals are in the pool at their rarity', (select bool_and(in_packs) from public.cards where type = 'crystal' and not disabled)
+  and 'motherlode' = any (private.pack_pool(null, 'Collector')) and 'soul-shard' = any (private.pack_pool('goblins', 'Common')));
+update public.settings set value = '5'::jsonb where key = 'pack_miners';
+update public.settings set value = '0'::jsonb where key = 'pack_uncommons';
+create temp table o6 as select pg_temp.json_as(:P1, 'aal1', $q$ select public.open_pack('goblin', 'k6-packsv2-counts', false) $q$) as j;
+select pg_temp.ok('packs v2: the admin counts rule: 5 Miners + 4 Common + 0 Uncommon + 1 Rare + 1 Rare-or-better = 11, goblin Miners only',
+  (select jsonb_array_length(j -> 'cards') = 11 and (select bool_and(c ->> 'card_id' in ('goblin-scrounger', 'goblin-smith-miner')) from jsonb_array_elements(j -> 'cards') with ordinality x(c, o) where o <= 5)
+          and (select count(*) from jsonb_array_elements(j -> 'odds') s where (s ->> 'count')::int > 0) = 4 from o6), (select j::text from o6));
+select pg_temp.ok('packs v2: the three Commanders are pack cards at Rare (a goblin pack can deal Grubnak, not Borgo); Meteor Strike is top rarity',
+  'commander-grubnak' = any (private.pack_pool('goblins', 'Rare')) and not ('commander-borgo' = any (private.pack_pool('goblins', 'Rare'))) and 'commander-borgo' = any (private.pack_pool(null, 'Rare'))
+  and (select rarity from public.cards where id = 'meteor-strike') = 'Collector' and not exists (select 1 from public.cards where id like 'commander-%' and id not in ('commander-grubnak', 'commander-sproingle', 'commander-borgo')),
+  'goblins Rare=' || array_to_string(private.pack_pool('goblins', 'Rare'), ',') || ' | all Rare=' || array_to_string(private.pack_pool(null, 'Rare'), ',') || ' | meteor=' || (select rarity from public.cards where id = 'meteor-strike'));
+select pg_temp.ok('packs v2: every player owns the three Commanders from the start (the one-off grant covered the test players)',
+  (select count(distinct card_id) from public.card_instances where owner_id = :P2 and status = 'owned' and card_id like 'commander-%') = 3
+  and private.setting('starter_collection') ? 'commander-grubnak');
+update public.settings set value = '3'::jsonb where key = 'pack_miners';
+update public.settings set value = '2'::jsonb where key = 'pack_uncommons';
+
 -- ========== 15. Upgraded cards (Nov 5: looks only; worth = copies spent; append-only) ==========
 select pg_temp.ok('upgrades: settings exist with their defaults (steps by rarity) and are editable',
   private.setting('upgrade_steps') -> 'Common' = '[5, 15, 30, 50]'::jsonb and private.setting('upgrade_steps') -> 'Collector' = '[1, 1, 1, 1]'::jsonb
@@ -354,12 +376,15 @@ select pg_temp.ok('open_pack: every dealt card carries a tier, and the instances
 update public.settings set value = '{"Common": 10000, "Uncommon": 0, "Rare": 0, "Ultra Rare": 0, "Collector": 0}' where key = 'upgrade_drop_bp';
 update public.settings set value = '{"2": 0, "3": 0, "4": 0, "5": 10000}' where key = 'upgrade_drop_tiers';
 create temp table o5 as select pg_temp.json_as(:P1, 'aal1', $q$ select public.open_pack('standard', 'k5-upgrade-drop-1', false) $q$) as j;
-select pg_temp.ok('upgrades: with the odds forced, the 5 Commons drop as Mythic (tier 5, worth 20) and the other 3 stay tier 1; history says so',
-  (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' = 'Common' and (c ->> 'tier')::int = 5) = 5
-  and (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' <> 'Common' and (c ->> 'tier')::int = 1) = 3
-  and (select count(*) from public.card_instances ci where ci.owner_id = :P1 and ci.origin_ref = (select j ->> 'opening_id' from o5) and ci.tier = 5 and ci.worth = 20) = 5
+select pg_temp.ok('upgrades: with the odds forced, every Common in the pack drops as Mythic (tier 5, worth 20: Common steps 1/3/5/10 here) and the rest stay tier 1; history says so',
+  (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' = 'Common' and (c ->> 'tier')::int = 5) >= 5
+  and (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' = 'Common' and (c ->> 'tier')::int <> 5) = 0
+  and (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' <> 'Common' and (c ->> 'tier')::int <> 1) = 0
+  and (select count(*) from public.card_instances ci where ci.owner_id = :P1 and ci.origin_ref = (select j ->> 'opening_id' from o5) and ci.tier = 5 and ci.worth = 20)
+      = (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' = 'Common')
   and (select count(*) from public.card_history h join public.card_instances ci on ci.id = h.card_instance_id
-       where ci.origin_ref = (select j ->> 'opening_id' from o5) and h.event = 'created' and h.reason = 'pack (tier 5)') = 5,
+       where ci.origin_ref = (select j ->> 'opening_id' from o5) and h.event = 'created' and h.reason = 'pack (tier 5)')
+      = (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' = 'Common'),
   (select j::text from o5));
 update public.settings set value = '{"Common": 200, "Uncommon": 100, "Rare": 50, "Ultra Rare": 20, "Collector": 5}' where key = 'upgrade_drop_bp';
 update public.settings set value = '{"2": 8000, "3": 1500, "4": 400, "5": 100}' where key = 'upgrade_drop_tiers';

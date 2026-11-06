@@ -33,16 +33,16 @@ select pg_temp.ok('signup: wallet holds the signup coins (setting signup_bonus_c
 select pg_temp.ok('signup: one signup_bonus ledger row',
   (select count(*) from public.transactions where user_id = :P1 and reason = 'signup_bonus' and balance_after = delta) = 1);
 -- Zero start (Ken, Nov 4): no cards at sign-up; the setting is empty and the trigger grants nothing
-select pg_temp.ok('signup: the starter collection setting is empty and the bonus is 500',
-  (select value from public.settings where key = 'starter_collection') = '{}'::jsonb and :BONUS = 500);
-select pg_temp.ok('signup: a new player owns no cards (zero start)',
-  (select count(*) from public.card_instances where owner_id = :P1 or original_owner_id = :P1) = 0
-  and (select count(*) from pg_temp.collection_of(:P1)) = 0);
+select pg_temp.ok('signup: the starter collection is the three Commanders (Ken, Nov 5: "you will start out with the commanders") and the bonus is 500',
+  (select value from public.settings where key = 'starter_collection') = '{"commander-grubnak": 1, "commander-sproingle": 1, "commander-borgo": 1}'::jsonb and :BONUS = 500);
+select pg_temp.ok('signup: a new player owns the three Commanders and nothing else (zero start otherwise)',
+  (select count(*) from public.card_instances where owner_id = :P1 or original_owner_id = :P1) = 3
+  and (select count(*) from pg_temp.collection_of(:P1)) = 3 and (select bool_and(card_id like 'commander-%') from pg_temp.collection_of(:P1)));
 -- the grant path itself still works the same way (packs use it): one id per card, origin, first owner, history row
 select private.card_grant(:P1, 'goblin-grunt', 3, 'admin_grant', 'test-grant', null);
 select pg_temp.ok('card_grant: every card has its own id, origin, first owner = this player, status owned',
   (select count(distinct id) = count(*) and count(*) = 3 and bool_and(origin = 'admin_grant' and original_owner_id = :P1 and status = 'owned')
-   from public.card_instances where owner_id = :P1));
+   from public.card_instances where owner_id = :P1 and card_id = 'goblin-grunt'));
 select pg_temp.ok('card_grant: one "created" history row per card',
   (select count(*) from public.card_history h join public.card_instances c on c.id = h.card_instance_id
    where c.owner_id = :P1 and h.event = 'created' and h.to_user = :P1)
@@ -173,8 +173,8 @@ select pg_temp.ok('player sees no other player''s decks', pg_temp.count_as(:P1, 
 select pg_temp.ok('player sees only own wallet', pg_temp.count_as(:P1, 'aal1', 'select * from public.wallets') = 1);
 select pg_temp.ok('player sees only own ledger', pg_temp.count_as(:P1, 'aal1',
   $q$ select * from public.transactions where user_id <> 'b0000000-0000-4000-8000-000000000001' $q$) = 0);
-select pg_temp.ok('my_collection gives the player''s own counts (5 kinds granted above) and no card ids',
-  (select count(*) from pg_temp.collection_of(:P1)) = 5
+select pg_temp.ok('my_collection gives the player''s own counts (5 kinds granted above + the 3 starter Commanders) and no card ids',
+  (select count(*) from pg_temp.collection_of(:P1)) = 8
   and (select sum(count) from pg_temp.collection_of(:P1)) = (select count(*) from public.card_instances where owner_id = :P1));
 select pg_temp.ok('anon cannot call my_collection', pg_temp.count_as(null, null, 'select * from public.my_collection()') = -1);
 select pg_temp.ok('player cannot read emails (auth.users)', pg_temp.count_as(:P1, 'aal1', 'select * from auth.users') <= 0);
@@ -533,7 +533,7 @@ create temp table kid_tokens as
 grant select on kid_tokens to public;
 select pg_temp.ok('under-13 sign-up: account waits for a parent; wallet and stats made, no cards (zero start)',
   (select age_group = 'under_13' and consent_status = 'pending' from public.profiles where id = :KID)
-  and (select count(*) from public.card_instances where owner_id = :KID) = 0
+  and (select count(*) from public.card_instances where owner_id = :KID and card_id not like 'commander-%') = 0
   and exists (select 1 from public.wallets where user_id = :KID) and exists (select 1 from public.player_stats where user_id = :KID));
 select pg_temp.ok('under-13 sign-up: consent request email queued to the parent (account email), token not stored in clear',
   (select count(*) from public.email_outbox where user_id = :KID and kind = 'parent_consent_request' and to_email = 'parent@test.local') = 1

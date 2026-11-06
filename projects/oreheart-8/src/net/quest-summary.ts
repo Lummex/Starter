@@ -17,6 +17,7 @@
 //   mineHoldTurns    the longest run of my consecutive turns (from 'turnStart') in which my units mined the same mine square
 //   minerMines       'mine' events by my units whose card is a Miner (Gatherer or Smith)
 // Which side owns a uid: 'summon' / 'defeat' events, then the final board, hands, decks and discard piles.
+import { COMMANDER_PACK_IDS, commanderPackCard } from '../ui/cardfmt';
 import { CARDS, isMiner } from '../engine';
 
 export interface Summary {
@@ -143,18 +144,21 @@ export function capSummary(s: Summary): Summary {
 
 // ------------------------------------------------------------------ small pure helpers shared by the screens (unit-tested in node)
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector'];
+const RARITY_SHOWN: Record<string, string> = { Collector: 'Legendary' }; // Ken, Nov 5: the top rarity reads Legendary (keys stay 'Collector')
+const shownR = (r: string) => RARITY_SHOWN[r] || r;
 const pct = (bp: number) => { const v = Math.round(bp) / 100; return (Number.isInteger(v) ? String(v) : v.toFixed(v < 1 ? 2 : 1).replace(/0+$/, '').replace(/\.$/, '')) + '%'; };
 /** "8 cards: 5 Common, 2 Uncommon, 1 Rare or better: Rare 85%, Ultra Rare 13%, Collector 2%" */
-export function oddsWords(slots: { slot_no: number; count: number; odds: Record<string, number> }[]): string {
+export function oddsWords(slots: { slot_no: number; count: number; odds: Record<string, number>; pool?: string }[]): string {
   const ss = [...(slots || [])].sort((a, b) => a.slot_no - b.slot_no);
   const total = ss.reduce((n, s) => n + (+s.count || 0), 0);
   const parts = ss.map((s) => {
+    if (s.pool === 'miners') return `${s.count} cheap Miner${s.count === 1 ? '' : 's'}`; // Nov 5 (Ken): the Miner slot
     const rs = RARITY_ORDER.filter((r) => (s.odds?.[r] || 0) > 0);
     const extra = Object.keys(s.odds || {}).filter((r) => !RARITY_ORDER.includes(r) && (s.odds[r] || 0) > 0);
     const all = [...rs, ...extra];
-    if (all.length === 1) return `${s.count} ${all[0]}`;
+    if (all.length === 1) return `${s.count} ${shownR(all[0])}`;
     if (!all.length) return `${s.count} card${s.count === 1 ? '' : 's'}`;
-    return `${s.count} ${all[0]} or better: ${all.map((r) => `${r} ${pct(s.odds[r])}`).join(', ')}`;
+    return `${s.count} ${shownR(all[0])} or better: ${all.map((r) => `${shownR(r)} ${pct(s.odds[r])}`).join(', ')}`;
   });
   return `${total} card${total === 1 ? '' : 's'}: ${parts.join(', ')}`;
 }
@@ -185,13 +189,13 @@ export const packArt = (p: any, part: '' | '-body' | '-top' | '-shine' = '') => 
 const ORDER = ['goblins', 'gnomes', 'dwarves', 'any'];
 const TYPE_ORDER: Record<string, number> = { creature: 0, spell: 1, crystal: 2 };
 
-export const collectionCards = () => (Object.values(CARDS) as any[]).filter((c) => !c.disabled)
+export const collectionCards = () => ([...(Object.values(CARDS) as any[]), ...COMMANDER_PACK_IDS.map((id) => commanderPackCard(id)).filter(Boolean)] as any[]).filter((c) => !c.disabled) // Nov 5: the three Commanders are collection cards too
   .sort((a, b) => ORDER.indexOf(a.faction) - ORDER.indexOf(b.faction) || (TYPE_ORDER[a.type] ?? 3) - (TYPE_ORDER[b.type] ?? 3) || (a.cost || 0) - (b.cost || 0) || a.name.localeCompare(b.name));
 
-/** "You own 123 cards (61 of 65 different)": crystal cards count as owned (free and unlimited). */
+/** "You own 123 cards (61 of 65 different)": crystals are owned cards like any other (Nov 5). */
 export function countLine(owned: Record<string, number>, cards = collectionCards()): string {
   let copies = 0, diff = 0;
-  for (const c of cards) { if (c.type === 'crystal') { diff++; continue; } const n = owned[c.id] || 0; copies += n; if (n > 0) diff++; }
+  for (const c of cards) { const n = owned[c.id] || 0; copies += n; if (n > 0) diff++; }
   return `You own ${copies} card${copies === 1 ? '' : 's'} (${diff} of ${cards.length} different)`;
 }
 

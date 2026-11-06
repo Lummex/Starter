@@ -156,7 +156,7 @@ html body .econ-screen .shop-pack .net-btn{padding-inline:calc(var(--sv-cap) * .
 .pko-shred{position:absolute;object-fit:contain;will-change:transform,opacity;pointer-events:none}
 
 /* the row of cards */
-.pko-row{--cw:min(calc((97vw - 7 * clamp(6px,1vw,14px)) / 8),calc((100vh - 190px) * .673),190px);place-self:center;display:flex;gap:clamp(6px,1vw,14px);justify-content:center;align-items:center;visibility:hidden}
+.pko-row{--cw:min(calc((97vw - 10 * clamp(4px,.7vw,10px)) / 11),calc((100vh - 190px) * .673),190px);place-self:center;display:flex;gap:clamp(4px,.7vw,10px);justify-content:center;align-items:center;visibility:hidden}
 .pko-scene:is([data-phase=cards],[data-phase=done]) .pko-row{visibility:visible}
 .pko-card{position:relative;flex:none;width:var(--cw);aspect-ratio:420/624;padding:0;margin:0;border:0;background:none;cursor:pointer;perspective:900px;border-radius:5%;will-change:transform,opacity;-webkit-tap-highlight-color:transparent}
 .pko-card:focus-visible{outline:3px solid #fff;outline-offset:3px}
@@ -219,7 +219,7 @@ html body .econ-screen .shop-pack .net-btn{padding-inline:calc(var(--sv-cap) * .
   .econ-screen.pko-screen{padding:24px 8px 4px}
   .pko-title{font-size:1.1rem}
   .pko-stage{height:min(58vh,600px)}
-  .pko-row{--cw:min(calc((97vw - 7 * 6px) / 8),calc((100vh - 140px) * .673))}
+  .pko-row{--cw:min(calc((97vw - 10 * 4px) / 11),calc((100vh - 140px) * .673))}
   .pko-ui{min-height:58px;gap:2px}
   .pko-ui .net-actions .net-btn{min-width:120px;min-height:40px;font-size:.95rem}
 }

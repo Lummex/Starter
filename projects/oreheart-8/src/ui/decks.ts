@@ -50,11 +50,11 @@ export const copyLimit = (id: string): number => CONFIG.copyLimits[CARDS[id]?.ra
 // my_collection). Crystal cards are free and unlimited. Offline nothing changes: no counts, every card unlimited as before.
 let ownedCounts: Record<string, number> | null = null;
 export function setOwnedCounts(m: Record<string, number> | null) { ownedCounts = m ? { ...m } : null; }
-/** Signed in and not one card of your own yet (crystals are free and don't count): the Deck Builder has nothing to build with. */
-export const ownsNothing = () => ownedMode() && !Object.entries(ownedCounts!).some(([id, n]) => n > 0 && CARDS[id] && CARDS[id].type !== 'crystal');
+/** Signed in and not one card of your own yet: the Deck Builder has nothing to build with. */
+export const ownsNothing = () => ownedMode() && !Object.entries(ownedCounts!).some(([id, n]) => n > 0 && CARDS[id]);
 const ownedMode = () => net.active && !!ownedCounts;
-/** Copies owned, or null when ownership doesn't apply (offline, crystal cards). */
-export const ownedOf = (id: string): number | null => (ownedMode() && CARDS[id]?.type !== 'crystal' ? ownedCounts![id] || 0 : null);
+/** Copies owned, or null when ownership doesn't apply (offline). Nov 5: crystals are owned cards too. */
+export const ownedOf = (id: string): number | null => (ownedMode() ? ownedCounts![id] || 0 : null);
 /** The copy limit in the deck builder: the normal limit, capped by the copies owned when signed in. */
 export const deckLimit = (id: string): number => { const o = ownedOf(id); return o == null ? copyLimit(id) : Math.min(copyLimit(id), o); };
 // test pages only: ?test=1&econ=shop|collection|quests|pack loads the economy screens with stand-in data (no database)

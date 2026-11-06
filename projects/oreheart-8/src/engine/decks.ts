@@ -1,5 +1,5 @@
 // Deck rules shared by the Deck Builder and the match setup.
-import { CARDS, CONFIG, COMMANDERS, FACTIONS } from './content';
+import { CARDS, CONFIG, COMMANDERS, FACTIONS, STARTER_DECKS } from './content';
 
 export function deckCounts(ids: string[]) {
   let creatures = 0, spells = 0, crystals = 0;
@@ -25,7 +25,7 @@ export function deckProblems(ids: string[], commander?: string): string[] {
   if (ids.length < CONFIG.deckMin || ids.length > CONFIG.deckMax) out.push(`Needs ${CONFIG.deckMin} to ${CONFIG.deckMax} cards (now ${ids.length}).`);
   const n: Record<string, number> = {};
   for (const id of ids) n[id] = (n[id] || 0) + 1;
-  for (const [id, k] of Object.entries(n)) {
+  for (const [id, k] of Object.entries(n)) { // Nov 5 (Ken): the starter decks follow the copy cap like every deck
     const lim = CONFIG.copyLimits[CARDS[id]?.rarity];
     if (lim != null && k > lim) out.push(`${CARDS[id].name}: at most ${lim} copies (now ${k}).`);
   }
@@ -34,6 +34,21 @@ export function deckProblems(ids: string[], commander?: string): string[] {
   return out;
 }
 
+/** The same cards as one of the fixed starter decks (order aside). */
+export function isStarterList(ids: string[]): boolean {
+  const key = [...ids].sort().join(',');
+  return Object.values(STARTER_DECKS).some((d) => d.length === ids.length && [...d].sort().join(',') === key);
+}
+/** For Ken: the starter decks' cards over their rarity's copy cap after the Nov 5 rarity batch. */
+export function starterOverCap(): { deck: string; card: string; copies: number; limit: number }[] {
+  const out: { deck: string; card: string; copies: number; limit: number }[] = [];
+  for (const [deck, ids] of Object.entries(STARTER_DECKS)) {
+    const n: Record<string, number> = {};
+    for (const id of ids) n[id] = (n[id] || 0) + 1;
+    for (const [id, k] of Object.entries(n)) { const lim = CONFIG.copyLimits[CARDS[id]?.rarity]; if (lim != null && k > lim) out.push({ deck, card: id, copies: k, limit: lim }); }
+  }
+  return out;
+}
 /** Test hook: legality and problem messages for a list of card ids. */
 export function validateDeck(ids: string[], commander?: string) {
   const problems = deckProblems(ids, commander);

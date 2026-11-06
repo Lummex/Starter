@@ -1,4 +1,4 @@
-import { hasUpgradeArt } from './ui/cardfmt';
+import { hasUpgradeArt, commanderPackCard } from './ui/cardfmt';
 import './style.css';
 import './ui/theme-silver.css'; // Ken (Oct 30): silver UI theme, loads after style.css so its rules win
 import './ui/leftovers-art.css'; // Ken (Nov 4): Brush's painted leftovers
@@ -98,7 +98,7 @@ if (test) {
     tutorialAction: () => (game.state ? tutorialAction(game.state) : null),
     hasUpgradeArt: (id: string) => hasUpgradeArt(id),
     getCard: (id: string) => {
-      const c: any = CARDS[id];
+      const c: any = CARDS[id] || commanderPackCard(id); // Nov 5: the pack Commanders too
       if (!c) return null;
       const cr = c.type === 'creature';
       return { id: c.id, name: c.name, type: c.type, faction: c.faction === 'any' ? null : c.faction, disabled: !!c.disabled, rarity: c.rarity, role: cr ? String(c.role).toLowerCase() : null,

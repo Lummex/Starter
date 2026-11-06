@@ -82,8 +82,8 @@ describe('PvP referee', () => {
   it('refuses out-of-turn, stale and illegal moves, logs them, and changes nothing', async () => {
     const { store, svc, matchId } = await freshMatch(3);
     const before = JSON.stringify((await store.getMatch(matchId))!.state);
-    // Alice holds the first mulligan; Bob may not act
-    const r1 = await svc.handle('act', { matchId, seq: 0, action: { type: 'mulligan', uids: [] } }, bob, T0 + 2 * SEC);
+    // Nov 5: both pick their hand at once, so Bob's mulligan would be fine; anything else of his is out of turn
+    const r1 = await svc.handle('act', { matchId, seq: 0, action: { type: 'done' } }, bob, T0 + 2 * SEC);
     expect(r1.ok).toBe(false); expect(r1.error).toMatch(/not your turn/);
     const r2 = await svc.handle('act', { matchId, seq: 5, action: { type: 'mulligan', uids: [] } }, alice, T0 + 2 * SEC);
     expect(r2.ok).toBe(false); expect(r2.error).toMatch(/Out of date/);
@@ -94,9 +94,12 @@ describe('PvP referee', () => {
     expect(JSON.stringify((await store.getMatch(matchId))!.state)).toBe(before);
     expect(store.moves.filter((m) => !m.ok).length).toBe(3);
     expect((await store.getMatch(matchId))!.seq).toBe(0);
-    // a player may never act for the other side by naming it
-    const r4 = await svc.handle('act', { matchId, seq: 0, action: { type: 'mulligan', uids: [], player: 'opponent' } }, bob, T0 + 2 * SEC);
+    // a player may never act for the other side by naming it (a mulligan is always taken as the sender's own)
+    const r4 = await svc.handle('act', { matchId, seq: 0, action: { type: 'done', player: 'player' } }, bob, T0 + 2 * SEC);
     expect(r4.ok).toBe(false);
+    const r5 = await svc.handle('act', { matchId, seq: 0, action: { type: 'mulligan', uids: [], player: 'player' } }, bob, T0 + 2 * SEC);
+    expect(r5.ok).toBe(true);
+    expect((await store.getMatch(matchId))!.state.mulliganDone).toEqual({ player: false, opponent: true }); // Bob's own hand kept, not Alice's
   });
 
   it('plays whole random matches to the end through the service, both players acting on their own views', async () => {

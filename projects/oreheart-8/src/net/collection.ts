@@ -1,10 +1,11 @@
 // The Collection (contract 4.2): every card in the game, owned ones with "×N", the rest greyed with a small lock.
 // Filters by faction, rarity and owned. Crystal cards are free and unlimited for everyone.
-import { h, pictureOf, rarityKey } from '../ui/app';
+import { h, pictureOf as pictureOfCard, rarityKey, commanderPortrait } from '../ui/app';
+const pictureOf = (c: any) => (c && c.type === 'commander' && c.commanderId ? commanderPortrait(c.commanderId) : pictureOfCard(c)); // Nov 5: Commanders in the Collection
 import { ohCardEl, TIER_NAMES, hasUpgradeArt } from '../ui/cardfmt';
 import { collectionCards, countLine } from './quest-summary';
 export { collectionCards, countLine };
-import { econShow, backBtn, coinChip, api, RARITIES, toast, tierOfWorth, worthOfTier, stepsFor } from './economy';
+import { econShow, backBtn, coinChip, api, RARITIES, toast, tierOfWorth, worthOfTier, stepsFor, rarityLabel } from './economy';
 import type { UpgradeInfo, CardCopy } from './economy';
 
 const idem = () => 'up-' + (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
@@ -28,7 +29,7 @@ export async function showCollection(): Promise<void> {
       coinChip()),
     h('div', { class: 'col-tools' },
       pills('Faction', 'faction', FACTION_LABEL),
-      pills('Rarity', 'rarity', [['All', 'Any rarity'], ...RARITIES.map((r) => [r, r] as [string, string])]),
+      pills('Rarity', 'rarity', [['All', 'Any rarity'], ...RARITIES.map((r) => [r, rarityLabel(r)] as [string, string])]),
       pills('Owned', 'owned', [['all', 'All'], ['owned', 'Owned'], ['upgraded', 'Upgraded'], ['missing', 'Missing']])),
     count, alert, grid);
   let owned: Record<string, number> = {};
@@ -39,7 +40,7 @@ export async function showCollection(): Promise<void> {
   count.textContent = countLine(owned, all);
   // one tile per card, built once; the filters only hide and show them
   const tiles = all.map((c) => {
-    const free = c.type === 'crystal';
+    const free = false; // Nov 5 (Ken): crystals come out of packs at their rarity and are owned like any card
     const n = owned[c.id] || 0;
     const has = free || n > 0;
     const best = has && !free ? bestOf(c.id) : 1;

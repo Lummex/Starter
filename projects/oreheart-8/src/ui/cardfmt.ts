@@ -1,11 +1,17 @@
 import FORMAT from '../../public/art/card-format/format.json';
 import { makeOHRenderer } from './ohrender';
 import HOLO from '../content/holo-masks.json';
+import { CARDS, COMMANDERS } from '../engine';
 import UPG from '../content/upgrade-art.json';
 import './ohcard.css';
 
 /** Upgraded cards (Nov 5): five tiers, looks only. Tier 1 is the card as painted; tiers 2-5 have their own picture (Brush) and coloured stars. */
-export const TIER_NAMES = ['', 'Original', 'Enhanced', 'Overcharged', 'Legendary', 'Mythic'];
+/** Ken renamed the top RARITY to Legendary (Nov 5), which clashes with this tier's name; Forge is asking him for a new tier name: swap it here. */
+export const TIER4_LABEL = 'Legendary';
+export const TIER_NAMES = ['', 'Original', 'Enhanced', 'Overcharged', TIER4_LABEL, 'Mythic'];
+/** The top rarity is stored as 'Collector' everywhere (keys, holo masks, odds); Ken calls it Legendary (Nov 5). Shown through this only. */
+export const RARITY_LABEL: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Legendary' };
+export const rarityLabel = (r: string) => RARITY_LABEL[r] || r;
 const UPG_IDS = new Set<string>((UPG as any).ids || []);
 export const hasUpgradeArt = (id: string) => UPG_IDS.has(id);
 /** The picture for a card at a tier: its upgrade art when painted, else the normal one. */
@@ -40,11 +46,12 @@ export function holoMaskOf(card: any): string {
   const key = id.startsWith('cmd:') ? 'cmd-' + id.slice(4) : id;
   return HOLO_IDS.has(key) ? `/art/holo-masks/${key}.webp` : '';
 }
-const withHolo = (card: any) => { const m = holoMaskOf(card); return m ? { ...card, holoMask: m } : card; };
+const withHolo = (card: any) => { if (card && Number(card.tier) > 1 && UPG_IDS.has(card.id)) return card; /* the tier picture carries its own look; the mask fits the base art only (Brush, Nov 5) */ const m = holoMaskOf(card); return m ? { ...card, holoMask: m } : card; };
 
 /** HTML string of a card face drawn at `px` height (the CSS makes it fill its parent). */
 export function ohCardHTML(card: any, artUrl: string | null, px = 624): string {
-  return R.cardHTML(withHolo(card), artUrl || '', px);
+  const shown = withHolo(card);
+  return R.cardHTML(shown.rarity && RARITY_LABEL[shown.rarity] && RARITY_LABEL[shown.rarity] !== shown.rarity ? { ...shown, rarity: RARITY_LABEL[shown.rarity] } : shown, artUrl || '', px); // the face says Legendary
 }
 
 /** Card face element: `.ohcard > .cardc`, sized by its parent; the text shrinks to fit once it has a size. */
@@ -70,6 +77,16 @@ export function ohCardEl(card: any, artUrl: string | null): HTMLElement {
 export function commanderCard(c: any) {
   return { id: 'cmd:' + c.id, type: 'commander', faction: c.faction, name: c.name, text: c.abilityText, health: c.health, cost: '', rarity: 'Collector', artPos: c.artPos };
 }
+/** Nov 5 (Ken: Commanders in packs at Rare): the pack / collection card for a Commander, by its pack id 'commander-<id>'. */
+export const COMMANDER_PACK_IDS = ['commander-grubnak', 'commander-sproingle', 'commander-borgo'];
+export const isCommanderPackId = (id: string) => typeof id === 'string' && id.startsWith('commander-');
+export function commanderPackCard(id: string): any | null {
+  if (!isCommanderPackId(id)) return null;
+  const c = COMMANDERS[id.slice(10)];
+  return c ? { ...commanderCard(c), id, commanderId: c.id, rarity: 'Rare', cost: 0 } : null;
+}
+/** A card by id, pack Commanders included (null when unknown). */
+export const cardFor = (id: string): any | null => (CARDS as any)[id] || commanderPackCard(id);
 
 /** The Oreheart card back, drawn from the format's `back` layout. */
 export const ohBackEl = () => ohCardEl({ id: 'back', type: 'back', faction: 'goblins', name: '', text: '' }, null);

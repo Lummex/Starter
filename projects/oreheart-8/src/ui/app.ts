@@ -138,7 +138,7 @@ export const ABILITY_UI: Record<string, { icon: string; name: string; text: stri
 /** Owner-facing names of the activated abilities (the data-ability attribute); the engine keeps its own names. */
 export const PUB_ABILITY: Record<string, string> = { slide: 'run', bowl: 'strike', shaman: 'pickUp', rocket: 'rocketRide', ramMove: 'gallop' };
 export const INTERNAL_ABILITY: Record<string, string> = Object.fromEntries(Object.entries(PUB_ABILITY).map(([a, b]) => [b, a]));
-export const RARITY_WORD: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Collector' };
+export const RARITY_WORD: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Legendary' }; // Nov 5 (Ken): the top rarity is called Legendary
 const CRYSTAL_SVG = '<svg viewBox="0 0 24 32" focusable="false" aria-hidden="true" class="rc"><polygon points="12,1 20,10 12,31 4,10" fill="currentColor"/><polygon points="12,1 4,10 12,13" fill="#fff" fill-opacity=".62"/><polygon points="12,1 20,10 12,13" fill="#fff" fill-opacity=".25"/><polygon points="4,10 12,13 12,31" fill="#000" fill-opacity=".18"/><polygon points="20,10 12,13 12,31" fill="#000" fill-opacity=".42"/><polyline points="12,1 20,10 12,31 4,10 12,1" fill="none" stroke="#1a0f06" stroke-width="1.1" stroke-linejoin="round"/><path d="M4,10 L12,13 L20,10 M12,13 L12,31" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".6"/></svg>';
 /** Card face on the owner's faction frame: cost, Attack, Health, Movement, type icon, picture, name, short text, rarity. */
 /** Owner framing of the picture inside the art window: scale s, offset x/y in % of the window. */
@@ -346,6 +346,7 @@ export class App {
   lastOptions: any = {};
   lastTutorial = false;
   handKey = '';
+  mullWait: El | null = null; // Nov 5: PvP, after your own mulligan while the other player still picks
   /** Ken (Oct 31): the hand's auto-arrange. '' = the player's own (manual) order; otherwise the hand shows sorted (display order only:
    *  the game's hand order is untouched until the player drags a card, which is the manual reorder as before and clears the sort). */
   handSortMode: '' | 'costDesc' | 'costAsc' | 'type' | 'rarity' = (() => { try { const v = localStorage.getItem('oreheart.handSort') || ''; return (['costDesc', 'type', 'rarity'].includes(v) ? v : '') as any; } catch { return ''; } })();
@@ -935,7 +936,7 @@ export class App {
     const c = this.withTier(CARDS[cardId], creature && creature.owner === 'opponent' ? 'opponent' : 'player');
     const rows: [string, string][] = [];
     rows.push(['Type', c.type === 'creature' ? `${FSYM(c.faction)} ${FACTIONS[c.faction].name} creature` : c.type === 'spell' ? ({ regular: 'Spell', instant: 'Instant', counter: 'Counterspell' } as any)[c.spellKind] : 'Crystal card']);
-    rows.push(['Rarity', c.rarity]);
+    rows.push(['Rarity', RARITY_WORD[c.rarity] || c.rarity]);
     const me = this.game.state?.players.player;
     const cost = c.type === 'creature' ? (me ? creatureCost(this.game.state, 'player', c) : c.cost) : c.type === 'spell' ? (me ? spellCost(this.game.state, 'player', c) : c.cost) : 0;
     rows.push(['Cost', c.type === 'crystal' ? 'Free' : `${cost}${cost !== c.cost ? ` (printed ${c.cost})` : ''}`]);
@@ -1159,6 +1160,8 @@ export class App {
     return Math.max(1, Math.min(5, Number(t) || 1));
   }
   withTier(c: any, owner: 'player' | 'opponent' = 'player'): any { if (!c) return c; const t = this.tierOf(c.id, owner); return t > 1 ? { ...c, tier: t } : c; }
+  /** Nov 5: a Commander's tier in a match comes under its pack id ('commander-grubnak') */
+  commanderTier(owner: 'player' | 'opponent'): number { const st = this.game.state; const id = st && st.players && st.players[owner] ? st.players[owner].commanderId : ''; return id ? this.tierOf('commander-' + id, owner) : 1; }
   /** Ken (Nov 5): "It should be impressive when someone drops a mythic out." The board darkens, the card slams in with lightning, KA-BOOM, its sound and
    *  the player's name, all under 1.5 s and never in the way of the next play (an overlay with pointer-events none; the engine already moved on).
    *  Smaller for lower tiers. In test mode without real FX only the marker element appears. */
@@ -1479,7 +1482,7 @@ export class App {
     r.view = null;
     try { this.view = createBoardView(r.board, this.low, this.arenaFaction || this.pickMatchArena()); } catch { this.view = null; } /* Oct 31: the picked faction's arena */
     if (!this.view) this.view = createFlatView(r.board);
-    (this.view as any).setTierLookup?.((id: string, owner: 'player' | 'opponent') => this.tierOf(id, owner)); // Nov 5: a Mythic's unit keeps a glow
+    (this.view as any).setTierLookup?.((id: string, owner: 'player' | 'opponent') => (id.startsWith('cmd:') ? this.commanderTier(owner) : this.tierOf(id, owner))); // Nov 5: a Mythic's unit (or Commander) keeps a glow
     this.view.onViewChange = () => this.layoutSoon();
     for (let row = 1; row <= BH; row++) for (let col = 1; col <= BW; col++) {
       const c = h('div', { class: 'cell', 'data-row': row, 'data-col': col });
@@ -3588,7 +3591,10 @@ export class App {
   /** The real Respond dialog is up (not the 2 s note PvP shows when you hold no counter): the board waits for it. */
   get respBlocking() { return !!this.respDlg && !this.respDlg.auto; }
   handleDialogs(st: any) {
-    const needMull = st.phase === 'mulligan' && st.priority === 'player' && !st.mulliganDone.player;
+    const needMull = st.phase === 'mulligan' && (st.priority === 'player' || !!this.netGame) && !st.mulliganDone.player; // Nov 5 (PvP): both pick at once
+    const waitMull = !!this.netGame && st.phase === 'mulligan' && st.mulliganDone.player && !st.mulliganDone.opponent;
+    if (waitMull && !this.mullWait) { this.mullWait = h('div', { class: 'mull-wait', role: 'status', 'data-testid': 'mull-wait' }, 'Waiting for opponent…'); (this.root.querySelector('.match') || this.root).append(this.mullWait); }
+    if (!waitMull && this.mullWait) { this.mullWait.remove(); this.mullWait = null; }
     if (needMull && this.mullDlg && (this.mullDlg as any).el.dataset.mulligans !== String(st.players.player.mulligans || 0)) { this.mullDlg.close(); this.mullDlg = null; }
     if (needMull && !this.mullDlg) this.openMulligan(st);
     if (!needMull && this.mullDlg) { this.mullDlg.close(); this.mullDlg = null; }

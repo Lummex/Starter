@@ -403,6 +403,7 @@ const _embV = new THREE.Vector3();
   function buildCommander(side: 'player' | 'opponent', faction: string, id: string) {
     const cm = cmd[side];
     cm.group.clear();
+    { const t = tierLookup ? tierLookup('cmd:' + id, side) : 1; (cm as any).tier = t; if (t >= 4) addTierHalo(cm.group as any, t, 1); } // Nov 5: an upgraded Commander wears its halo
     cm.g3d = null;
     const a3 = id === 'grubnak' ? grubnak3dReady() : commander3dReady(id);
     if (!a3 && id !== 'grubnak' && commanderIds3d().includes(id)) loadCommander3d(id).then((x) => { if (x && !disposed) for (const sd of ['player', 'opponent'] as const) if (cmd[sd].id === id && !cmd[sd].g3d) buildCommander(sd, cmd[sd].faction, id); });

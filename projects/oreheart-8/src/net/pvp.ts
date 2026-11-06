@@ -4,7 +4,7 @@
 // full snapshot (`view`) of what this player may see. In that view this player is ALWAYS engine side 'player' (the server mirrors the
 // board for the second player and hides the other hand, both decks and the rng), so the match screen works unchanged.
 import './pvp.css';
-import { applyAction, legalActions as engineLegal, brewActions, hasMovesLeft, COMMANDERS, STARTER_DECK_LIST, warbandOf, deckProblems, CARDS } from '../engine';
+import { applyAction, legalActions as engineLegal, brewActions, hasMovesLeft, COMMANDERS, STARTER_DECK_LIST, warbandOf, deckProblems, CARDS, mulliganActions } from '../engine';
 import { net } from './state';
 import { getPlayerName } from '../ui/players';
 import type { App } from '../ui/app';
@@ -263,6 +263,7 @@ export class NetGame {
     const s = this.planState(); // Nov 4 (boom boom boom): with moves still on their way, the next offers count them (no lighting a square a unit just took)
     if (!s || s.phase === 'over' || this.status === 'over') return [];
     try {
+      if (s.phase === 'mulligan') return mulliganActions(s, 'player'); // Nov 5: both pick at once
       if (s.priority !== 'player') return brewActions(s, 'player').map((a: any) => ({ ...a, player: 'player' }));
       return engineLegal(s);
     } catch { return []; }
@@ -298,7 +299,8 @@ export class NetGame {
     if (action.type === 'surrender') { void this.forfeit(); return { ok: true, events: [] }; }
     const base = this.planState();
     let a = action;
-    if (base.priority !== 'player') {
+    if (base.phase === 'mulligan' && a.type === 'mulligan') a = { ...a, player: 'player' }; // Nov 5: both pick their hand at once
+    else if (base.priority !== 'player') {
       if (!(a.type === 'ability' && a.ability === 'brew')) return { ok: false, error: "It is your friend's turn" };
       a = { ...a, player: 'player' };
     }

@@ -10,12 +10,13 @@ import { rpc } from './online';
 import { h } from '../ui/app';
 import { CARDS } from '../engine';
 import { setOwnedCounts, deckLimit, ownedOf, copyLimit } from '../ui/decks';
+import { COMMANDER_PACK_IDS, commanderPackCard, cardFor } from '../ui/cardfmt';
 import { summarize, capSummary } from './quest-summary';
 
 type El = HTMLElement;
 
 // ------------------------------------------------------------------ shapes (contract part 1)
-export interface PackSlot { slot_no: number; count: number; odds: Record<string, number> }
+export interface PackSlot { slot_no: number; count: number; odds: Record<string, number>; pool?: 'any' | 'miners' }
 export interface PackInfo { id: string; name: string; blurb: string; price_coins: number; faction: string | null; art: string | null; max_per_day: number; opened_today: number; slots: PackSlot[] }
 export interface ShopInfo { packs: PackInfo[]; coins: number; free_packs: number }
 export interface PulledCard { card_id: string; rarity: string; is_new: boolean; tier?: number }
@@ -23,7 +24,7 @@ export interface PulledCard { card_id: string; rarity: string; is_new: boolean; 
 export interface UpgradeInfo { steps: Record<string, number[]>; drop_bp: Record<string, number>; drop_tiers: Record<string, number>; cards: Record<string, { best: number; owned: number; upgraded: number }> }
 export interface CardCopy { id: string; tier: number; worth: number; since: string }
 export interface UpgradeResult { event_id: string; target: string; card_id: string; spent: number; worth_before: number; worth_after: number; tier_before: number; tier_after: number; next_worth: number | null; repeat: boolean }
-export const TIER_NAMES = ['', 'Original', 'Enhanced', 'Overcharged', 'Legendary', 'Mythic'];
+export { TIER_NAMES } from '../ui/cardfmt';
 /** Extra copies per step (Enhanced, Overcharged, Legendary, Mythic) by rarity (Ken and Forge, Nov 5); the server's setting upgrade_steps is the truth */
 export const DEFAULT_STEPS: Record<string, number[]> = { Common: [5, 15, 30, 50], Uncommon: [4, 12, 24, 40], Rare: [2, 4, 7, 14], 'Ultra Rare': [1, 2, 3, 4], Collector: [1, 1, 1, 1] };
 export const stepsFor = (rarity: string, steps: Record<string, number[]> = DEFAULT_STEPS) => steps[rarity] || steps.Common || DEFAULT_STEPS.Common;
@@ -39,13 +40,17 @@ export const isTestPage = () => params().get('test') === '1';
 /** Stand-in data: only on test pages, and only while nobody is signed in. */
 export const stubMode = () => isTestPage() && !net.active;
 export const RARITIES = ['Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector'];
+/** what the player reads for a rarity key (Collector is shown as Legendary, Ken Nov 5) */
+export { rarityLabel } from '../ui/cardfmt';
 export const STREAK_DAYS = 7;
 
 // ------------------------------------------------------------------ test-page stand-in (never used in real play)
 const STD_SLOTS: PackSlot[] = [
-  { slot_no: 1, count: 5, odds: { Common: 10000 } },
+  { slot_no: 0, count: 3, odds: { Common: 10000 }, pool: 'miners' }, // Nov 5 (Ken): 3 cheap low-end Miners in every pack
+  { slot_no: 1, count: 4, odds: { Common: 10000 } },
   { slot_no: 2, count: 2, odds: { Uncommon: 10000 } },
-  { slot_no: 3, count: 1, odds: { Rare: 8500, 'Ultra Rare': 1300, Collector: 200 } },
+  { slot_no: 3, count: 1, odds: { Rare: 10000 } }, // the sure Rare
+  { slot_no: 4, count: 1, odds: { Rare: 8500, 'Ultra Rare': 1300, Collector: 200 } }, // Rare or better
 ];
 const stubPack = (id: string, name: string, blurb: string, faction: string | null): PackInfo => ({ id, name, blurb, price_coins: 100, faction, art: null, max_per_day: 50, opened_today: 0, slots: STD_SLOTS.map((s) => ({ ...s, odds: { ...s.odds } })) });
 const STUB = {
@@ -68,8 +73,9 @@ const addDays = (d: string, n: number) => { const t = new Date(d + 'T00:00:00Z')
 function stubInit() {
   if (STUB.quests) return;
   // a starter-ish collection: four of most commons, a couple of the rest, some missing
-  const ids = Object.keys(CARDS).filter((id) => !(CARDS as any)[id].disabled && (CARDS as any)[id].type !== 'crystal');
+  const ids = Object.keys(CARDS).filter((id) => !(CARDS as any)[id].disabled); // Nov 5: crystals are owned cards like any other
   ids.forEach((id, i) => { const r = (CARDS as any)[id].rarity; const n = r === 'Common' ? 4 : r === 'Uncommon' ? 2 : r === 'Rare' ? (i % 2 ? 1 : 0) : 0; if (n) STUB.owned[id] = n; });
+  for (const id of COMMANDER_PACK_IDS) STUB.owned[id] = 1; // everyone starts with the three Commanders (Ken, Nov 5)
   const t = today();
   STUB.quests = { today: t, reroll_left: 1, streak_days: 3, free_packs: STUB.free_packs, quests: [
     { id: 'stub-q1', quest_id: 'thwack', name: 'THWACK!', text: 'Land 10 hits.', tier: 'easy', reward: 25, progress: 10, target: 10, done: true, expires_on: addDays(t, 3) },
@@ -80,21 +86,25 @@ function stubInit() {
 const pickOf = (pool: any[], n: number) => pool[Math.floor(Math.random() * pool.length) % Math.max(1, n)];
 let stubUid = 0;
 const STUB_STEPS: Record<string, number[]> = { ...DEFAULT_STEPS, Common: [1, 3, 5, 10] }; // the test page keeps Commons quick to combine (the real numbers come from the server)
-const stubSteps = (id: string) => stepsFor(((CARDS as any)[id] || {}).rarity || 'Common', STUB_STEPS);
+const stubSteps = (id: string) => stepsFor((cardFor(id) || {}).rarity || 'Common', STUB_STEPS);
 function stubCopy(id: string, tier = 1) { (STUB.copies[id] ||= []).push({ id: 'stub-c' + (++stubUid), tier, worth: worthOfTier(tier, stubSteps(id)), since: new Date().toISOString() }); }
 function stubCopies(id: string): CardCopy[] { const n = STUB.owned[id] || 0; const list = (STUB.copies[id] ||= []); while (list.length < n) stubCopy(id); return list; }
 function stubRoll(pack: PackInfo, force?: string): PulledCard[] {
-  const pool = Object.values(CARDS as any).filter((c: any) => !c.disabled && (c.type === 'creature' || c.type === 'spell') && (!pack.faction || c.faction === pack.faction || c.faction === 'any')) as any[];
+  const pool = ([...Object.values(CARDS as any), ...COMMANDER_PACK_IDS.map((id) => commanderPackCard(id))] as any[]).filter((c: any) => c && !c.disabled && (c.type === 'creature' || c.type === 'spell' || c.type === 'crystal' || c.type === 'commander') && (!pack.faction || c.faction === pack.faction || c.faction === 'any')) as any[];
+  const miners = pool.filter((c) => (c.role === 'Gatherer' || c.role === 'Smith') && c.cost <= 1); // the cheap low-end Miners (the server's pack_miner_ids)
   const of = (r: string) => { for (let i = RARITIES.indexOf(r); i >= 0; i--) { const p = pool.filter((c) => c.rarity === RARITIES[i]); if (p.length) return p; } return pool; };
   const out: PulledCard[] = [];
   const seen: Record<string, number> = { ...STUB.owned };
   // a test page can force an upgraded drop: force 'tier5' (Mythic) .. 'tier2' puts it on the first card
   const forcedTier = force && /^tier[2-5]$/.test(force) ? Number(force.slice(4)) : 0;
-  const add = (r: string) => { const p = of(r); const c = pickOf(p, p.length); const tier = forcedTier && !out.length ? forcedTier : 1; out.push({ card_id: c.id, rarity: c.rarity, is_new: !seen[c.id], tier }); seen[c.id] = (seen[c.id] || 0) + 1; stubCopy(c.id, tier); };
-  for (let i = 0; i < 5; i++) add('Common');
+  const add = (r: string) => { const p = of(r); const c = pickOf(p, p.length); out.push({ card_id: c.id, rarity: c.rarity, is_new: !seen[c.id], tier: 1 }); seen[c.id] = (seen[c.id] || 0) + 1; stubCopy(c.id, 1); };
+  for (let i = 0; i < 3; i++) { const c = miners.length ? pickOf(miners, miners.length) : pickOf(of('Common'), of('Common').length); out.push({ card_id: c.id, rarity: c.rarity, is_new: !seen[c.id], tier: 1 }); seen[c.id] = (seen[c.id] || 0) + 1; stubCopy(c.id, 1); }
+  for (let i = 0; i < 4; i++) add('Common');
   for (let i = 0; i < 2; i++) add('Uncommon');
-  // the rare slot walks Rare -> Ultra Rare -> Collector on a test page, so every glow can be seen
+  add('Rare'); // the sure Rare
+  // the rare-or-better slot walks Rare -> Ultra Rare -> Collector on a test page, so every glow can be seen
   add(force && RARITIES.includes(force) ? force : ['Rare', 'Ultra Rare', 'Collector'][STUB.opens % 3]);
+  if (forcedTier) { out[0].tier = forcedTier; const cp = STUB.copies[out[0].card_id]; if (cp && cp.length) cp[cp.length - 1].tier = forcedTier; } // the forced upgraded drop sits first
   return out;
 }
 

@@ -707,6 +707,28 @@ test('AC684: the connection clock and the average wait (Ken, Nov 5): while searc
   await closeAll(z);
 });
 
+test('AC685: PvP mulligan at the same time (Ken, Nov 5): both players see their own hand and the Mulligan choice at once; after one confirms they see "Waiting for opponent…" while the other still picks; the match starts when both have; hands stay hidden from each other', async ({ browser }) => {
+  test.setTimeout(120000);
+  const { a, b } = await pair(browser);
+  // both are asked at the same moment (no "your friend first")
+  for (const p of [a, b]) {
+    await expect.poll(() => p.evaluate(() => { const st = window.oreheart.getState(); return st && st.phase === 'mulligan' && window.oreheart.legalActions().some((l) => l.type === 'mulligan'); }), { timeout: 15000 }).toBe(true);
+    await expect(p.getByRole('button', { name: 'Keep Hand' })).toBeVisible({ timeout: 10000 });
+    expect(await p.evaluate(() => { const st = window.oreheart.getState(); return st.players.player.hand.length > 0 && st.players.opponent.hand.every((h) => h.hidden); })).toBe(true);
+  }
+  // Bob (seat b) keeps first; Alice still has her choice open, Bob waits
+  await b.getByRole('button', { name: 'Keep Hand' }).click();
+  await expect(b.getByTestId('mull-wait')).toHaveText('Waiting for opponent…', { timeout: 10000 });
+  await expect.poll(async () => (await view(a)).state.mulliganDone, { timeout: 10000 }).toEqual({ player: false, opponent: true });
+  await expect(a.getByRole('button', { name: 'Keep Hand' })).toBeVisible();
+  await a.getByRole('button', { name: 'Keep Hand' }).click();
+  for (const p of [a, b]) await expect.poll(async () => (await view(p)).state.phase, { timeout: 10000 }).toBe('deploy');
+  expect(await b.getByTestId('mull-wait').count()).toBe(0);
+  expect((await hook(a, 'actLog')).filter((e) => !e.ok)).toEqual([]);
+  expect((await hook(b, 'actLog')).filter((e) => !e.ok)).toEqual([]);
+  await closeAll(a, b);
+});
+
 test('AC677: a card dropped from the hand spawns its REAL model at once (models load with the hand), and a model still on its way is a shimmer, never a pawn', async ({ browser }) => {
   test.setTimeout(120000);
   const { a, b } = await pair(browser);

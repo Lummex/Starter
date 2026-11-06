@@ -53,10 +53,10 @@ test('AC640: the pack opening screen shows the painted foil pack (sealed, shine,
     const r = await page.request.get(`/art/packs/pack-${n}${part}.webp`);
     expect(r.ok(), `pack-${n}${part}.webp is served`).toBe(true);
   }
-  expect((await packState(page)).cards).toHaveLength(8);
+  expect((await packState(page)).cards).toHaveLength(11);
 });
 
-test('AC641: ripping runs idle -> ripping -> cards: the pack shakes, the top strip tears off (it moves), plenty of foil shreds fly, and the eight cards come out face down', async ({ page }) => {
+test('AC641: ripping runs idle -> ripping -> cards: the pack shakes, the top strip tears off (it moves), plenty of foil shreds fly, and the eleven cards come out face down', async ({ page }) => {
   await openEcon(page, 'pack');
   const seen = await page.evaluate(async () => {
     const out = { phases: [], shreds: 0, topMoved: false, shaking: false, sealedHidden: false };
@@ -84,15 +84,15 @@ test('AC641: ripping runs idle -> ripping -> cards: the pack shakes, the top str
   expect(seen.shreds, 'foil shreds').toBeGreaterThanOrEqual(30);
   expect(seen.shreds).toBeLessThanOrEqual(100);
   const cards = page.locator('.pko-card');
-  await expect(cards).toHaveCount(8);
-  for (let i = 0; i < 8; i++) { await expect(cards.nth(i)).toBeVisible(); await expect(cards.nth(i)).toHaveAttribute('data-flipped', 'false'); }
+  await expect(cards).toHaveCount(11);
+  for (let i = 0; i < 11; i++) { await expect(cards.nth(i)).toBeVisible(); await expect(cards.nth(i)).toHaveAttribute('data-flipped', 'false'); }
   await expect(page.locator('.pko-shred')).toHaveCount(0, { timeout: 4000 }); // the shreds clean themselves up
 });
 
-test('AC642: the player flips each card by clicking it (a 3D Y-turn shows the real card face); after all 8 the phase is done with "Open another" and "Done"', async ({ page }) => {
+test('AC642: the player flips each card by clicking it (a 3D Y-turn shows the real card face); after all 11 the phase is done with "Open another" and "Done"', async ({ page }) => {
   await ripToCards(page);
   const cards = page.locator('.pko-card');
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 11; i++) {
     await cards.nth(i).click();
     await expect(cards.nth(i)).toHaveAttribute('data-flipped', 'true');
     expect((await packState(page)).flipped).toBe(i + 1);
@@ -111,18 +111,18 @@ test('AC642: the player flips each card by clicking it (a 3D Y-turn shows the re
 test('AC643: "Flip all" and the packs.flipAll() hook turn every card; skip() jumps straight to the face-down row, then to all face up', async ({ page }) => {
   await ripToCards(page);
   await page.getByRole('button', { name: 'Flip all' }).click();
-  await expect.poll(async () => (await packState(page)).flipped, { timeout: 5000 }).toBe(8);
+  await expect.poll(async () => (await packState(page)).flipped, { timeout: 5000 }).toBe(11);
   expect((await packState(page)).phase).toBe('done');
   // skip from idle
   await page.evaluate(() => window.oreheart.packs.open('dwarf'));
   await expect.poll(async () => (await packState(page)).phase).toBe('idle');
   await page.evaluate(() => window.oreheart.packs.skip());
   expect((await packState(page)).phase).toBe('cards');
-  await expect(page.locator('.pko-card')).toHaveCount(8);
+  await expect(page.locator('.pko-card')).toHaveCount(11);
   await page.evaluate(() => window.oreheart.packs.skip());
   const st = await packState(page);
   expect(st.phase).toBe('done');
-  expect(st.flipped).toBe(8);
+  expect(st.flipped).toBe(11);
 });
 
 test('AC644: rarity glow grows with rarity and is never gold: Common none, Uncommon silver rim, Rare blue-white bloom, Ultra Rare violet bloom, Collector rainbow shimmer', async ({ page }) => {
@@ -240,7 +240,7 @@ test('AC650: the Shop shows the four packs (Oreheart, Junkpile, Gizmo, Deepforge
   for (let i = 0; i < 4; i++) {
     await expect(packs.nth(i).locator('.shop-price')).toContainText('100');
     await expect(packs.nth(i).locator('.shop-today')).toHaveText(/^\d+ opened today$/);
-    await expect(packs.nth(i).locator('.shop-odds')).toHaveText('8 cards: 5 Common, 2 Uncommon, 1 Rare or better: Rare 85%, Ultra Rare 13%, Collector 2%');
+    await expect(packs.nth(i).locator('.shop-odds')).toHaveText('11 cards: 3 cheap Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 85%, Ultra Rare 13%, Legendary 2%');
   }
   await expect(page.getByTestId('coin-chip').first()).toContainText('500');
   await expect(packs.first().locator('.shop-free'), 'the free pack ribbon').toHaveText('FREE');
@@ -294,7 +294,7 @@ test('AC652: the Collection shows every card with "×N" for owned ones, unowned 
   expect(missing.length).toBeGreaterThan(0);
   expect(missing.every(Boolean)).toBe(true);
   await page.getByRole('group', { name: 'Owned' }).getByRole('button', { name: 'All' }).click();
-  await page.getByRole('group', { name: 'Rarity' }).getByRole('button', { name: 'Collector' }).click();
+  await page.getByRole('group', { name: 'Rarity' }).getByRole('button', { name: 'Legendary' }).click(); // Ken, Nov 5: the top rarity reads Legendary
   const rar = await page.locator('.col-card:not([hidden])').evaluateAll((els) => els.map((e) => e.dataset.rarity));
   expect(rar.length).toBeGreaterThan(0);
   expect(new Set(rar)).toEqual(new Set(['collector']));
@@ -316,7 +316,7 @@ test('AC680: upgraded cards: a pack can drop one (forced here): its tier art or 
   await expect(page.locator('.pko-hint')).toContainText('UPGRADED');
   // the other seven are Originals: one dim star each, no tag
   const others = page.locator('.pko-card:not(.pko-upgraded)');
-  expect(await others.count()).toBe(7);
+  expect(await others.count()).toBe(10);
   expect(await others.first().locator('.oh-stars[data-tier="1"] i').count()).toBe(1);
   expect(await others.first().locator('.pko-upg').count()).toBe(0);
 });
@@ -527,7 +527,7 @@ test('AC658: shop_info lists the 4 active packs, each slot\'s odds summing to ex
   expect(error, error && error.message).toBeNull();
   expect(data.packs.map((p) => p.id).sort()).toEqual(['dwarf', 'gnome', 'goblin', 'standard']);
   for (const p of data.packs) {
-    expect(p.slots.reduce((n, s) => n + s.count, 0)).toBe(8);
+    expect(p.slots.reduce((n, s) => n + s.count, 0)).toBe(11);
     for (const s of p.slots) expect(Object.values(s.odds).reduce((a, b) => a + b, 0), `${p.id} slot ${s.slot_no}`).toBe(10000);
   }
   expect(data.coins).toBe(500);
@@ -536,25 +536,25 @@ test('AC658: shop_info lists the 4 active packs, each slot\'s odds summing to ex
   await expect(page.locator('.shop-pack')).toHaveCount(4);
 });
 
-test('AC659: opening a pack costs 100 coins and adds exactly 8 card instances; the opening animation shows those 8 cards', async ({ page }) => {
+test('AC659: opening a pack costs 100 coins and adds exactly 11 card instances; the opening animation shows those 11 cards', async ({ page }) => {
   needDb();
   const u = await makeUser();
   const c = await loginApi(u);
   const before = await ownedTotal(c);
   const { data, error } = await c.rpc('open_pack', { p_pack_type: 'standard', p_idem_key: key(), p_use_free: false });
   expect(error, error && error.message).toBeNull();
-  expect(data.cards).toHaveLength(8);
+  expect(data.cards).toHaveLength(11);
   expect(data.price_paid).toBe(100);
   expect(data.coins_after).toBe(200);
   expect(await coinsOf(u.id)).toBe(200);
-  expect(await ownedTotal(c)).toBe(before + 8);
+  expect(await ownedTotal(c)).toBe(before + 11);
   // through the game screens
   await gameToMenu(page, u);
   await page.getByRole('group', { name: 'Coins and packs' }).getByRole('button', { name: 'Shop' }).click();
   await page.locator('.shop-pack[data-pack="goblin"] .shop-buy').click();
   await expect(page.locator('[data-screen="econ-pack"]')).toBeVisible({ timeout: 15000 });
   const st = await page.evaluate(() => window.oreheart.packs.state());
-  expect(st.cards).toHaveLength(8);
+  expect(st.cards).toHaveLength(11);
   await expect.poll(() => coinsOf(u.id)).toBe(100);
   await page.evaluate(() => { window.oreheart.packs.skip(); window.oreheart.packs.skip(); });
   await expect(page.getByTestId('coin-chip').first()).toContainText('100');

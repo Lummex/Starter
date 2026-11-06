@@ -154,6 +154,7 @@ export function playerAction(m: MatchRecord, userId: string, seq: number, action
   const isBrew = real.type === 'ability' && real.ability === 'brew';
   if (real.type === 'surrender') { real.player = side; }
   else if (isBrew) { real.player = side; }
+  else if (s.phase === 'mulligan' && real.type === 'mulligan') { real.player = side; } // Nov 5 (Ken): both pick their hand at once
   else if (s.priority !== side) return { ok: false, error: "It is not your turn.", events: [] };
   else delete real.player; // a player can only ever act for their own side
   let r: any;
@@ -184,7 +185,10 @@ export function applyTimeouts(m: MatchRecord, now: number, rules: Rules): any[] 
     const s = m.state, c = m.clock;
     let seat: Seat | null = null, action: any = null, respondRunOut = false;
     if (c.respondDeadline != null && now >= c.respondDeadline && s.pendingResponse) { seat = sideSeat(s.pendingResponse.responder); action = { type: 'pass' }; respondRunOut = true; }
-    else if (c.deadline != null && now >= c.deadline && !s.pendingResponse) { seat = holderOf(s); action = s.phase === 'mulligan' ? { type: 'mulligan', uids: [] } : { type: 'done' }; }
+    else if (c.deadline != null && now >= c.deadline && !s.pendingResponse) {
+      if (s.phase === 'mulligan') { const side = (['player', 'opponent'] as const).find((x) => !s.mulliganDone[x]) || null; seat = sideSeat(side); action = { type: 'mulligan', uids: [], player: side }; } // Nov 5: both pick at once; the clock keeps the hand for whoever is late
+      else { seat = holderOf(s); action = { type: 'done' }; }
+    }
     if (!seat || !action) break;
     const r = applyAction(s, action);
     if (!r.ok) {
