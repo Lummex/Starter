@@ -757,14 +757,24 @@ export class App {
     };
     for (const c of cmds) {
       const f = FACTIONS[c.faction];
+      const [cName, cTitle] = String(c.name).split(/,\s*/);
+      const looks = h('span', { class: 'cmd-looks', 'aria-hidden': 'true' }, ...[1, 2, 3, 4, 5].map((t) => h('span', { class: 'cmd-look' + (t === 1 ? ' on' : ''), 'data-t': String(t), style: `background-image:url(${t === 1 ? commanderPortrait(c.id) : `/art/upgrades/commander-${c.id}/${t}.webp`})` })));
+      const tierTag = h('span', { class: 'cmd-tier', 'data-tier': '1', 'aria-hidden': 'true' }, 'Original \u2605');
       cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { if (picked && cmd === c.id) return; cmd = c.id; onCmd(); pick(); },
         onpointerenter: () => { hallOver = c.id; setHall(); }, onpointerleave: () => { if (hallOver === c.id) { hallOver = ''; setHall(); } }, onfocus: () => { hallOver = c.id; setHall(); }, onblur: () => { if (hallOver === c.id) { hallOver = ''; setHall(); } } },
-        h('span', { class: 'portrait-img oh-cmd', 'aria-hidden': 'true' }, ohCardEl(commanderCard(c), commanderPortrait(c.id))),
+        h('span', { class: 'portrait-img oh-cmd', 'aria-hidden': 'true' }, h('img', { class: 'cmd-pic', src: commanderPortrait(c.id), alt: '', draggable: 'false' }),
+          h('span', { class: 'cmd-tags' }, h('span', { class: 'cmd-fac' }, h('i', {}), f.name), h('span', { class: 'cmd-chosen' }, 'Chosen'), h('span', { class: 'cmd-hp' }, h('b', {}, String(c.health || 20)), 'Health')), tierTag),
         h('span', { class: 'cmd-win' },
-          h('span', { class: 'nm' }, c.name),
+          h('span', { class: 'nm' }, cName), h('span', { class: 'ttl' }, cTitle || `${f.name} · ${f.faith}`),
           h('span', { class: 'fa' }, `${f.name} · ${f.faith}`),
-          h('span', { class: 'ds' }, c.abilityText))));
+          h('span', { class: 'ab' }, h('small', {}, 'Commander ability'), h('span', { class: 'ds' }, c.abilityText)),
+          h('span', { class: 'bl' }, c.blurb || ''),
+          h('span', { class: 'cmd-foot' }, looks, h('span', { class: 'cmd-lk' }, h('small', {}, 'Upgrade look'), h('b', { class: 'cmd-lkn' }, 'Original'), h('small', { class: 'cmd-decks-n' }, ''))))));
     }
+    // signed in: the Commander's upgrade look (the best 'commander-<id>' copy) lights the looks row and the tag
+    if (net.active) void import('../net/economy').then((m) => m.api.myUpgradeInfo()).then((u) => {
+      for (const b of cmdBtns) { const best = Math.max(1, Math.min(5, Number(u?.cards?.['commander-' + b.dataset.id]?.best) || 1)); const tg = b.querySelector('.cmd-tier') as El | null; if (tg) { tg.dataset.tier = String(best); tg.textContent = `${TIER_NAMES[best]} ${'\u2605'.repeat(best)}`; } (b.querySelector('.cmd-lkn') as El | null)!.textContent = TIER_NAMES[best]; b.querySelectorAll('.cmd-look').forEach((l) => l.classList.toggle('on', Number((l as El).dataset.t) <= best)); }
+    }).catch(() => {});
     for (const [id, label] of [['standard', 'Standard'], ['cardplay', 'Card Play'], ['compvscomp', 'Card Comp vs Card Comp']]) modeBtns.push(btn(label, 'diff mode-btn', () => { mode = id; this.game.setMode(id); try { localStorage.setItem('oreheart.mode', id); } catch { /* storage unavailable */ } sel(); }, { 'data-id': id }));
     for (const d of ['easy', 'normal', 'hard']) diffBtns.push(btn(d[0].toUpperCase() + d.slice(1), 'diff', () => { diff = d; sel(); }, { 'data-id': d }));
     const FCMD: Record<string, string> = { goblins: 'grubnak', gnomes: 'sproingle', dwarves: 'borgo' };
@@ -876,24 +886,39 @@ export class App {
           try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, mode, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
           this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, mode, rivalId: rv.id, aiStyle: rv.style, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
     };
-    const startBtn = h('div', { class: 'fight-wrap' }, btn('Fight!', 'primary fight-btn', startFn));
-    const mainEl = h('main', { class: 'screen setup mb-setup', 'data-screen': 'select' },
-      h('div', { class: 'mb-stage' },
-        ownerBox('commander', 'cTitle', h('h1', { class: 'section cinzel cs-title' }, 'Choose Your Commander')),
-        ownerBox('commander', 'cCards', pager, 'cs-cards'),
-        // Owner (Ken, Oct 31): "I would also like the game mode, standard ... comp versus comp ... on the right-hand side"; the deck picker sits
-        // right under it as a list (Forge, Ken approved: room for four named starter decks per faction plus the saved decks)
-        freeBox(74, 12, 24.5, 23, [h('span', { class: 'cs-label', 'aria-hidden': 'true' }, 'Game mode'), h('div', { class: 'mode-row', role: 'group', 'aria-label': 'Game mode' }, ...modeBtns)], 'cs-modes'),
-        ownerBox('commander', 'cDecks', h('div', { class: 'deck-wrap' }, h('span', { class: 'cs-label', 'aria-hidden': 'true' }, 'Deck'), row), 'cs-decks'),
-        freeBox(20, 88.2, 60, 11.8, [msg,
-          h('div', { class: 'row setup-actions', role: 'group', 'aria-label': 'Difficulty' },
-            btn('Restore starter decks', '', () => { setHiddenStarters([]); buildRow(); sel(); }), ...diffBtns)], 'cs-extra'),
-        ownerBox('commander', 'cStart', startBtn, 'cs-start'),
-        ownerBox('commander', 'cBack', btn('Back', 'back-btn', () => this.showMenu()), 'cs-back')));
+    // Nov 6 (design D, Ken approved): START is the Fight! button (its name stays Fight! for the checks and the keyboard)
+    const start = btn('Start', 'primary fight-btn panel play', startFn, { 'aria-label': 'Fight!' });
+    start.prepend(h('img', { src: '/art/ui/silver/icon-play.webp', alt: '', draggable: 'false' }));
+    const startSub = h('span', { class: 'start-sub', 'aria-hidden': 'true' }, '');
+    const startBtn = h('div', { class: 'fight-wrap panel' }, start, startSub);
+    const deckTitle = h('h2', { class: 'h' }, 'Deck');
+    const online = net.active;
+    const back = btn(online ? '\u2039 Dashboard' : 'Back', 'back-btn panel', () => this.showMenu());
+    const top = h('div', { class: 'top', 'aria-hidden': 'true' });
+    // the old Menu Builder zones (cTitle / cCards / cDecks / cStart / cBack, owner-layout.json) are not used by this screen any more: Ledger's editor needs a note (see the report)
+    const mainEl = h('main', { class: 'screen setup-d dash' + (online ? '' : ' offline'), 'data-screen': 'select' }, // (not .setup: the older sheet's !important sizes for that class would fight the D layout)
+      top, h('div', { class: 'logo', 'aria-hidden': 'true' }),
+      h('div', { class: 'hdr' }, back, h('h1', { class: 'h ttl cs-title' }, 'Choose Your Commander'), h('div', { class: 'info' }, 'Your Commander leads the deck and has 20 Health. Bring the enemy to 0 to win.')),
+      h('div', { class: 'main' },
+        h('div', { class: 'cs-cards' }, pager),
+        h('div', { class: 'side' },
+          h('section', { class: 'panel cs-modebox', 'aria-label': 'How to play' },
+            h('span', { class: 'cs-label' }, 'Game mode'), h('div', { class: 'mode-row', role: 'group', 'aria-label': 'Game mode' }, ...modeBtns),
+            h('span', { class: 'cs-label' }, 'Difficulty'), h('div', { class: 'row setup-actions', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns),
+            h('div', { class: 'cs-extra' }, msg, btn('Restore starter decks', 'sbtn panel', () => { setHiddenStarters([]); buildRow(); sel(); }))),
+          h('section', { class: 'panel cs-deckbox', 'aria-label': 'Deck' }, h('div', { class: 'ptitle' }, deckTitle, h('button', { type: 'button', class: 'more', onclick: () => showDecks(this) }, 'Edit deck \u203a')),
+            h('div', { class: 'deck-wrap' }, h('span', { class: 'cs-label', 'aria-hidden': 'true' }, 'Deck'), row)),
+          h('section', { class: 'panel cs-locked', 'aria-label': 'Locked Commanders' }, h('div', { class: 'ptitle' }, h('h2', { class: 'h' }, 'Locked Commanders')),
+            h('div', { class: 'cs-lockrow' }, ...[['Queen Skreeka', 'Goblin'], ['Old Grumblebeard', 'Dwarf']].map(([n, f]) => h('div', { class: 'cs-lock' }, h('span', { class: 'pic', 'aria-hidden': 'true' }), h('b', {}, n), h('small', {}, `${f} · coming in a later season`)))),
+            h('p', { class: 'cs-locknote' }, 'More Commanders join in later seasons. Each will bring its own ability and an upgrade look of its own.')),
+          startBtn)));
+    const selSub = () => { const d = COMMANDERS[cmd]; deckTitle.textContent = `Deck for ${String(d?.name || '').split(/[ ,]/)[0] || 'your Commander'}`; startSub.textContent = `${({ standard: 'Standard', cardplay: 'Card Play', compvscomp: 'Comp vs Comp' } as Record<string, string>)[mode] || mode} · ${diff[0].toUpperCase() + diff.slice(1)}`; for (const b of cmdBtns) { const n = b.querySelector('.cmd-decks-n') as El | null; if (n) { const k = STARTER_DECK_LIST.filter((x) => x.faction === COMMANDERS[b.dataset.id!].faction && !hiddenStarters().includes(x.id)).length + decks.filter((x) => !x.commander || x.commander === b.dataset.id).length; n.textContent = `${k} deck${k === 1 ? '' : 's'}`; } } };
+    mainEl.addEventListener('click', () => requestAnimationFrame(selSub));
     mainRef.el = mainEl as El;
     this.selState = () => ({ mode: picked ? 'focused' : 'row', commanderId: cmd, model: null }); // Ken, Oct 31: no 3D pop-up on this screen
     this.root.append(mainEl);
-    if (net.active) void import('../net/dashboard').then((m) => m.dashSkin(mainEl, 'Choose Your Commander', () => this.showMenu())).catch(() => {}); // Nov 6 (design D)
+    selSub();
+    if (online) void import('../net/dashboard').then((m) => m.loadAll().then((d) => { if (top.isConnected) { const t = m.topBar(d); t.setAttribute('aria-hidden', 'true'); top.replaceWith(t); } })).catch(() => {});
     setHall();
   }
 
