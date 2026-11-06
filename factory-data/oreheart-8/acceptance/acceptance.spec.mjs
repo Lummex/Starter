@@ -12269,7 +12269,7 @@ for (const id of SFX_SPELLS) SFX_SPEC['spell:' + id] = [['spell-' + id], 1, 0];
 const sfxState = async (page) => (await page.evaluate(async () => await window.oreheart.getAudioState())).sfx;
 async function sfxReady(page) {
   await page.mouse.click(5, 5); // first gesture unlocks audio; the files load after it
-  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 55 sound files decoded (Oct 31: 3 summon variants; Nov 1: rocket launch and crash)', timeout: 20000 }).toBe(55);
+  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 58 sound files decoded (Oct 31: 3 summon variants; Nov 1: rocket launch and crash)', timeout: 20000 }).toBe(58); // Nov 6: + the three new spells' sounds
 }
 const playKey = (page, key) => page.evaluate((k) => {
   if (k.startsWith('spell:')) window.oreheart.playSpellSound(k.slice(6));
@@ -12721,7 +12721,7 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
       ] }));
       await done(page);
       const man = await voicesReady(page, request);
-      await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 55 sound files decoded (with the 12 projectile sounds, 3 summon variants, the 2 rocket sounds)', timeout: 20000 }).toBe(55);
+      await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 58 sound files decoded (with the 12 projectile sounds, 3 summon variants, the 2 rocket sounds)', timeout: 20000 }).toBe(58); // Nov 6: + the three new spells' sounds
       await expect.poll(async () => (await sfxState(page)).punchLoaded, { message: 'all 6 punch files decoded', timeout: 20000 }).toBe(6);
       await unitLoaded(page, 'goblin-sneak', man); await unitLoaded(page, 'dwarf-pickman', man);
       // --- the hurt rule, through the voice hook (owner check change, Ken Nov 1: the 1-in-20 roll replaced the 35 % rule; test pages roll every time, AC550 checks the roll)
