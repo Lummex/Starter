@@ -177,6 +177,7 @@ update public.settings set value = '2' where key = 'quest_streak_days';
 update public.player_quests set quest_id = 'pick-a-fight', params = '{}', target = 2, progress = 1 where user_id = :P3 and quest_id in (select id from public.quest_defs where tier = 'easy');
 update public.player_quests set quest_id = 'big-spender', params = '{}', target = 1 where user_id = :P3 and quest_id in (select id from public.quest_defs where tier = 'medium');
 update public.player_quests set quest_id = 'crown-jewels', params = '{"commander": "grubnak"}', target = 1 where user_id = :P3 and quest_id in (select id from public.quest_defs where tier = 'hard');
+insert into public.quest_streaks (user_id) values (:P3) on conflict (user_id) do nothing; -- the row may not exist yet (it depends on earlier random deals)
 update public.quest_streaks set days = 1, last_day = private.today() - 1 where user_id = :P3;
 select private.quest_progress(:P3, '{"turns": 8, "won": true, "commander": "grubnak", "cost7Plays": 1}', 'practice:00000000-0000-4000-8000-000000000031');
 select pg_temp.ok('streak: yesterday 1 + today all done = 2 days = quest_streak_days -> one free pack',

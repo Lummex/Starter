@@ -405,7 +405,7 @@ function waitTimer(el: El, startedAt: number, label = 'Searching') {
 }
 const avgText = (avgWait: number | null | undefined, pairings: number | undefined) => (avgWait == null ? (pairings === undefined ? '' : 'Average wait: not enough players yet') : `Average wait right now: ~${mmss(avgWait)}`);
 /** flow.ts (and the mock start in test pages) hand over the App. */
-export function bindPvpApp(a: App) { app = a; }
+export function bindPvpApp(a: App) { app = a; net.openPvp = (mode) => { if (mode === 'friend') showFriend(); else showQueue(mode); }; }
 export const currentNetGame = () => current;
 
 function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string | Node | null | undefined | false)[]): El {

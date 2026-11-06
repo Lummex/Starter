@@ -11,6 +11,7 @@ import { h } from '../ui/app';
 import { CARDS } from '../engine';
 import { setOwnedCounts, setOwnedTiers, deckLimit, ownedOf, copyLimit } from '../ui/decks';
 import { COMMANDER_PACK_IDS, commanderPackCard, cardFor } from '../content/card-labels';
+import { rankOfRating, DEFAULT_LADDER, type LadderRank, type LadderStep } from '../content/ladder';
 import { summarize, capSummary } from './quest-summary';
 
 type El = HTMLElement;
@@ -39,6 +40,10 @@ export const tierOfWorth = (worth: number, steps: number[]) => { for (let t = 5;
 export interface OpenResult { opening_id: string; pack_type: string; price_paid: number; free: boolean; cards: PulledCard[]; coins_after: number; free_packs_after: number; odds: PackSlot[]; extras?: PulledCard[]; pity?: boolean; bundle_id?: string | null }
 export interface Quest { id: string; quest_id: string; name: string; text: string; tier: 'easy' | 'medium' | 'hard'; reward: number; progress: number; target: number; done: boolean; expires_on: string }
 export interface QuestsInfo { quests: Quest[]; reroll_left: number; streak_days: number; free_packs: number; today: string }
+/** Nov 6 (Dashboard): the player's rank card from my_rank: the Elo rating and the ladder step read off it */
+export interface RankCard { season: string; season_end: string | null; rating: number; name: string; games: number; wins: number; losses: number; peak: number; place: number | null; players?: number; rank: LadderRank; ladder: LadderStep[] }
+export interface NewsPost { id: string; title: string; subtitle: string | null; body: any; posted_on?: string; event_on?: string | null; action?: 'join' | 'remind' | null }
+export interface NewsFeed { patch: NewsPost[]; events: NewsPost[]; news: NewsPost[] }
 
 const params = () => new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
 export const isTestPage = () => params().get('test') === '1';
@@ -235,6 +240,23 @@ export const api = {
       return { event_id: 'stub-e' + (++stubUid), target, card_id: id, spent: srcs.length, left: STUB.copies[id].length, decks: [], worth_before: before.worth, worth_after: t.worth, tier_before: before.tier, tier_after: t.tier, next_worth: t.tier < 5 ? worthOfTier(t.tier + 1, stubSteps(id)) : null, repeat: false };
     }
     return await retryOnce(() => rpc<UpgradeResult>('upgrade_card', { p_target: target, p_sources: sources, p_idem_key: idemKey, p_force: force === true }));
+  },
+  /** Nov 6 (Dashboard): the rank card */
+  async myRank(): Promise<RankCard> {
+    if (stubMode()) { stubInit(); const rating = 1016; return { season: '2026-Q4', season_end: new Date(Date.now() + 12 * 86400000 + 6 * 3600000).toISOString(), rating, name: rankOfRating(rating).label, games: 27, wins: 18, losses: 9, peak: 1044, place: 84, players: 2184, rank: rankOfRating(rating), ladder: DEFAULT_LADDER.slice() }; }
+    const r = await rpc<any>('my_rank');
+    const ladder: LadderStep[] = Array.isArray(r?.ladder) ? r.ladder.map((s: any) => ({ name: String(s.name), min: Number(s.min) || 0 })) : DEFAULT_LADDER.slice();
+    return { ...r, rank: r && r.rank && r.rank.label ? { ...rankOfRating(Number(r.rating) || 1000, ladder), ...r.rank, divFloor: Number(r.rank.div_floor), divNext: r.rank.div_next == null ? null : Number(r.rank.div_next), progress: Number(r.rank.progress) || 0 } : rankOfRating(Number(r?.rating) || 1000, ladder), ladder };
+  },
+  /** Nov 6 (Dashboard): What's New from the news table (admin-editable) */
+  async newsFeed(): Promise<NewsFeed> {
+    if (stubMode()) { stubInit(); return { patch: [{ id: 'stub-p1', title: 'Patch 0.9.5 (test server)', subtitle: 'November 5', body: [{ section: 'new', items: ['<b>Ranked and Unranked PvP</b> on the test server', '<b>Card upgrades</b>: Enhanced to Mythic, found in packs', '<b>Treasure Chest</b>: 99 packs and an exclusive card back'] }, { section: 'fixed', items: ['Units no longer freeze after a Respond window'] }, { section: 'known', items: ['Friend codes can take a moment to appear'] }] }], events: [{ id: 'stub-e1', title: 'Crystal Cup', subtitle: 'Tournament · coming soon', body: [], event_on: null, action: 'join' }, { id: 'stub-e2', title: 'Goblin Rumble Weekend', subtitle: 'Double coins on goblin quests · coming soon', body: [], event_on: null, action: 'remind' }], news: [{ id: 'stub-n1', title: 'Welcome to the test server', subtitle: 'Oreheart Online, early days', body: ['Coins, packs and ranks here are for testing.'] }] }; }
+    return await rpc<NewsFeed>('news_feed');
+  },
+  /** Nov 6 (Dashboard): the top of the season and the caller's row */
+  async leaderboard(limit = 10): Promise<any> {
+    if (stubMode()) { stubInit(); const names = ['Snagtooth', 'Amvilina', 'ProfessorZap', 'MossQueen', 'SirBonksAlot', 'IronBeardBetty', 'Propellerhead', 'LadyGloom', 'HexyBexy', 'BigBogBrian']; const top = names.map((n, i) => { const rating = 1700 - i * 40; return { place: i + 1, user_id: 'stub-' + i, username: n, avatar: null, rating, label: rankOfRating(rating).label, wins: 200 - i * 12, losses: 100 - i * 3, games: 300 - i * 15, me: false }; }); return { season: '2026-Q4', season_end: new Date(Date.now() + 12 * 86400000).toISOString(), top, me: await this.myRank(), players: 2184, shares: { Stone: 180, Copper: 220, Iron: 260, Silver: 330, Sapphire: 480, Emerald: 320, Ruby: 200, Amethyst: 120, Diamond: 54, Oreheart: 20 } }; }
+    return await rpc<any>('leaderboard', { p_limit: limit });
   },
   async myQuests(): Promise<QuestsInfo> {
     if (stubMode()) { stubInit(); return JSON.parse(JSON.stringify({ ...STUB.quests!, free_packs: STUB.free_packs })); }

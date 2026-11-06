@@ -941,6 +941,94 @@ test('AC692: the 24-bundle keeps its promise: after its last pack the grid holds
   expect(await page.evaluate(() => window.oreheart.packs.coins().coins)).toBe(5500 - 2400);
 });
 
+test('AC693: the Main Dashboard (design D, Ken Nov 5) is the signed-in main menu: top bar with name, rank charm, coins and free packs; Your rank with the 10-step ladder; the daily quests; Play with the four modes and Find a match; the six tiles with real counts; What\'s new tabs from the news table; events with Join / Remind me disabled', async ({ page }) => {
+  await openEcon(page, 'shop');
+  await page.getByRole('button', { name: 'Back' }).click();
+  expect(await page.evaluate(() => window.oreheart.packs.setOwned({ 'goblin-grunt': 4, 'shiv-rat': 2 }, [{ name: 'Junk Pile', cards: Array(4).fill('goblin-grunt'), commander: 'grubnak' }]))).toBe(true);
+  await page.evaluate(() => window.__app.showMenu());
+  const dash = page.locator('main.dash[data-dash="1"]');
+  await expect(dash).toBeVisible({ timeout: 10000 });
+  await expect(dash.getByTestId('dash-who')).toContainText('Sapphire III');
+  await expect(dash.getByTestId('dash-coins')).toContainText('500');
+  await expect(dash.getByTestId('dash-free')).toContainText('1 free pack');
+  await expect(dash.getByTestId('dash-server')).toContainText('online');
+  const rank = dash.getByTestId('dash-rank');
+  await expect(rank).toContainText('Sapphire III');
+  await expect(rank).toContainText('Rating 1,016');
+  await expect(rank).toContainText('#84 on the server');
+  await expect(rank).toContainText('18 wins · 9 losses');
+  await expect(rank).toContainText('Progress to Sapphire II');
+  expect(await rank.locator('.ladder img').count()).toBe(10);
+  await expect(rank.locator('.ladder img.on')).toHaveAttribute('src', '/art/ui/rank-charms/sapphire.webp');
+  await expect(rank).toContainText('ends in');
+  await expect(dash.getByTestId('dash-quests').locator('.q')).toHaveCount(3);
+  await expect(dash.getByTestId('dash-quests')).toContainText('Free pack in 4 days');
+  // Play: Ranked is on by default; the sub line follows the mode
+  const play = dash.getByTestId('dash-play');
+  await expect(play.locator('.chip.on')).toHaveText('Ranked');
+  await play.locator('.chip[data-mode="unranked"]').click();
+  await expect(play.locator('.chip.on')).toHaveText('Unranked');
+  await expect(play.locator('.play-sub')).toContainText('Unranked');
+  await expect(dash.getByTestId('dash-find')).toContainText('Find a match');
+  // the tiles carry real counts
+  await expect(dash.getByTestId('dash-decks')).toContainText('1 deck');
+  await expect(dash.getByTestId('dash-collection')).toContainText('2 /');
+  await expect(dash.getByTestId('dash-shop')).toContainText('1 free pack waiting');
+  await expect(dash.getByTestId('dash-questtile')).toContainText('1 of 3 today');
+  // What's new: the seeded patch first, the tabs switch, events with disabled buttons
+  const news = dash.getByTestId('dash-news');
+  await expect(news).toContainText('Patch 0.9.5');
+  await expect(news.locator('.sec.new')).toHaveText('New');
+  await news.getByRole('tab', { name: 'News' }).click();
+  await expect(news).toContainText('Welcome to the test server');
+  const events = dash.getByTestId('dash-events');
+  await expect(events.locator('.ev')).toHaveCount(2);
+  await expect(events.getByRole('button', { name: /Join/ })).toBeDisabled();
+  await expect(events.getByRole('button', { name: /Remind me/ })).toBeDisabled();
+  // a tile opens its screen and Back comes home to the dashboard
+  await dash.getByTestId('dash-shop').click();
+  await expect(page.locator('[data-screen="econ-shop"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.locator('main.dash[data-dash="1"]')).toBeVisible({ timeout: 10000 });
+  await page.locator('main.dash').getByTestId('dash-settings').click();
+  await expect(page.locator('[data-screen="settings"]')).toBeVisible();
+});
+
+test('AC694: Rankings from the dashboard: the top ten with rank charms and ratings, the caller\'s row pinned, the 10-step ladder with shares, the season countdown, season rewards "coming soon"; Back returns to the dashboard; and at phone landscape the dashboard shows Play, six small tiles and one tabbed side panel', async ({ page }) => {
+  await openEcon(page, 'shop');
+  await page.getByRole('button', { name: 'Back' }).click();
+  expect(await page.evaluate(() => window.oreheart.packs.setOwned({ 'goblin-grunt': 4 }))).toBe(true);
+  await page.evaluate(() => window.__app.showMenu());
+  const dash = page.locator('main.dash[data-dash="1"]');
+  await expect(dash).toBeVisible({ timeout: 10000 });
+  await dash.getByTestId('dash-rankings').click();
+  const rk = page.locator('main.dash.rankings');
+  await expect(rk).toBeVisible({ timeout: 10000 });
+  const rows = rk.getByTestId('rank-row');
+  await expect(rows).toHaveCount(11); // ten on top and the caller's own row (#84)
+  await expect(rows.first()).toContainText('Snagtooth');
+  await expect(rows.first()).toContainText('Oreheart');
+  await expect(rows.last()).toHaveClass(/me/);
+  await expect(rows.last()).toContainText('84');
+  expect(await rk.getByTestId('rank-ladder').locator('.ladder-big > div').count()).toBe(10);
+  await expect(rk.getByTestId('rank-ladder').locator('.ladder-big > div.on')).toContainText('Sapphire');
+  await expect(rk.getByTestId('rank-ladder')).toContainText('Season ends in');
+  await expect(rk).toContainText('Coming soon: rewards');
+  await rk.getByRole('button', { name: '‹ Dashboard' }).click();
+  await expect(page.locator('main.dash[data-dash="1"]')).toBeVisible({ timeout: 10000 });
+  // phone landscape
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect(page.locator('main.dash .small')).toBeVisible();
+  await expect(page.locator('main.dash .pside')).toBeVisible();
+  await expect(page.locator('main.dash .col.left')).toBeHidden();
+  await expect(page.locator('main.dash .pside .rkmini')).toContainText('Sapphire III');
+  await expect(page.locator('main.dash .pside .tabs button[aria-selected="true"]')).toHaveText('Quests');
+  await expect(page.locator('main.dash .pside .q')).toHaveCount(3);
+  await page.locator('main.dash .pside').getByRole('tab', { name: 'Patch notes' }).click();
+  await expect(page.locator('main.dash .pside')).toContainText('Patch 0.9.5');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+});
+
 // ---- Gauge's list (Nov 2)
 test('AC667: while an economy screen is up the keyboard can never reach the menu behind it (the menu is inert), and it comes back on Back', async ({ page }) => {
   await openEcon(page, 'shop');

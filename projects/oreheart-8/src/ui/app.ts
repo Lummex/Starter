@@ -614,6 +614,8 @@ export class App {
   }
   showMenu() {
     this.leaveNet();
+    // Nov 6 (Ken approved design D): signed in, the main menu is the Dashboard; offline and the mock PvP pages keep the older menu
+    if (net.active && !/[?&]pvp=mock/.test(location.search)) { void import('../net/dashboard').then((m) => m.showDashboard(this)); return; }
     const s = this.menuScreen('main', 'title');
     this.menuHook?.(s);
     if (!this.test && !localStorage.getItem('oreheart.tutorialSeen')) {

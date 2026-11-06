@@ -39,6 +39,7 @@ let uid = 0;
 // own pick). Offline practice and signed out fall back to the saved local name / avatar, else "Player" and Ken's goblin-goggle-rogue.
 setPlayerNameProvider(() => (net.active && status ? status.username : null));
 setPlayerAvatarProvider(() => (net.active && status ? status.avatar : null));
+net.openProfile = () => { if (net.active && status) showProfile(); };
 
 // ------------------------------------------------------------------ small UI helpers
 const testBar = (): El | null => (serverKind === 'test' ? h('div', { class: 'test-server-bar', 'data-testid': 'test-server-bar' }, 'TEST SERVER — practice accounts only') : null);
@@ -460,6 +461,7 @@ async function afterSignIn() {
   }
   if (my !== uid) return;
   status = s;
+  net.avatar = s.avatar || null;
   net.under13 = s.age_group === 'under_13';
   net.ageGroup = s.age_group;
   setMatureAllowed(canSeeMature(s.age_group)); /* plates: mature avatars only for a signed-in 16+ account */

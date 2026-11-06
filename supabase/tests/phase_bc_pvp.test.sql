@@ -278,7 +278,7 @@ select pg_temp.ok('every security definer function pins search_path',
 -- ========== Modes (Nov 5): ranked queue + Elo, unranked queue, practice pays nothing ==========
 select pg_temp.ok('modes: settings, the season name, the rank names',
   (private.setting('ranked_k'))::int = 32 and private.season_now() ~ '^\d{4}-Q[1-4]$'
-  and private.rank_name(899) = 'Scrap' and private.rank_name(1000) = 'Ore' and private.rank_name(1299) = 'Crystal' and private.rank_name(1300) = 'Gem' and private.rank_name(1500) = 'Mythic'
+  and private.rank_name(899) = 'Iron I' and private.rank_name(1000) = 'Sapphire III' and private.rank_name(1299) = 'Ruby I' and private.rank_name(1300) = 'Amethyst III' and private.rank_name(1500) = 'Oreheart' -- the 10-step ladder (Forge, Nov 5)
   and 'ranked_k' = any (private.editable_settings()));
 select pg_temp.refused('queue: players cannot call the referee doors', :PA, 'aal1', $q$ select public.pvp_queue_pair('c0000000-0000-4000-8000-000000000021') $q$);
 select pg_temp.refused('queue: players cannot read the queue table', :PA, 'aal1', 'select * from public.pvp_queue');
@@ -345,9 +345,10 @@ select pg_temp.ok('ranked finish: coins as usual, ratings 1016 / 984, rating_eve
 select pg_temp.ok('ranked finish: the same match again moves nothing',
   (select not (j ->> 'finished')::boolean from private.pvp_finish('22222222-0000-4000-8000-0000000000cc', :PA, 'a', 'win', 7, null, null) j)
   and (select rating from public.ratings where user_id = :PA and season = private.season_now()) = 1016);
-select pg_temp.ok('my_rank: Side A sees 1016 Ore, first place; Side C (never ranked) sees 1000 and no place',
-  (select (r ->> 'rating')::int = 1016 and r ->> 'name' = 'Ore' and (r ->> 'place')::int = 1 and (r ->> 'wins')::int = 1 from pg_temp.json_as(:PA, 'aal1', 'select public.my_rank()') r)
-  and (select (r ->> 'rating')::int = 1000 and r -> 'place' = 'null'::jsonb from pg_temp.json_as(:PC, 'aal1', 'select public.my_rank()') r));
+select pg_temp.ok('my_rank: Side A sees 1016 Sapphire III, first place; Side C (never ranked) sees 1000 and no place',
+  (select (r ->> 'rating')::int = 1016 and r ->> 'name' = 'Sapphire III' and r -> 'rank' ->> 'division' = 'III' and (r -> 'rank' ->> 'next')::int = 1100 and jsonb_array_length(r -> 'ladder') = 10 and r ? 'season_end' and (r ->> 'place')::int = 1 and (r ->> 'wins')::int = 1 from pg_temp.json_as(:PA, 'aal1', 'select public.my_rank()') r)
+  and (select (r ->> 'rating')::int = 1000 and r -> 'place' = 'null'::jsonb from pg_temp.json_as(:PC, 'aal1', 'select public.my_rank()') r),
+  (select r::text from pg_temp.json_as(:PA, 'aal1', 'select public.my_rank()') r));
 select pg_temp.refused('my_rank needs a login', null, null, 'select public.my_rank()');
 -- a practice match: nothing paid, nothing counted
 insert into public.matches (id, mode, player_a, player_b, state, seq, status, engine_version)
@@ -365,8 +366,29 @@ select pg_temp.ok('practice finish: the match ends, 0 coins, no match_rewards, n
 
 -- ---------- report ----------
 \set QUIET off
+-- ========== Nov 6: the Dashboard: leaderboard and What's New ==========
+insert into public.roles (user_id, role, granted_by) select id, 'admin', id from auth.users where id = :PC and not exists (select 1 from public.roles r where r.user_id = :PC and r.role = 'admin'); -- Side C becomes the admin for these checks
+select pg_temp.ok('leaderboard: Side A on top with its name and label, the caller flagged, the shares by step, the season end',
+  (select jsonb_array_length(j -> 'top') >= 1 and j -> 'top' -> 0 ->> 'label' = 'Sapphire III' and (j -> 'top' -> 0 ->> 'me')::boolean and (j -> 'top' -> 0 ->> 'place')::int = 1
+          and (j -> 'me' ->> 'rating')::int = 1016 and (j -> 'shares' ->> 'Sapphire')::int >= 1 and j ? 'season_end'
+   from pg_temp.json_as(:PA, 'aal1', 'select public.leaderboard(10)') j),
+  (select j::text from pg_temp.json_as(:PA, 'aal1', 'select public.leaderboard(10)') j));
+select pg_temp.refused('leaderboard needs a login', null, null, 'select public.leaderboard(10)');
+select pg_temp.ok('news_feed: the seeded patch notes, two placeholder events and one news line',
+  (select jsonb_array_length(j -> 'patch') >= 2 and j -> 'patch' -> 0 ->> 'title' like 'Patch 0.9.5%' and jsonb_array_length(j -> 'events') = 2 and j -> 'events' -> 0 ->> 'action' in ('join', 'remind') and jsonb_array_length(j -> 'news') >= 1
+   from pg_temp.json_as(:PA, 'aal1', 'select public.news_feed()') j),
+  (select j::text from pg_temp.json_as(:PA, 'aal1', 'select public.news_feed()') j));
+select pg_temp.refused('news_feed needs a login', null, null, 'select public.news_feed()');
+select pg_temp.refused('news: a player cannot write posts', :PA, 'aal1', $q$ select public.admin_news_set(null, 'news', 'Hacked', null, '[]', null, null, true, 0, 'because') $q$);
+select pg_temp.works('news: an admin adds a post', :PC, 'aal2', $q$ select public.admin_news_set(null, 'news', 'Server note', 'today', '["Line one"]', null, null, true, 9, 'test post') $q$);
+select pg_temp.ok('news: the new post leads the news list and the audit row is there',
+  (select j -> 'news' -> 0 ->> 'title' = 'Server note' from pg_temp.json_as(:PA, 'aal1', 'select public.news_feed()') j)
+  and (select count(*) from public.admin_audit where action = 'news_set' and reason = 'test post') = 1);
+select pg_temp.refused('news: players cannot read the table directly', :PA, 'aal1', 'select * from public.news_posts', 'permission denied');
+
 select n, case when ok then 'PASS' else 'FAIL' end as result, name, case when ok then '' else detail end as detail
 from results order by n;
+
 do $$ declare f int := (select count(*) from results where not ok); t int := (select count(*) from results);
 begin
   raise notice '% of % checks passed', t - f, t;

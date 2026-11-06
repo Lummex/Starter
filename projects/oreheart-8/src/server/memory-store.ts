@@ -1,10 +1,11 @@
 // An in-memory Store for the PvP service: the unit tests and the local mock server (tools/pvp-mock-server.mjs) use it.
 // Nothing here is used by the real server function.
+import { rankOfRating } from '../content/ladder';
 import type { Store, Room, MoveLog, Summaries, QueueEntry, RankInfo } from './service';
 import type { MatchRecord, View, Seat, PlayerInfo, DeckChoice } from './referee';
 
 const season = () => { const d = new Date(); return `${d.getUTCFullYear()}-Q${Math.floor(d.getUTCMonth() / 3) + 1}`; };
-const rankName = (r: number) => (r < 900 ? 'Scrap' : r < 1100 ? 'Ore' : r < 1300 ? 'Crystal' : r < 1500 ? 'Gem' : 'Mythic');
+const rankName = (r: number) => rankOfRating(r).label; // the 10-step ladder (Forge, Nov 5), as private.rank_name on the server
 
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 
@@ -68,7 +69,7 @@ export class MemoryStore implements Store {
   }
   private rankRow(userId: string): RankInfo {
     let r = this.ratings.get(userId);
-    if (!r) { r = { season: season(), rating: 1000, name: 'Ore', games: 0, wins: 0, losses: 0, peak: 1000 }; this.ratings.set(userId, r); }
+    if (!r) { r = { season: season(), rating: 1000, name: rankName(1000), games: 0, wins: 0, losses: 0, peak: 1000 }; this.ratings.set(userId, r); }
     return r;
   }
   async queueJoin(user: PlayerInfo, mode: 'ranked' | 'unranked', deck: DeckChoice, now: number, wantAvg = false) {
