@@ -351,3 +351,7 @@
 
 - Nov 5: the server engine bundle must stay UI-free. quest-summary.ts importing ui/cardfmt (CSS) broke deploy #24 and the local mock. Shared label/Commander helpers live in src/content/card-labels.ts. Run tools/bundle-engine.mjs before pushing anything under src/net or src/engine.
 - Nov 5: when two branches must match a data file byte for byte, compare blob hashes (git hash-object), not just counts: my first trim swapped the first copies, Anvil the last ones.
+
+- Nov 5: Supabase SQL editor: never double-click the snippet title to rename (it wiped the editor and dropped the snippet). Name the statement in its first comment line; set text via window.monaco editor.setValue + one typed newline so it saves.
+- Nov 5: a self-rebuilding list detaches the clicked button before the click bubbles; stop propagation at the panel, not the overlay.
+- Nov 5: per-copy tiers: the id map (view.tiers) carries only the Commander; card tiers ride on the engine card instances (deck -> hand -> unit). The mock /debug/tier sets both.

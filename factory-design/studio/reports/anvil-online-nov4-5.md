@@ -82,3 +82,21 @@ Still open:
 - Later: leaderboard, Studio admin pages, per-copy tiers in match.
 
 Next: starting the Deck Builder upgrade panel job (replace the 3D panel with the upgrade panel + 5-look preview row when signed in).
+
+## Deck Builder upgrade panel, per-copy upgrades, Radiant (Nov 5, eed7366b..d5f3c8e5)
+
+Anvil-online: Deck Builder upgrade panel + per-copy upgrades done on pvp-nov2 (eed7366b). TEST deploy #26 (then #27 for the odds/Radiant/Scarab decisions) green, preview https://oreheart-8-2ccpzxwkx-lummex.vercel.app (d5f3c8e5) (earlier 1y3l9e86b superseded). TEST only, nothing live.
+
+What Ken sees:
+- Deck Builder, signed in: open a card (long-press or Enter) and the right-hand side is the Upgrade panel instead of the 3D model: your copies, the Combine controls, and "The five looks" (Original, Enhanced, Overcharged, Legendary tier, Mythic). Looks you own are lit; the others are dimmed with a lock and the copies they take. Tap a look and the big card shows it. Commanders too (double-tap the portrait). Offline / vs-computer keeps the 3D model.
+- Per copy: every copy keeps its own tier. If you own 1 Overcharged and 5 plain, a deck can hold 1 Overcharged and the rest plain. In the Deck Builder the card's tile says "Overcharged ×1 · Original ×5", and in the deck list each copy is a small star chip, best copy first; a tap swaps that slot to another tier that has a spare copy. Saved decks remember which copy sits where; the server checks you really own copies of that tier. In a match each card shows the tier of the copy that is in the deck (the opponent's hand stays hidden).
+- Combine: pick the TARGET copy ("Upgrade this one"); every other copy has a Hold button that turns into Upgrade when tapped. Quick ways: "Combine with [number] [tier] copies" and "Upgrade to <next level> (uses N copies)", which picks the cheapest copies and only appears when there are enough. The status line and the looks row show the tier you will reach before you confirm.
+- Confirm box before any combine: how many copies go and how many stay, how many are playable against the deck limit, which saved decks would be left short ("Only 1 left to play. Your deck Junk Pile uses 4. Are you sure?"), and a red line when every copy would go. Confirm / Cancel. On confirm the server combines (with the ledger and history as before), and if a deck was left short it re-fits that deck's copies (best first) and tells you "Decks updated: …". Without the confirmed warning the server still refuses to leave a deck short.
+- Commander upgrade pictures (Brush's three final sets) are in: Grubnak, Knobbin and Borgo show their tier art in the Collection, the panel, packs and matches.
+- Existing TEST collections need no migration: a combined stack already was one upgraded copy plus the plain ones.
+
+Ken's Mythic test card: a new TEST SQL editor tab (snippet f8bc8a02, first line "KEN'S MYTHIC TEST CARD") holds one statement that grants ken.turney@gmail.com one Gronkowski Troll Tyrant at Mythic through the normal grant path (origin admin_grant, history written). Safe to press Run twice; it stops with a notice if the account does not exist. I did not run it. The 1,000,000 coin statement is still in its own tab (snippet 8f3a800f).
+
+Checks: vitest 324, SQL 515/515 (new: deck tiers, forced combine + repair, copies per tier), browser AC686-AC689 + AC681/AC674/AC656 pass, per-copy match test in pvp-modes. Looked at PC (800x600) and phone landscape (844x390): the panel stacks and scrolls on the phone.
+
+Next: the pack bundles / My Packs / multi-open job with Ken's final shop design (1 / 6 / 24 / 99, bonus packs, per-pack price, Best Value, chest, 24-pack Overcharged+ guarantee, 99-pack tier-4 + unowned Legendary + chest card back, 40-pack bad-luck Legendary). One preview when done.
