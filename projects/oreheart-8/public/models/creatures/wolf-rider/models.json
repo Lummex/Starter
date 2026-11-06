@@ -1,0 +1,91 @@
+{
+ "generated": "2026-10-24T10:30:23.014Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "mace": "01a16d71-945a-7606-a24c-1cd8a3507a66",
+  "character": "01a16d71-94ce-71ed-b704-a8d276504e7c",
+  "wolf": "01a16d71-94d3-72d9-ba34-3fe1c2935d73",
+  "rig": "01a16d74-64ed-740f-8f22-841a9ea26abb",
+  "anim": "01a16d75-37f1-7428-8363-4580eb77c1de"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [
+  "mace",
+  "wolf"
+ ],
+ "notes": "wolf is the mount (static model, not rigged) Nov 6: the mount is a living Tripo model (Clay + Spring): own skeleton and 8 clips, the rider rides its seat bone.",
+ "fileSizes": {
+  "mace.glb": 10320652,
+  "wolf.glb": 1848832,
+  "char.glb": 6309188
+ },
+ "mount": {
+  "file": "wolf.glb",
+  "from": "Clay's rigged Tripo model (factory-design/tripo/wolf-rider/slim/wolf.glb, main 6a36f52) + Spring's clips on its own Tripo skeleton (studio/spring-nov1/tripo/anim.py); uncompressed",
+  "clips": {
+   "idle": "wolf-idle-01",
+   "idles": [
+    "wolf-idle-01",
+    "wolf-idle-02"
+   ],
+   "idleBreak": "wolf-idlebreak-01",
+   "walk": "wolf-walk-01",
+   "run": "wolf-run-01",
+   "attack": "wolf-attack-01",
+   "hit": "wolf-bonk-01",
+   "defeat": "wolf-death-01"
+  },
+  "gait": {
+   "walk": 0.324,
+   "run": 0.55
+  },
+  "events": {
+   "wolf-attack-01": [
+    {
+     "name": "windup",
+     "frame": 3,
+     "time": 0.104
+    },
+    {
+     "name": "hit",
+     "frame": 26,
+     "time": 0.858
+    }
+   ],
+   "wolf-bonk-01": [
+    {
+     "name": "impact",
+     "frame": 1,
+     "time": 0.04
+    }
+   ],
+   "wolf-death-01": [
+    {
+     "name": "ground",
+     "frame": 37,
+     "time": 1.232
+    },
+    {
+     "name": "poof",
+     "frame": 59,
+     "time": 1.98
+    }
+   ]
+  },
+  "seat": {
+   "bone": "tripo::Spine_2",
+   "pos": [
+    0,
+    0.4156,
+    -0.0014
+   ],
+   "frac": 0.853
+  }
+ }
+}

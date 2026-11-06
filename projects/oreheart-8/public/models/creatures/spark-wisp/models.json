@@ -1,0 +1,60 @@
+{
+ "generated": "2026-11-06",
+ "from": "Clay's unrigged slim model (factory-design/models-slim/new-cards-nov5/token-spark-wisp/char.glb) + Spring's own rig and clips (studio/spring-nov1/quad/rig.py); uncompressed",
+ "rigged": true,
+ "parts": [],
+ "bodyType": "floater",
+ "notes": "Own skeleton (not the biped pack): no retarget. 2 bones, all pointing up. Clips made for this body only.",
+ "fileSizes": {
+  "char.glb": 1092464
+ },
+ "clips": {
+  "idle": "wisp-idle-01",
+  "idleBreak": "wisp-idlebreak-01",
+  "walk": "wisp-walk-01",
+  "run": "wisp-run-01",
+  "attack": "wisp-attack-01",
+  "hit": "wisp-bonk-01",
+  "defeat": "wisp-death-01",
+  "react_lifted": "wisp-lifted-01"
+ },
+ "gait": {
+  "walk": 1.711,
+  "run": 3.042
+ },
+ "events": {
+  "wisp-attack-01": [
+   {
+    "name": "windup",
+    "frame": 6,
+    "time": 0.2
+   },
+   {
+    "name": "hit",
+    "frame": 14,
+    "time": 0.45
+   }
+  ],
+  "wisp-bonk-01": [
+   {
+    "name": "impact",
+    "frame": 2,
+    "time": 0.05
+   }
+  ],
+  "wisp-death-01": [
+   {
+    "name": "poof",
+    "frame": 20,
+    "time": 0.66
+   }
+  ]
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 0,
+  "attack": 0,
+  "hit": 0,
+  "defeat": 0
+ }
+}

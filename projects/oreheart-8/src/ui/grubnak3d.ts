@@ -1,0 +1,332 @@
+// Grubnak Rotgut as a real 3D model (Meshy, generated once by tools/gen-grubnak-3d.mjs and saved under public/models/commanders).
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { attachPart, packClipsFor, standingBox } from './creature3d';
+import tiersJson from '../content/commander-tiers.json';
+import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+
+const BASE = '/models/creatures/grubnak/';
+export const GRUBNAK_ANIMS = ['idle', 'laugh', 'point', 'celebrate', 'surprised', 'cast', 'hit', 'defeat'] as const;
+export type GrubnakAnim = (typeof GRUBNAK_ANIMS)[number];
+
+export interface G3DAssets {
+  /** Oct 30: a hand prop placed exactly as in Ken's Studio setup (Ledger) */ prop?: THREE.Object3D | null;
+  char: THREE.Object3D;
+  clips: Record<string, THREE.AnimationClip>;
+  fortress: THREE.Object3D;
+  scepter: THREE.Object3D | null;
+  info: any;
+  /** Nov 1 (Spring): idle breaks from the shared pack */ breaks?: THREE.AnimationClip[];
+}
+
+let loading: Promise<G3DAssets | null> | null = null;
+let loaded: G3DAssets | null = null;
+export const grubnak3dReady = () => loaded;
+
+/** Nov 1 (Anvil): one switch for Spring's Commander pack clips (standing idle for Grubnak, idle breaks for all six). Checked: with them off Grubnak looks the same from the board camera, so they stay on for Ken to judge. */
+const CMD_PACK_CLIPS = true;
+const CMD_BREAKS = ['biped-idleBreak-01', 'biped-idleBreak-02', 'biped-idleBreak-04'];
+/** Nov 1 (Spring): shared idle breaks for a Commander. A Commander holding a prop keeps its right arm on the idle's first frame, so the prop stays put. */
+function commanderBreaks(sh: { byName: Record<string, THREE.AnimationClip> } | null, idle: THREE.AnimationClip | undefined, holdsProp: boolean, side: 'Left' | 'Right' = 'Right'): THREE.AnimationClip[] {
+  if (!sh) return [];
+  const names = holdsProp ? CMD_BREAKS : [...CMD_BREAKS, 'biped-idleBreak-03'];
+  return names.map((n) => sh.byName[n]).filter(Boolean).map((c) => (holdsProp && idle ? holdArm(c, idle, side) : c));
+}
+/** Nov 2 (Spring): the clip with one arm kept on the idle's first frame, so what that hand holds stays put */
+function holdArm(c: THREE.AnimationClip, idle: THREE.AnimationClip, side: 'Left' | 'Right'): THREE.AnimationClip {
+  const arm = new RegExp('^' + side + '(Shoulder|Arm|ForeArm|Hand)\.quaternion$');
+  const tracks = c.tracks.map((t) => {
+    if (!arm.test(t.name)) return t;
+    const src = idle.tracks.find((x) => x.name === t.name);
+    if (!src) return t;
+    const v = Array.from(src.values.slice(0, 4));
+    return new THREE.QuaternionKeyframeTrack(t.name, [0, c.duration], [...v, ...v]);
+  });
+  return new THREE.AnimationClip(c.name + '-held', c.duration, tracks);
+}
+
+/** Loads the saved models once; resolves null when they are not shipped (the procedural figure stays). */
+export function loadGrubnak3d(): Promise<G3DAssets | null> {
+  return (loading ||= (async () => {
+    try {
+      const r = await fetch(BASE + 'models.json');
+      if (!r.ok) return null;
+      const info = await r.json();
+      const gl = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+      const [c, f, s] = await Promise.all([
+        gl.loadAsync(BASE + 'char.glb'),
+        gl.loadAsync(BASE + 'throne.glb'),
+        gl.loadAsync(BASE + 'scepter-v2.glb').catch(() => null), // Nov 1 (Spring): the extra baked-in green hand removed
+      ]);
+      const clips: Record<string, THREE.AnimationClip> = {};
+      const names: Record<string, string> = info.clipNames || {};
+      for (const k of GRUBNAK_ANIMS) {
+        const want = names[k];
+        const clip = c.animations.find((a) => a.name === want) || c.animations[GRUBNAK_ANIMS.indexOf(k)];
+        if (clip) clips[k] = clip;
+      }
+      const sh = CMD_PACK_CLIPS ? await packClipsFor('cmd-grubnak', c.scene).catch(() => null) : null; // off together with the clips
+      if (CMD_PACK_CLIPS && sh?.byName['biped-idle-01']) clips.idle = sh.byName['biped-idle-01']; // Nov 1: no throne any more, so he stands
+      loaded = { char: c.scene, clips, fortress: f.scene, scepter: s ? s.scene : null, info, breaks: CMD_PACK_CLIPS ? commanderBreaks(sh, clips.idle, !!s) : [] };
+      return loaded;
+    } catch {
+      return null;
+    }
+  })());
+}
+
+export interface G3D {
+  /** fortress + character, one space wide */
+  group: THREE.Group;
+  /** only the character (so the fortress can stay when he leaves) */
+  figure: THREE.Group;
+  fortress: THREE.Object3D;
+  mixer: THREE.AnimationMixer;
+  play(name: GrubnakAnim | string, opts?: { loop?: boolean }): void;
+  current(): string;
+  update(dt: number): void;
+  clipNames: string[]; scepterBone?: string; held?: any;
+  /** native-units height of the whole assembly */
+  height: number;
+  /** Oct 30: file names reported by the test hook (only set for Commanders other than Grubnak) */
+  files?: { source: string; fortress: string; scepter: string };
+  /** Nov 6 (aura): the posed character and the weapon in his hand */
+  char?: THREE.Object3D; weapon?: THREE.Object3D | null;
+}
+
+/** Bounding box that follows the skeleton (Meshy rigs sit under a 0.01-scaled armature, so the raw geometry box is wrong). */
+export function skinBox(o: THREE.Object3D, into = new THREE.Box3()): THREE.Box3 {
+  o.updateMatrixWorld(true);
+  o.traverse((m: any) => {
+    if (m.isSkinnedMesh) {
+      m.skeleton.update(); m.boundingBox = null; m.computeBoundingBox();
+      into.union(m.boundingBox.clone().applyMatrix4(m.matrixWorld));
+    } else if (m.isMesh) into.expandByObject(m);
+  });
+  return into;
+}
+const box = (o: THREE.Object3D) => skinBox(o, new THREE.Box3());
+
+
+const D2R = Math.PI / 180;
+/** Round 12b-1: Grubnak SEATED on his junk throne (the throne replaces the castle/stand). The throne stands flat on the board point; he sits in it holding the staff,
+ *  both turned to the owner's `turn` (146 deg = toward the enemy corner). `figure` (the seated Grubnak) turns alone for look-backs. */
+const THRONE_H = 1.5, SEAT = { k: 0.55, y: 0.17, z: 0.1 };
+export interface OwnerPose { fort: { scale: number; sx?: number; sy?: number; sz?: number; turn: number }; cmd: { scale: number; turn: number }; groups?: number;
+  /** Ken (Oct 30 playtest): Commander size on the board (owner-layout characterSizes.commanders, 1 = the old size) and whether the throne / stronghold under a 3D Commander shows (characterSizes.commanderBase) */ size?: number; base?: boolean }
+
+export function makeGrubnak3d(a: G3DAssets, pose?: OwnerPose): G3D {
+  const turn = (pose?.cmd.turn ?? 0) * D2R;
+  const group = new THREE.Group();
+  const figure = new THREE.Group();
+  const tH = THRONE_H * (pose?.groups ?? 1);
+  // throne: bottom-centre on the board point, upright, turned with Grubnak
+  const throne = a.fortress.clone(true);
+  let tb = box(throne);
+  const tk = tH / Math.max(tb.max.y - tb.min.y, 0.01);
+  const tsc = new THREE.Group(); tsc.scale.setScalar(tk);
+  throne.position.set(-(tb.min.x + tb.max.x) / 2, -tb.min.y, -(tb.min.z + tb.max.z) / 2);
+  tsc.add(throne);
+  const tYaw = new THREE.Group(); tYaw.rotation.y = turn; tYaw.add(tsc);
+  group.add(tYaw);
+  const onBase = pose?.base ?? true, size = pose?.size ?? 1;
+  tYaw.visible = onBase; // Ken (Oct 30): "take the thrones off them" (kept, hidden, so the stronghold spot and its test poses stay put)
+  // Grubnak
+  const ch = skeletonClone(a.char) as THREE.Object3D;
+  ch.traverse((o: any) => { if (o.isMesh || o.isSkinnedMesh) { o.frustumCulled = false; o.castShadow = false; } });
+  const idle = a.clips.idle;
+  const m0 = new THREE.AnimationMixer(ch); if (idle) { m0.clipAction(idle).play(); m0.setTime(0); }
+  ch.updateMatrixWorld(true);
+  const cb0 = box(ch);
+  const H0 = cb0.max.y - cb0.min.y;
+  let scepterBone = '', weapon: THREE.Object3D | null = null;
+  if (a.scepter) { // Spring, Nov 1: bone-local grip on the right hand (staff upright, hand wraps the shaft), no more chest-diagonal grip rule
+    const hb = ch.getObjectByName('RightHand');
+    if (hb) { const sp = a.scepter.clone(true); sp.position.set(19.273, -6.143, 6.595); sp.rotation.set(THREE.MathUtils.degToRad(-85.46), THREE.MathUtils.degToRad(44.47), THREE.MathUtils.degToRad(-119.65), 'XYZ'); sp.scale.setScalar(70.993); hb.add(sp); scepterBone = hb.name; weapon = sp; }
+  }
+  m0.stopAllAction(); m0.uncacheRoot(ch);
+  const ck = (SEAT.k * tH * size) / Math.max(H0, 0.01);
+  const sc = new THREE.Group(); sc.scale.setScalar(ck);
+  ch.position.set(-(cb0.min.x + cb0.max.x) / 2, -cb0.min.y, -(cb0.min.z + cb0.max.z) / 2);
+  sc.add(ch);
+  figure.add(sc);
+  if (onBase) figure.position.set(Math.sin(turn) * SEAT.z * tH, SEAT.y * tH, Math.cos(turn) * SEAT.z * tH); // without the throne he stands on the ground
+  figure.rotation.y = turn;
+  group.add(figure);
+  const g = finish(a, group, figure, throne, ch, scepterBone);
+  g.weapon = weapon;
+  return g;
+}
+
+function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress: THREE.Object3D, ch: THREE.Object3D, scepterBone: string): G3D {
+  const mixer = new THREE.AnimationMixer(ch);
+  const actions: Record<string, THREE.AnimationAction> = {};
+  for (const k of Object.keys(a.clips)) actions[k] = mixer.clipAction(a.clips[k]);
+  const breaks = (a.breaks || []).map((c) => mixer.clipAction(c));
+  let cur = '';
+  let back: ReturnType<typeof setTimeout> | null = null;
+  const play = (want: GrubnakAnim | string, opts: { loop?: boolean } = {}) => {
+    if (want === 'idleBreak') { if (cur !== 'idle' || !breaks.length) return; actions.idleBreak = breaks[Math.floor(Math.random() * breaks.length)]; }
+    // Oct 30: a Commander without a clip for this emote plays a stand-in (attack / hit / idle); Grubnak has every clip, so nothing changes for him
+    const name = actions[want] ? want : actions[EMOTE_FALLBACK[want]] ? EMOTE_FALLBACK[want] : actions.idle ? 'idle' : '';
+    const next = actions[name];
+    if (!next) return;
+    if (back) { clearTimeout(back); back = null; }
+    const once = name !== 'idle' && !opts.loop;
+    next.reset();
+    next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, once ? 1 : Infinity);
+    next.clampWhenFinished = true;
+    next.enabled = true;
+    const prev = actions[cur];
+    if (prev && prev !== next) next.crossFadeFrom(prev, 0.2, false);
+    next.play();
+    cur = name;
+    if (once && name !== 'defeat') {
+      const ms = Math.max(300, next.getClip().duration * 1000 - 150);
+      back = setTimeout(() => { back = null; play('idle'); }, ms);
+    }
+  };
+  play('idle');
+  const total = box(group);
+  return { group, figure, fortress, mixer, play, current: () => cur, update: (dt) => mixer.update(dt), clipNames: Object.keys(actions), scepterBone, char: ch, held: scepterBone ? { item: 'scepter', bone: scepterBone } : null, height: total.max.y - total.min.y };
+}
+
+// ---------------------------------------------------------------- Oct 30: other Commanders as 3D models (Thane Borgo first)
+/** emotes a Commander may lack -> the clip that stands in for it */
+const EMOTE_FALLBACK: Record<string, string> = { laugh: 'attack', point: 'attack', celebrate: 'attack', cast: 'attack', taunt: 'attack', cheer: 'attack', surprised: 'hit', flinch: 'hit', walk: 'idle' };
+/** Nov 2 (Spring): most pack idles turn the hand far from where a held item was placed (idle-05, 06, 09 and 11-20), so a Commander with an item in the right hand gets fixed clips.
+ *  Attacks and hits keep the arm free: the item swings with the blow. */
+const RIGHT_HELD = { fixed: { idle: 'biped-idle-01', walk: 'biped-walk-03', attack: 'biped-attack-03', cast: 'biped-attack-03', point: 'biped-attack-03', cheer: 'biped-cheer-02', celebrate: 'biped-cheer-02', laugh: 'biped-cheer-02', taunt: 'biped-cheer-02', hit: 'biped-bonk-01', surprised: 'biped-bonk-01', flinch: 'biped-bonk-01', defeat: 'biped-death-01' }, hold: ['idle', 'walk', 'cheer', 'celebrate', 'laugh', 'taunt'] };
+/** per Commander: model folder, files and how tall he stands (board squares) on top of his stronghold */
+type Look = { bone: string; pos: [number, number, number]; rot: [number, number, number]; scale: [number, number, number] };
+const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortress: string; scepter: string }; figH: number; keepK: number; deck: number; sceptre: { len: number; grip: number; rot: [number, number, number]; upright?: boolean }; prop?: { file: string; look: Look }; /** Nov 2 (Spring): fixed pack clips per role instead of random ones */ fixed?: Record<string, string>; /** Nov 6: the hand holding a staff built into the mesh */ propSide?: 'Left' | 'Right'; /** Nov 6: the staff is part of the mesh (tier models) */ fused?: boolean; /** roles that keep the prop arm still */ hold?: string[] }> = {
+  borgo: { base: '/models/commanders/borgo/', files: { source: 'borgo.glb', fortress: 'dwarf-stronghold', scepter: 'borgo-sceptre.glb' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] },
+    // Nov 2 (Spring): as on his card: the sceptre upright in his LEFT hand, foot on the ground. The old grip rule held it out sideways and its dark shaft vanished, so the head seemed to float.
+    prop: { file: 'sceptre.glb', look: { bone: 'LeftHand', pos: [-3.575, 1.633, 10.306], rot: [-57.54, -9.65, 153.59], scale: [52.514, 52.514, 52.514] } },
+    fixed: { idle: 'biped-idle-01', walk: 'biped-walk-01', attack: 'biped-attack-03', cast: 'biped-attack-03', point: 'biped-attack-03', cheer: 'biped-cheer-01', celebrate: 'biped-cheer-01', laugh: 'biped-cheer-01', taunt: 'biped-cheer-01', hit: 'biped-bonk-01', surprised: 'biped-bonk-01', flinch: 'biped-bonk-01', defeat: 'biped-death-01' },
+    hold: ['idle', 'walk', 'attack', 'cast', 'point', 'cheer', 'celebrate', 'laugh', 'taunt'] },
+  // Oct 30 (Clay): rigged, rest pose only; every move comes from the shared pack. figH = Ken's Studio body scale (Ledger) x 0.8, the same conversion as Borgo's.
+  // Ken (Oct 31): "The gnome commander doesn't have his staff." Knobbin's crystal staff (Studio model sproingle-staff) in his right hand by the grip rule until Ledger saves a placement
+  sproingle: { base: '/models/commanders/sproingle/', files: { source: 'sproingle.glb', fortress: 'gnome-stronghold', scepter: 'staff.glb' }, figH: 0.72, keepK: 1.1, deck: 0.71, sceptre: { len: 1.18, grip: 0.335, rot: [0, 0, 0], upright: true }, ...RIGHT_HELD }, // Oct 31: Ledger's card match (taller than his hat, foot near the floor), still solved upright per load
+  skreeka: { base: '/models/commanders/skreeka/', files: { source: 'skreeka.glb', fortress: 'goblin-stronghold', scepter: '' }, figH: 1.2, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] } },
+  sprocket: { base: '/models/commanders/sprocket/', files: { source: 'sprocket.glb', fortress: 'gnome-stronghold', scepter: '' }, figH: 0.68, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] }, prop: { file: 'wrench.glb', look: { bone: 'RightHand', pos: [-2.293, 7.176, 7.017], rot: [-16.36, -20.67, 135.98], scale: [15.776, 15.776, 15.776] } }, ...RIGHT_HELD },
+  grumblebeard: { base: '/models/commanders/grumblebeard/', files: { source: 'grumblebeard.glb', fortress: 'dwarf-stronghold', scepter: '' }, figH: 0.84, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] }, prop: { file: 'hammer.glb', look: { bone: 'RightHand', pos: [-4.807, -4.132, 0.907], rot: [-3.17, -47.48, 163.5], scale: [44.699, 44.699, 44.699] } }, ...RIGHT_HELD },
+};
+// Nov 6: Clay's tier models (Spring's fixes): '<id>@<tier>' with the base Commander's stronghold and height. The staff is part of the mesh (`fused`):
+// no prop file; its tip is found from the hand-weighted vertices so the aura can light it.
+const GRUBNAK_FIG_H = SEAT.k * THRONE_H; // Grubnak's body height on his (hidden) throne, so his tiers stand as tall
+for (const [key, m] of Object.entries((tiersJson as any).models as Record<string, any>)) {
+  const b = OTHER_CMDS[m.commander];
+  OTHER_CMDS[key] = { base: m.base, files: { source: 'char.glb', fortress: b ? b.files.fortress : 'goblin-stronghold', scepter: '' }, figH: b ? b.figH : GRUBNAK_FIG_H, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [0, 0, 0] }, fixed: m.fixed, hold: m.hold, propSide: m.propSide, fused: true };
+}
+/** the model to show for a Commander at an upgrade tier (falls back to the base model) */
+export const commanderModelId = (id: string, tier: number) => (tier >= 2 && `${id}@${tier}` in OTHER_CMDS ? `${id}@${tier}` : id);
+/** Oct 30: which pack kind fills each Commander role it lacks (or has only as a stock Meshy clip) */
+const CMD_PACK: [string, string][] = [['idle', 'idle'], ['walk', 'walk'], ['attack', 'attack'], ['hit', 'hit'], ['defeat', 'defeat'], ['cheer', 'cheer'], ['celebrate', 'cheer'], ['laugh', 'cheer'], ['taunt', 'cheer'], ['cast', 'attack'], ['point', 'attack'], ['surprised', 'hit'], ['flinch', 'hit']];
+const CMD_STOCK = /^(Idle|Casual_Walk|Walk|Heavy_Hammer_Swing|Hit_Reaction|Dead)$/;
+export const hasCommander3d = (id: string) => id === 'grubnak' || id in OTHER_CMDS;
+export const commanderIds3d = () => ['grubnak', ...Object.keys(OTHER_CMDS)];
+const otherLoading = new Map<string, Promise<G3DAssets | null>>();
+const otherLoaded = new Map<string, G3DAssets>();
+/** Ready assets for a Commander (Grubnak keeps his own loader). */
+export const commander3dReady = (id: string): G3DAssets | null => (id === 'grubnak' ? loaded : otherLoaded.get(id) || null);
+
+/** Loads a Commander's saved model once; resolves null when it is not shipped (the placeholder stays). Clips strictly by name from models.json `clips`. */
+export function loadCommander3d(id: string): Promise<G3DAssets | null> {
+  if (id === 'grubnak') return loadGrubnak3d();
+  const cfg = OTHER_CMDS[id];
+  if (!cfg) return Promise.resolve(null);
+  let p = otherLoading.get(id);
+  if (!p) {
+    p = (async () => {
+      try {
+        const r = await fetch(cfg.base + 'models.json');
+        if (!r.ok) return null;
+        const info = await r.json();
+        const gl = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+        const [c, s] = await Promise.all([gl.loadAsync(cfg.base + (info.files?.char || 'char.glb')), info.files?.sceptre && !cfg.prop ? gl.loadAsync(cfg.base + info.files.sceptre).catch(() => null) : Promise.resolve(null)]);
+        const clips: Record<string, THREE.AnimationClip> = {};
+        for (const [role, nm] of Object.entries((info.clips || {}) as Record<string, string>)) { const cl = c.animations.find((x) => x.name === nm); if (cl) clips[role] = cl; }
+        const sh = await packClipsFor('cmd-' + id, c.scene).catch(() => null);
+        if (sh) for (const [role, kind] of CMD_PACK) {
+          if (clips[role] && !CMD_STOCK.test(clips[role].name)) continue;
+          const l = sh.byKind[kind] || []; if (l.length) clips[role] = l[Math.floor(Math.random() * l.length)];
+        }
+        const propSide = cfg.propSide || (cfg.prop?.look.bone.startsWith('Left') ? 'Left' : 'Right');
+        if (sh && cfg.fixed) for (const [role, nm] of Object.entries(cfg.fixed)) { const cl = sh.byName[nm]; if (cl) clips[role] = cl; }
+        if (cfg.hold && clips.idle) { const idle0 = clips.idle; for (const role of cfg.hold) if (clips[role]) clips[role] = holdArm(clips[role], idle0, propSide); }
+        const pr = cfg.prop ? await gl.loadAsync(cfg.base + cfg.prop.file).then((x) => x.scene).catch(() => null) : null;
+        const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info, prop: pr, breaks: CMD_PACK_CLIPS ? commanderBreaks(sh, clips.idle, !!(s || pr || cfg.fused), propSide) : [] };
+        otherLoaded.set(id, a);
+        return a;
+      } catch {
+        return null;
+      }
+    })();
+    otherLoading.set(id, p);
+  }
+  return p;
+}
+
+/** A standing Commander on top of his (procedural) stronghold `keep`, both turned to the owner's `turn`. `figure` turns alone for look-backs. */
+export function makeCommander3d(id: string, a: G3DAssets, keep: THREE.Object3D, pose?: OwnerPose): G3D {
+  const cfg = OTHER_CMDS[id];
+  const turn = (pose?.cmd.turn ?? 0) * D2R, gk = pose?.groups ?? 1;
+  const group = new THREE.Group();
+  const kYaw = new THREE.Group(); kYaw.rotation.y = turn;
+  keep.scale.setScalar(cfg.keepK * gk); keep.position.set(0, 0, 0);
+  kYaw.add(keep); group.add(kYaw);
+  const onBase = pose?.base ?? true, size = pose?.size ?? 1;
+  kYaw.visible = onBase; // Ken (Oct 30): Commanders stand on the board, no throne or stronghold under them
+  const ch = skeletonClone(a.char) as THREE.Object3D;
+  ch.traverse((o: any) => { if (o.isMesh || o.isSkinnedMesh) { o.frustumCulled = false; o.castShadow = false; } });
+  const m0 = new THREE.AnimationMixer(ch); if (a.clips.idle) { m0.clipAction(a.clips.idle).play(); m0.setTime(0); }
+  ch.updateMatrixWorld(true);
+  const cb0 = box(ch);
+  const sb0 = cfg.fused ? standingBox(ch) : cb0; // a staff built into the mesh does not count toward his height
+  const H0 = sb0.max.y - sb0.min.y;
+  let scepterBone = '';
+  const items: { name: string; bone: string; obj: THREE.Object3D | null }[] = []; // Oct 31 test hook: the items a Commander carries
+  const lastChild = (bn: string) => { const o = ch.getObjectByName(bn); return o && o.children.length ? o.children[o.children.length - 1] : null; };
+  if (a.scepter) { scepterBone = attachPart(ch, { name: 'scepter', file: '', bone: ['RightHand'], len: cfg.sceptre.len, grip: cfg.sceptre.grip, rot: cfg.sceptre.rot, axis: 'y', upright: (cfg.sceptre as any).upright }, a.scepter, H0, () => {}); if (scepterBone) items.push({ name: cfg.files.scepter.replace(/\.glb$/, ''), bone: scepterBone, obj: lastChild(scepterBone) }); }
+  if (a.prop && cfg.prop) { const bn = ch.getObjectByName(cfg.prop.look.bone); if (bn) { const p = a.prop.clone(true); const L = cfg.prop.look; p.position.set(...L.pos); p.rotation.set(...(L.rot.map((d) => THREE.MathUtils.degToRad(d)) as [number, number, number]), 'XYZ'); p.scale.set(...L.scale); p.traverse((o: any) => { if (o.isMesh) o.frustumCulled = false; }); bn.add(p); scepterBone = scepterBone || bn.name; items.push({ name: cfg.prop.file.replace(/\.glb$/, ''), bone: bn.name, obj: p }); } } // Ken's Studio placement (Ledger)
+  const tip = cfg.fused ? staffTip(ch, (cfg.propSide || 'Right') + 'Hand') : null; // in the idle's first frame, like the props above
+  if (tip) { scepterBone = tip.parent!.name; items.push({ name: 'staff', bone: scepterBone, obj: tip }); }
+  m0.stopAllAction(); m0.uncacheRoot(ch);
+  const sc = new THREE.Group(); sc.scale.setScalar((cfg.figH * gk * size) / Math.max(H0, 0.01));
+  ch.position.set(-(cb0.min.x + cb0.max.x) / 2, -cb0.min.y, -(cb0.min.z + cb0.max.z) / 2);
+  sc.add(ch);
+  sc.position.y = onBase ? cfg.deck * cfg.keepK * gk : 0; // feet on the stronghold's top deck (the scene keeps `figure` itself at y 0)
+  const figure = new THREE.Group();
+  figure.add(sc);
+  figure.rotation.y = turn;
+  group.add(figure);
+  const g = finish(a, group, figure, keep, ch, scepterBone);
+  g.files = cfg.files;
+  (g as any).items = items;
+  g.weapon = items.length ? items[items.length - 1].obj : null;
+  return g;
+}
+
+/** Nov 6: the far end of a staff built into the mesh: the vertex weighted to the hand that lies farthest from it, as an empty on the hand bone */
+function staffTip(ch: THREE.Object3D, handName: string): THREE.Object3D | null {
+  const hand = ch.getObjectByName(handName); if (!hand) return null;
+  ch.updateMatrixWorld(true);
+  const hp = hand.getWorldPosition(new THREE.Vector3()), v = new THREE.Vector3(), best = new THREE.Vector3(); let bd = -1;
+  ch.traverse((m: any) => {
+    if (!m.isSkinnedMesh) return;
+    const hi = m.skeleton.bones.indexOf(hand); if (hi < 0) return;
+    const pos = m.geometry.attributes.position, si = m.geometry.attributes.skinIndex, sw = m.geometry.attributes.skinWeight;
+    m.skeleton.update();
+    for (let i = 0; i < pos.count; i++) {
+      let w = 0; for (let k = 0; k < 4; k++) if (si.getComponent(i, k) === hi) w += sw.getComponent(i, k);
+      if (w < 0.9) continue;
+      m.getVertexPosition(i, v); m.localToWorld(v);
+      const d = v.distanceToSquared(hp); if (d > bd) { bd = d; best.copy(v); }
+    }
+  });
+  if (bd < 0) return null;
+  const o = new THREE.Object3D(); o.name = 'staff-tip'; hand.add(o); o.position.copy(hand.worldToLocal(best.clone()));
+  return o;
+}

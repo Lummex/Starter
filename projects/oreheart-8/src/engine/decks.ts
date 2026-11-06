@@ -1,5 +1,5 @@
 // Deck rules shared by the Deck Builder and the match setup.
-import { CARDS, CONFIG } from './content';
+import { CARDS, CONFIG, COMMANDERS, FACTIONS } from './content';
 
 export function deckCounts(ids: string[]) {
   let creatures = 0, spells = 0, crystals = 0;
@@ -10,10 +10,20 @@ export function deckCounts(ids: string[]) {
   return { cards: ids.length, creatures, spells, crystals };
 }
 
+const SING: Record<string, string> = { goblins: 'Goblin', gnomes: 'Gnome', dwarves: 'Dwarf' };
 /** Problem messages for a deck; an empty list means the deck is legal. */
-export function deckProblems(ids: string[]): string[] {
+export function deckProblems(ids: string[], commander?: string): string[] {
   const out: string[] = [];
-  if (ids.length !== CONFIG.deckSize) out.push(`Needs exactly ${CONFIG.deckSize} cards (now ${ids.length}).`);
+  const fac = commander ? (COMMANDERS[commander]?.faction ?? (FACTIONS[commander] ? commander : null)) : null;
+  const seen = new Set<string>();
+  for (const id of ids) {
+    const c = CARDS[id];
+    if (!c || seen.has(id)) continue;
+    if (c.disabled) { seen.add(id); out.push(`${c.name} is not available yet.`); }
+    else if (c.token) { seen.add(id); out.push(`${c.name} is a token: it appears in play and can't go in a deck.`); } // Nov 5
+    else if (fac && c.type === 'spell' && c.faction !== 'any' && c.faction !== fac) { seen.add(id); out.push(`${c.name}: only for ${SING[c.faction] ?? c.faction} Commanders.`); }
+  }
+  if (ids.length < CONFIG.deckMin || ids.length > CONFIG.deckMax) out.push(`Needs ${CONFIG.deckMin} to ${CONFIG.deckMax} cards (now ${ids.length}).`);
   const n: Record<string, number> = {};
   for (const id of ids) n[id] = (n[id] || 0) + 1;
   for (const [id, k] of Object.entries(n)) {
@@ -21,6 +31,19 @@ export function deckProblems(ids: string[]): string[] {
     if (lim != null && k > lim) out.push(`${CARDS[id].name}: at most ${lim} copies (now ${k}).`);
   }
   const cr = deckCounts(ids).crystals;
-  if (cr > CONFIG.maxCrystalCards) out.push(`At most ${CONFIG.maxCrystalCards} Crystal cards (now ${cr}).`);
+  if (cr > CONFIG.crystalCardLimit) out.push(`At most ${CONFIG.crystalCardLimit} Crystal cards (now ${cr}).`);
   return out;
+}
+
+/** Test hook: legality and problem messages for a list of card ids. */
+export function validateDeck(ids: string[], commander?: string) {
+  const problems = deckProblems(ids, commander);
+  return { legal: problems.length === 0, problems };
+}
+
+/** Shards streaming from one owned mine (Ken, Nov 1: twice as many as before, and the more Miners on the mine, the more crystals flow out):
+ *  4 for the mine itself plus 4 for every Miner working it, at most 32 (1 Miner 8, 2 Miners 12, 3 Miners 16). */
+export function flowShardCount(miners: number): number {
+  const m = Math.max(1, Math.round(Number(miners) || 1));
+  return Math.min(32, 4 + 4 * m);
 }

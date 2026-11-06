@@ -1,0 +1,313 @@
+{
+ "_note": "Nov 6 (Anvil, Ken's ask): the aura of an upgraded Commander on the board, matching his tier card art (art/card-upgrades-samples/cmd-*). Tier 1 = Original (no aura), 2 = Enhanced, 3 = Overcharged, 4 = Radiant, 5 = Mythic. Sizes are multiples of the Commander's body height H; y is measured from his feet. Each tier is spelled out in full (nothing inherited) so the Model Editor can preview it as is. *Low = the count on Graphics: Low (phones). Colours and shapes are taken from the tier card art (each look has a _art line saying what it copies).",
+ "factionLook": {
+  "goblins": "grubnak",
+  "gnomes": "sproingle",
+  "dwarves": "borgo"
+ },
+ "looks": {
+  "grubnak": {
+   "main": "#7dff2e",
+   "hi": "#eaff9a",
+   "deep": "#2fa317",
+   "halo": "crown",
+   "weapon": "#ff2f5a",
+   "weaponHi": "#ffd0dc",
+   "mythicHalo": {
+    "main": "#7dff2e",
+    "hi": "#eaff9a"
+   },
+   "shard": "#7dff2e",
+   "_art": "T2 red gem + magenta swirl on the scepter; T3 green lightning; T4 green crown-and-crystal halo; T5 orange blaze + galaxy, the halo stays green"
+  },
+  "sproingle": {
+   "main": "#62c8ff",
+   "hi": "#f0f8ff",
+   "deep": "#8a46ff",
+   "halo": "rune",
+   "haloFrom": 2,
+   "weapon": "#7fe8ff",
+   "weaponHi": "#ffffff",
+   "mythicHalo": {
+    "main": "#ffa52e",
+    "hi": "#fff1c8"
+   },
+   "shard": "#8fdcff",
+   "_art": "T2 icy staff crystal + a faint rune ring; T3 blue-white lightning; T4 silver eye-rune halo + floating crystals; T5 golden halo, orange blaze, galaxy, blue lightning"
+  },
+  "borgo": {
+   "main": "#2f8cff",
+   "hi": "#c4ecff",
+   "deep": "#2346ff",
+   "halo": "gear",
+   "weapon": "#5fd2ff",
+   "weaponHi": "#ffffff",
+   "mythicHalo": {
+    "main": "#ff9a1f",
+    "hi": "#fff0c0"
+   },
+   "shard": "#6fc8ff",
+   "_art": "T2 cyan gear core; T3 electric-blue lightning; T4 blue rune gear halo; T5 golden gear halo, orange blaze, galaxy, blue lightning"
+  }
+ },
+ "mythic": {
+  "fire": "#ff7a12",
+  "gold": "#ffd34d",
+  "white": "#fff6dc",
+  "cosmic": "#b34dff",
+  "cosmic2": "#5a6bff"
+ },
+ "sprites": {
+  "_note": "Brush's painted sprites (Nov 6, on black, drawn additively) replace the coded ones of the same name; a name not listed is drawn in code (the gold Mythic halos for Knobbin and Borgo until Brush paints them)",
+  "dir": "/art/fx/cmd-aura/",
+  "files": [
+   "borgo-halo-mythic.webp",
+   "borgo-halo.webp",
+   "grubnak-halo.webp",
+   "mythic-blaze.webp",
+   "mythic-cosmos.webp",
+   "spark.webp",
+   "sproingle-halo-mythic.webp",
+   "sproingle-halo.webp"
+  ]
+ },
+ "tiers": {
+  "2": {
+   "name": "Enhanced",
+   "glow": {
+    "size": 0.95,
+    "y": 0.5,
+    "opacity": 0.3,
+    "pulseHz": 0.5
+   },
+   "ground": {
+    "size": 0.8,
+    "opacity": 0.32
+   },
+   "weapon": {
+    "size": 0.4,
+    "opacity": 1,
+    "emissive": 0.2,
+    "pulseHz": 0.9
+   },
+   "bodyTint": 0
+  },
+  "3": {
+   "name": "Overcharged",
+   "glow": {
+    "size": 1.05,
+    "y": 0.5,
+    "opacity": 0.4,
+    "pulseHz": 0.8
+   },
+   "ground": {
+    "size": 0.9,
+    "opacity": 0.42
+   },
+   "weapon": {
+    "size": 0.34,
+    "opacity": 1,
+    "emissive": 0.3,
+    "pulseHz": 1.4
+   },
+   "arcs": {
+    "count": 7,
+    "countLow": 3,
+    "weaponArcs": 3,
+    "weaponArcsLow": 2,
+    "lifeMs": [
+     60,
+     190
+    ],
+    "width": 0.012,
+    "glowWidth": 0.045,
+    "reach": 0.4,
+    "branch": 0.45
+   },
+   "sparks": {
+    "count": 14,
+    "countLow": 6,
+    "size": 0.04,
+    "rise": 0.45,
+    "radius": 0.42
+   },
+   "bodyTint": 0.04
+  },
+  "4": {
+   "name": "Radiant",
+   "glow": {
+    "size": 1.15,
+    "y": 0.55,
+    "opacity": 0.45,
+    "pulseHz": 0.6
+   },
+   "ground": {
+    "size": 1,
+    "opacity": 0.5
+   },
+   "weapon": {
+    "size": 0.36,
+    "opacity": 1,
+    "emissive": 0.35,
+    "pulseHz": 1.2
+   },
+   "arcs": {
+    "count": 5,
+    "countLow": 2,
+    "weaponArcs": 3,
+    "weaponArcsLow": 1,
+    "lifeMs": [
+     70,
+     210
+    ],
+    "width": 0.012,
+    "glowWidth": 0.045,
+    "reach": 0.4,
+    "branch": 0.35
+   },
+   "halo": {
+    "size": 0.62,
+    "y": 0.82,
+    "back": 0.15,
+    "spinDegPerSec": 12,
+    "opacity": 0.95,
+    "pulseHz": 0.5
+   },
+   "runes": {
+    "size": 1,
+    "opacity": 0.55,
+    "spinDegPerSec": -8
+   },
+   "sparks": {
+    "count": 40,
+    "countLow": 16,
+    "size": 0.04,
+    "rise": 0.38,
+    "radius": 0.42
+   },
+   "shards": {
+    "count": 6,
+    "countLow": 4,
+    "radius": 0.36,
+    "y": 0.85,
+    "size": 0.045,
+    "orbitDegPerSec": 28
+   },
+   "bodyTint": 0.05
+  },
+  "5": {
+   "name": "Mythic",
+   "glow": {
+    "size": 1.3,
+    "y": 0.55,
+    "opacity": 0.35,
+    "pulseHz": 0.9
+   },
+   "ground": {
+    "size": 1.15,
+    "opacity": 0.5
+   },
+   "weapon": {
+    "size": 0.42,
+    "opacity": 1,
+    "emissive": 0.45,
+    "pulseHz": 2,
+    "rays": 0.75
+   },
+   "arcs": {
+    "count": 9,
+    "countLow": 4,
+    "weaponArcs": 4,
+    "weaponArcsLow": 2,
+    "lifeMs": [
+     50,
+     170
+    ],
+    "width": 0.012,
+    "glowWidth": 0.045,
+    "reach": 0.4,
+    "branch": 0.5
+   },
+   "halo": {
+    "size": 0.68,
+    "y": 0.84,
+    "back": 0.15,
+    "spinDegPerSec": 22,
+    "opacity": 1,
+    "pulseHz": 0.9
+   },
+   "runes": {
+    "size": 1.2,
+    "opacity": 0.7,
+    "spinDegPerSec": -14
+   },
+   "sparks": {
+    "count": 60,
+    "countLow": 22,
+    "size": 0.04,
+    "rise": 0.55,
+    "radius": 0.42
+   },
+   "shards": {
+    "count": 8,
+    "countLow": 4,
+    "radius": 0.4,
+    "y": 0.86,
+    "size": 0.05,
+    "orbitDegPerSec": 46
+   },
+   "blaze": {
+    "size": 1.45,
+    "y": 0.55,
+    "back": 0.3,
+    "opacity": 0.55,
+    "spinDegPerSec": 9,
+    "pulseHz": 1.1
+   },
+   "cosmos": {
+    "size": 1.9,
+    "y": 0.62,
+    "back": 0.45,
+    "opacity": 0.3,
+    "spinDegPerSec": -6
+   },
+   "flames": {
+    "count": 20,
+    "countLow": 10,
+    "size": 0.16,
+    "rise": 0.9,
+    "radius": 0.3
+   },
+   "bursts": {
+    "everyMs": [
+     2000,
+     3200
+    ],
+    "flash": 1.3,
+    "ring": 1.5,
+    "ms": 650,
+    "opacity": 0.45
+   },
+   "bodyTint": 0.1
+  }
+ },
+ "haloEarly": {
+  "2": {
+   "size": 0.6,
+   "opacity": 0.45,
+   "spinDegPerSec": 10,
+   "y": 0.86,
+   "back": 0.15,
+   "pulseHz": 0.5
+  },
+  "3": {
+   "size": 0.6,
+   "opacity": 0.65,
+   "spinDegPerSec": 12,
+   "y": 0.86,
+   "back": 0.15,
+   "pulseHz": 0.6
+  },
+  "_note": "a look with haloFrom (Knobbin: 2) shows a fainter halo before Radiant, as on his Enhanced and Overcharged cards"
+ }
+}

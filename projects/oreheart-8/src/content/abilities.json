@@ -5,7 +5,7 @@
  },
  "tunnel": {
   "name": "Tunnel",
-  "text": "While the enemy holds more mines than you, it can be summoned onto any empty space next to a mine."
+  "text": "It can be summoned straight onto any empty space next to a mine your side owns right now."
  },
  "frenzy": {
   "name": "Frenzy",
@@ -13,7 +13,7 @@
  },
  "ranged": {
   "name": "Ranged",
-  "text": "Hits any enemy within 2 spaces in any direction, even over other creatures. No strike back."
+  "text": "Hits the first unit up to 7 spaces away in a straight line (8 directions). Cannot shoot past a unit. No strike back."
  },
  "kaboom": {
   "name": "Ka-boom",
@@ -37,7 +37,7 @@
  },
  "armored": {
   "name": "Armored",
-  "text": "Takes 1 less damage from every hit."
+  "text": "Rolls one extra block die (3 at most)."
  },
  "blink": {
   "name": "Blink",
@@ -61,11 +61,11 @@
  },
  "charge": {
   "name": "Charge",
-  "text": "Can move and attack in the same turn."
+  "text": "Can still attack after spending all its move points."
  },
  "unbreakable": {
   "name": "Unbreakable",
-  "text": "Never takes more than 3 damage from one hit."
+  "text": "Never takes more than 3 damage from one attack."
  },
  "heartyale": {
   "name": "Hearty Ale",
@@ -89,7 +89,7 @@
  },
  "kaboom1": {
   "name": "Ka-boom 1",
-  "text": "When defeated, deals 1 damage to every adjacent enemy creature."
+  "text": "When defeated, deals 1 damage to every adjacent creature, friend or foe."
  },
  "junkBoost": {
   "name": "Junk Boost",
@@ -102,5 +102,109 @@
  "glyphShield": {
   "name": "Glyph Shield",
   "text": "At the start of your turn it gets Shield 1."
+ },
+ "brew": {
+  "name": "Brew",
+  "text": "Once per turn, at any time (even on the enemy's turn): heal an adjacent wounded dwarf. If that dwarf would die, it survives with 1 Health instead. It becomes Drunk for 2 rounds. Drunk dwarves can't be healed."
+ },
+ "riotShield": {
+  "name": "Riot Shield",
+  "text": "Enemies next to it must attack it first. It rolls one extra block die (3 at most), and nothing can knock it back, bowl it, lift it or shove it."
+ },
+ "brood": {
+  "name": "Brood",
+  "text": "Deploy phase, 2 crystals, any number of times: a Piglet token appears next to her (max 4). Your Piglets have +1 Health."
+ },
+ "poxDoctor": {
+  "name": "Pox Doctor",
+  "text": "Her hits Poison 3. Poisoned enemies have -1 Attack. Your poison ticks deal double."
+ },
+ "drillSergeant": {
+  "name": "Drill Sergeant",
+  "text": "Piglets within 2 spaces get +1 Attack and can act the turn they appear."
+ },
+ "fuseLighter": {
+  "name": "Fuse-Lighter",
+  "text": "Your Ka-booms deal +1. A friendly Goblin or Piglet defeated next to him Ka-booms for 1."
+ },
+ "fling": {
+  "name": "Fling",
+  "text": "Pay 1, once per turn: throw an adjacent Piglet up to 5 spaces; it can attack this turn."
+ },
+ "greaser": {
+  "name": "Greaser",
+  "text": "Adjacent Goblins have Sneaky."
+ },
+ "brewPoison": {
+  "name": "Bog Brew",
+  "text": "Pay 1: an adjacent Goblin's hits Poison 2 this turn."
+ },
+ "spark": {
+  "name": "Spark",
+  "text": "Deploy phase, 1 crystal, any number of times: a Spark Wisp token appears next to her (max 3). Wisps' spell discount is 2."
+ },
+ "jinxmaster": {
+  "name": "Jinxmaster",
+  "text": "Enemies your spells damage become Jinxed. End of your turn: each Jinxed enemy within 4 spaces takes 1."
+ },
+ "batteryCharge": {
+  "name": "Battery",
+  "text": "Each spell you cast this turn gives it +1 Attack this turn (max +3)."
+ },
+ "runeSpark": {
+  "name": "Rune Spark",
+  "text": "Whenever you cast a spell: 1 damage to one Jinxed enemy in range."
+ },
+ "lensGrinder": {
+  "name": "Lens Grinder",
+  "text": "Your Ranged allies within 2 spaces shoot 2 spaces further."
+ },
+ "jinxHit": {
+  "name": "Jinx",
+  "text": "Its hits Jinx the target: -1 Attack and +1 damage from spells until its owner's next turn."
+ },
+ "sparkCaddy": {
+  "name": "Spark Caddy",
+  "text": "Adjacent Wisps have Ranged 2."
+ },
+ "hexCadet": {
+  "name": "Hex Cadet",
+  "text": "+1 Attack against Jinxed enemies."
+ },
+ "ratchet": {
+  "name": "Ratchet",
+  "text": "+1 Attack while next to an Automaton."
+ },
+ "build": {
+  "name": "Build",
+  "text": "Deploy phase, 2 crystals, once per turn: a Clockwork Mule token appears next to him (max 3). Mules next to him mine +1."
+ },
+ "forgemaster": {
+  "name": "Forgemaster",
+  "text": "Upgrading a Dwarf also gives each Dwarf next to it +1 Health. Dwarves with a Smith upgrade are Armored."
+ },
+ "shieldwall": {
+  "name": "Shield Wall",
+  "text": "Walls within 2 spaces get +1 Attack and walk 3."
+ },
+ "masterSmith": {
+  "name": "Master Smith",
+  "text": "Your Smith upgrades give +2 Attack. Pay 2, once per turn: upgrade an adjacent Dwarf without a card."
+ },
+ "drummer": {
+  "name": "Drummer",
+  "text": "Dwarves next to him walk 1 further."
+ },
+ "wrangler": {
+  "name": "Wrangler",
+  "text": "Clockwork Mules within 2 spaces mine +1 and can't be knocked back."
+ },
+ "eager": {
+  "name": "Eager",
+  "text": "The first time it is upgraded it gets +1 Attack extra."
+ },
+ "noAttack": {
+  "name": "Harmless",
+  "text": "Never attacks."
  }
 }

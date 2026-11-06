@@ -1,0 +1,38 @@
+/* Ken, Nov 4 ("those are all cool"): Brush's painted leftovers (art/ui/leftovers-nov2) replace the last computer-drawn bits. Own file, loaded after the silver theme. */
+
+/* Card Play stance boxes: the coin and word stay inside */
+html body .stance-btn.stance-btn{background:url(/art/ui/leftovers/stance-box.webp) center/100% 100% no-repeat!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+html body .stance-btn.stance-btn[aria-pressed="true"]{background:url(/art/ui/leftovers/stance-box-chosen.webp) center/100% 100% no-repeat!important}
+
+/* Dialog and mulligan buttons: Brush's painted frame (Nov 2, Ken's OK Nov 4), which is newer than the Nov 1 fade-out bars, so dialogs only change here. The art is 117 px tall with round ends 90 px wide. */
+html body:not(#_a):not(#_b) :is(.dialog .row .btn.btn,.dialog .menu-list .btn.btn){
+  --sv-cap:calc(var(--sv-f) * .769);
+  border-style:solid!important;border-color:transparent!important;border-width:0!important;border-radius:0!important;
+  border-image-source:url(/art/ui/leftovers/dialog-button.webp)!important;
+  border-image-slice:0 90 fill!important;
+  border-image-width:0 var(--sv-cap)!important;
+  border-image-outset:calc(var(--sv-h,40px) * var(--sv-v,.25)) var(--sv-ox)!important;
+  border-image-repeat:stretch!important;
+  background:none!important;text-align:center!important;justify-content:center!important;opacity:1!important;
+}
+html body:not(#_a):not(#_b) :is(.dialog .row .btn.btn,.dialog .menu-list .btn.btn):is(:hover,:focus-visible):not(:disabled){border-image-source:url(/art/ui/leftovers/dialog-button-hover.webp)!important;background:none!important}
+html body:not(#_a):not(#_b) :is(.dialog .row .btn.btn,.dialog .menu-list .btn.btn).primary:not(:disabled){border-image-source:url(/art/ui/leftovers/dialog-button-main.webp)!important;background:none!important}
+html body:not(#_a):not(#_b) :is(.dialog .row .btn.btn,.dialog .menu-list .btn.btn):active:not(:disabled){border-image-source:url(/art/ui/leftovers/dialog-button-pressed.webp)!important;background:none!important}
+html body:not(#_a):not(#_b) :is(.dialog .row .btn.btn,.dialog .menu-list .btn.btn):disabled{border-image-source:url(/art/ui/leftovers/dialog-button-disabled.webp)!important;color:#9aa3b0!important;-webkit-text-fill-color:#9aa3b0!important}
+
+/* Hand glow: the painted edge, tinted with the card's glow colour. It hugs the card at any thickness because only the outer 34 px of the picture are used. */
+@supports (-webkit-mask-box-image:none){
+  html body .hand-card .card-glow{background:var(--gc,#fff0c2);-webkit-mask-box-image:url(/art/ui/leftovers/hand-glow.webp) 34 fill / calc(var(--gt) / var(--gs,1)) stretch}
+  html body .hand-card .card-glow::before{display:none}
+}
+
+/* Commander hearts: silver rim; cracked with a plaster at low health (the game's own data-low, 7 or less) */
+html body .heart{background-image:url(/art/ui/leftovers/heart.webp)!important}
+html body .heart[data-low=true]{background-image:url(/art/ui/leftovers/heart-hurt.webp)!important}
+
+/* Mine counter: the plate only backs the ×n that already sits beside the pickaxe; it never goes above the mine (Ken, Oct 29), and sits just up from the unit standing in front so that unit's health number stays readable */
+.site-mark .pk-count{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;font-size:clamp(10px,1.5vh,16px);transform:translateY(-1.15em);min-width:2.9em;height:2em;padding-top:.42em;background:url(/art/ui/leftovers/count-plate.webp) center/100% 100% no-repeat;color:#fff;line-height:1;pointer-events:none}
+
+/* Ken, Nov 4 ("1 and 2 button stance ... don't overlap"): the 1x / 2x speed coins sit just left of the stance boxes when they slide out, not on top of them. The boxes are 160 px wide in every size, so the offset is that plus the slide-out (6 px) and a gap. */
+html body .stance-btn.stance-btn{width:160px!important;max-width:none!important}
+html body .watch-bar.cp-bar.cp-bar{right:calc(160px + 6px + 10px)}

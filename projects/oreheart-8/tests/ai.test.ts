@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { CONFIG as _CFG } from '../src/engine';
+(_CFG as any).combat.dice = 'sure'; // Combat v2 (Nov 1): these older tests pin exact damage, so every swing lands and nothing blocks here (the dice have their own tests)
 import { createMatch, applyAction } from '../src/engine';
 import { aiChoose, makeRand } from '../src/ai/ai';
 
@@ -36,4 +38,14 @@ describe('AI', () => {
     const s = play(createMatch({ seed: 9, skipMulligan: true }), { player: 'easy', opponent: 'normal' }, false, 120);
     expect(s.turn).toBeGreaterThan(2);
   });
+});
+
+describe('Round 3a: deck styles', () => {
+  for (const style of ['warband', 'mine-rush', 'arcane-hoard', 'expedition']) { // Ken, Oct 31: four starter styles
+    it(`AI plays the Goblin ${style} against the Gnome ${style} to a winner`, () => {
+      const s = play(createMatch({ seed: 21, playerCommander: 'grubnak', opponentCommander: 'sproingle', playerDeckId: `goblin-${style}`, opponentDeckId: `gnome-${style}`, testMode: true }), { player: 'normal', opponent: 'normal' }, false, 400);
+      expect(s.phase).toBe('over');
+      expect(s.winner).toBeTruthy();
+    });
+  }
 });

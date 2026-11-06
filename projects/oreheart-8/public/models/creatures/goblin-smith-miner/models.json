@@ -1,0 +1,23 @@
+{
+ "generated": "2026-10-22T20:44:14.537Z",
+ "tasks": {
+  "character": "01a16554-d0d7-7635-9c9b-1c07d9b93d6d",
+  "rig": "01a16557-8b5d-740a-9a78-5857b38828f9",
+  "anim": "01a16557-d9b9-7101-8677-d90c61619ac6",
+  "pickaxe": "01a16558-5a2f-75eb-94a6-f79e5e4c72b6",
+  "hammer": "01a1655a-54db-741f-b4b7-db12e223e530"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "mine": 237,
+  "hit": 178,
+  "defeat": 8
+ },
+ "fileSizes": {
+  "char.glb": 5578652,
+  "pickaxe.glb": 9373520,
+  "hammer.glb": 9678704
+ }
+}

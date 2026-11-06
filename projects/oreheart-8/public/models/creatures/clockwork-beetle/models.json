@@ -1,0 +1,70 @@
+{
+ "generated": "2026-11-06",
+ "from": "Clay's rigged Tripo model (factory-design/tripo/clockwork-beetle/slim/char.glb, main 6a36f52) + Spring's clips on its own Tripo skeleton (studio/spring-nov1/tripo/anim.py); uncompressed",
+ "rigged": true,
+ "parts": [],
+ "bodyType": "multileg",
+ "notes": "Own Tripo skeleton (tripo::Root, tripo::Spine_n, ...), not the biped pack: no retarget. Walk = Tripo's walk (glitch keys removed on the scarab), run = that walk 1.7x faster. Over-the-top clips with squash and stretch on the root. Every clip is grounded: the lowest point stays on the rest floor (Tripo's walks were 6-26% under it).",
+ "fileSizes": {
+  "char.glb": 1665596
+ },
+ "actions": {
+  "idle": 3,
+  "idleBreak": 5,
+  "walk": 7,
+  "run": 6,
+  "attack": 0,
+  "hit": 1,
+  "defeat": 2
+ },
+ "clips": {
+  "idle": "scarab-idle-01",
+  "idles": [
+   "scarab-idle-01",
+   "scarab-idle-02"
+  ],
+  "idleBreak": "scarab-idlebreak-01",
+  "walk": "scarab-walk-01",
+  "run": "scarab-run-01",
+  "attack": "scarab-attack-01",
+  "hit": "scarab-bonk-01",
+  "defeat": "scarab-death-01"
+ },
+ "gait": {
+  "walk": 0.189,
+  "run": 0.321
+ },
+ "events": {
+  "scarab-attack-01": [
+   {
+    "name": "windup",
+    "frame": 4,
+    "time": 0.12
+   },
+   {
+    "name": "hit",
+    "frame": 17,
+    "time": 0.552
+   }
+  ],
+  "scarab-bonk-01": [
+   {
+    "name": "impact",
+    "frame": 1,
+    "time": 0.04
+   }
+  ],
+  "scarab-death-01": [
+   {
+    "name": "ground",
+    "frame": 30,
+    "time": 1.012
+   },
+   {
+    "name": "poof",
+    "frame": 61,
+    "time": 2.024
+   }
+  ]
+ }
+}

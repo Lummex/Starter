@@ -1,0 +1,29 @@
+{
+ "note": "Ken, Oct 31: single-player ranks (saved on this device for now; Online Phase C moves them to the server). Tune the numbers here.",
+ "tiers": [
+  { "name": "Stone", "color": "#9a9ca3", "dark": "#4b4d53" },
+  { "name": "Copper", "color": "#d9864a", "dark": "#7a3d16" },
+  { "name": "Iron", "color": "#8a98a8", "dark": "#3a4450" },
+  { "name": "Silver", "color": "#e4e9f0", "dark": "#7b8794" },
+  { "name": "Sapphire", "color": "#4a8dff", "dark": "#173a8a" },
+  { "name": "Emerald", "color": "#2fd38a", "dark": "#0d6a3f" },
+  { "name": "Ruby", "color": "#ff4560", "dark": "#7d1222" },
+  { "name": "Amethyst", "color": "#b47aff", "dark": "#4f2391" },
+  { "name": "Diamond", "color": "#d6fbff", "dark": "#5aa9c2" },
+  { "name": "Oreheart", "color": "#ffa24a", "dark": "#a33a0c" }
+ ],
+ "divisions": ["III", "II", "I"],
+ "pointsPerDivision": 100,
+ "startPoints": 0,
+ "win": 20,
+ "loss": 15,
+ "winPerDivisionGap": 2,
+ "lossPerDivisionGap": 1.5,
+ "winMin": 10,
+ "winMax": 35,
+ "lossMin": 8,
+ "lossMax": 22,
+ "protectedTiers": 3,
+ "rivalBands": { "easy": [0, 800], "medium": [300, 1700], "hard": [1200, 2800] },
+ "matchmakingPool": 3
+}

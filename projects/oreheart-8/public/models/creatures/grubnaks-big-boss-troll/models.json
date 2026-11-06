@@ -1,0 +1,21 @@
+{
+ "generated": "2026-10-24T10:21:45.429Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a16d69-3cce-7497-9797-301b22fc98bf",
+  "rig": "01a16d6c-aa97-73e9-a7ea-db54b21e4860",
+  "anim": "01a16d6d-7b1d-70aa-abce-3523596174f7"
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 30,
+  "attack": 128,
+  "hit": 178,
+  "defeat": 8
+ },
+ "parts": [],
+ "notes": "",
+ "fileSizes": {
+  "char.glb": 5934812
+ }
+}
