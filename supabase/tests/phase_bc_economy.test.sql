@@ -178,11 +178,11 @@ select pg_temp.ok('spread: 1,000 openings cost 100,000 coins and made 11,000 car
   (select coins from public.wallets where user_id = :P3) = 500
   and (select count(*) from public.card_instances where owner_id = :P3 and origin = 'pack') = 11000
   and (select count(*) from public.pack_openings where user_id = :P3) = 1000);
-select pg_temp.ok('spread: the rare slot gave Rare 850 +/- 60 times',
-  coalesce((select n from spread where rarity = 'Rare'), 0) between 790 and 910,
+select pg_temp.ok('spread: the rare slot gave Rare 780 +/- 60 times (Ken, Nov 5: 78 / 20 / 2)',
+  coalesce((select n from spread where rarity = 'Rare'), 0) between 720 and 840,
   (select string_agg(rarity || '=' || n, ', ') from spread));
-select pg_temp.ok('spread: Ultra Rare about 130 (70..200) and Collector about 20 (3..50); nothing below Rare in that slot',
-  coalesce((select n from spread where rarity = 'Ultra Rare'), 0) between 70 and 200
+select pg_temp.ok('spread: Ultra Rare about 200 (130..280) and Collector about 20 (3..50); nothing below Rare in that slot',
+  coalesce((select n from spread where rarity = 'Ultra Rare'), 0) between 130 and 280
   and coalesce((select n from spread where rarity = 'Collector'), 0) between 3 and 50
   and not exists (select 1 from spread where rarity in ('Common', 'Uncommon')),
   (select string_agg(rarity || '=' || n, ', ') from spread));
