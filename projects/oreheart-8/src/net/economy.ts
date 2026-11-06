@@ -179,7 +179,7 @@ export const api = {
         let free = false;
         if (!b) { if (STUB.free_packs < 1) break; STUB.free_packs -= 1; free = true; }
         const cards = stubRoll(pack);
-        STUB.opens += 1; pack.opened_today += 1;
+        STUB.opens += 1;
         for (const c of cards) STUB.owned[c.card_id] = (STUB.owned[c.card_id] || 0) + 1;
         const extras: PulledCard[] = [];
         if (b) {
@@ -399,7 +399,7 @@ export async function openStash(pack: PackInfo, n: number, onErr?: (msg: string)
   let res: StashResult;
   try { res = await api.openStash(pack.id, n, key); } catch (e: any) { const m = String(e?.message || e); if (onErr) onErr(m); else toast(m); return; }
   setCoins(res.coins_after, res.free_packs_after);
-  if (shopCache) { shopCache.coins = res.coins_after; shopCache.free_packs = res.free_packs_after; shopCache.stash = res.stash; const p = shopCache.packs.find((x) => x.id === pack.id); if (p) p.opened_today += res.opened; }
+  if (shopCache) { shopCache.coins = res.coins_after; shopCache.free_packs = res.free_packs_after; shopCache.stash = res.stash; } // packs from My Packs never count against the single pack's daily limit
   void refreshOwned();
   const left = () => (shopCache && shopCache.stash ? (Number(shopCache.stash.packs[pack.id]) || 0) + (shopCache.stash.free || 0) : 0);
   const mod = await import('./packopen');

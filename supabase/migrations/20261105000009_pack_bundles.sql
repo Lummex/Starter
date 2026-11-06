@@ -328,7 +328,7 @@ begin
         'id', p.id, 'name', p.name, 'blurb', p.blurb, 'price_coins', p.price_coins, 'faction', p.faction,
         'art', p.art, 'max_per_day', p.max_per_day,
         'opened_today', (select count(*) from public.pack_openings o
-                         where o.user_id = uid and o.pack_type = p.id and o.created_at >= private.day_start()),
+                         where o.user_id = uid and o.pack_type = p.id and o.bundle_id is null and o.created_at >= private.day_start()),
         'slots', coalesce((select jsonb_agg(jsonb_build_object('slot_no', s.slot_no, 'count', private.slot_count(s.slot_no, s.count), 'odds', s.odds, 'pool', s.pool) order by s.slot_no)
                            from public.pack_slots s where s.pack_type = p.id and private.slot_count(s.slot_no, s.count) > 0), '[]'::jsonb))
         order by (p.faction is null) desc, p.id)

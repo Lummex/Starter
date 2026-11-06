@@ -420,3 +420,5 @@ html body .econ-screen .net-btn.pko-leave{position:absolute;left:0;top:50%;trans
 .pkm-back .pkm-back-art{position:static;width:100%;height:auto;aspect-ratio:1024/1536;border-radius:6px;object-fit:cover}
 .pkm-back{padding:0;background:none;border:0}
 .pkm-back .pkm-name{position:absolute;bottom:4px;left:0;right:0;text-align:center;background:#000a;border-radius:4px;margin:0 4px}
+
+@media (max-width:900px){.shop-bundles{grid-template-columns:repeat(2,minmax(0,1fr))}.shop-bundle.shop-big{transform:none}.shop-bundle .net-btn{white-space:normal;font-size:.85rem;line-height:1.15;padding-inline:8px}.shop-bundle .shop-promise{min-height:0}}
