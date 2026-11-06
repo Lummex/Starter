@@ -3559,7 +3559,7 @@ test('AC111: decks of 50 to 100 cards and at most 20 Crystal cards', async ({ pa
   expect(cfg.deckMin).toBe(50);
   expect(cfg.deckMax).toBe(100);
   expect(cfg.crystalCardLimit).toBe(20);
-  const grunts = (n) => Array(n).fill('goblin-scrapper');
+  const grunts = (n) => Array(n).fill('goblin-grunt'); // Nov 5: the filler must be a Common (no copy limit); the Bowler Brawler is Rare now
   expect((await validate(page, grunts(50))).legal).toBe(true);
   expect((await validate(page, grunts(100))).legal).toBe(true);
   const small = await validate(page, grunts(49));
