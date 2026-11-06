@@ -138,3 +138,17 @@ What's New source: table news_posts (kind patch / event / news, title, subtitle,
 Checks: SQL 541/541 (ladder names, my_rank fields, leaderboard, news feed, admin writes + audit, players cannot read the table), vitest 324, browser AC693 (dashboard) + AC694 (rankings + phone) + the menu/shop neighbours (AC650/656/667/674/681/686/688/690/691). Two old flaky SQL checks made deterministic (the quest streak row, the forced-Mythic pack).
 
 Next: the 11-screen restyle in the D kit (lobby / rankings / match end / profile first), then regions.
+
+## Restyle set 1: PvP Lobby, Match End, Profile (Nov 6, 51c064dd)
+
+Anvil-online: restyle set 1 (PvP Lobby, Match End, Profile) in the D kit, on pvp-nov2 (51c064dd). Preview https://oreheart-8-1nes87qgo-lummex.vercel.app (no new TEST deploy needed: client-only; #30 stays). TEST only, nothing live.
+
+What Ken sees:
+- PvP Lobby: every PvP screen now sits in the D shell: the top bar, "‹ Dashboard · PvP Lobby", three columns. Left: SERVER (one row, "Test server", with a note that US East / Central / West with live counts come with the regions job) and PLAY A FRIEND (Make a code, I have a code, Practice with a friend). Middle: the stage with the big RANKED / UNRANKED word, the mode chips (Ranked, Unranked, Friend code, Practice vs computer), the searching clock and average wait when the queue runs, and FIND A MATCH. Right: YOUR ARMY (the three Commander portraits and the deck picker, "Deck Builder ›") and YOUR RANK (charm, step, rating, "Rankings ›"). Phone landscape keeps the three columns smaller.
+- Match End (online matches): VICTORY / DEFEAT across the top with both players (avatar medallions, names, Commander, Winner / Retreated), then four panels: RATING (before → after, +/− in a pill, the bar inside the division with the gained or lost bit, "N more to Sapphire II"), COINS (+N), QUESTS (counted on the server; link to all quests), MATCH STATS (turns, units played, damage dealt, Crystal Flow mined, units lost, rival units). Buttons: Dashboard and Play again (same mode). vs-computer keeps its own end screen.
+- Profile: the big avatar with Change avatar, name, rank and rating, "Member since", the favourite Commander (the last one picked), STATS this season (matches, wins, losses, win rate; best rating, place, season, season end), and "coming soon" for lifetime stats, win rate by faction, recent matches and badges; ACCOUNT with the masked email, the documents, Contact us and Sign out. ‹ Dashboard goes back.
+- Mockup slips fixed as instructed: the top rarity reads Legendary, the 4th look Radiant; nothing invented where data does not exist yet.
+
+Checks: every PvP element id the checks use is unchanged (the mock pages run the same screens): AC671/675/679/682/685 pass, AC693/694 (dashboard) pass, vitest 324. Looked at the lobby on PC and phone landscape.
+
+Next: set 2 (Deck Builder, Collection, Choose Your Commander) and set 3 (Shop, Pack opening, Quests, Settings), one preview each; then regions.

@@ -358,3 +358,5 @@
 
 - Nov 6: the deploy workflow runs the SQL suite on a real local Supabase; luck-based checks must count only the certain slots and normalise random state first. psql \set lines take no trailing comment. New SQL checks go above the results table.
 - Nov 6: the Dashboard (src/net/dashboard.ts) replaces the menu when net.active and the page is not ?pvp=mock; the mock pages keep the old menu for their checks. The ladder arithmetic lives in src/content/ladder.ts and private.rank_of.
+
+- Nov 6: restyling a screen the checks drive: keep every data-testid and the clicked classes, wrap in the new shell, never duplicate an id in a side column (strict-mode locator errors). AC679 (an under-600 ms timing check) can flake when vitest runs right before it; rerun alone.
