@@ -2428,7 +2428,7 @@ test('AC60: Deck Builder shows card faces with full text and filters them', asyn
   await expect(all.getByRole('button', { name: 'Venom Shiv', exact: true })).toBeVisible();
   await expect(all.getByRole('button', { name: 'Shiv Rat', exact: true })).toHaveCount(0);
   await chooseFilter(page, 'Type', 'All');
-  await chooseFilter(page, 'Rarity', 'Collector');
+  await chooseFilter(page, 'Rarity', 'Legendary');
   await expect(all.getByRole('button', { name: 'Gronkowski Troll Tyrant', exact: true })).toBeVisible();
   await expect(all.getByRole('button', { name: 'Snotskull Grunt', exact: true })).toHaveCount(0);
   await chooseFilter(page, 'Rarity', 'All');
@@ -3078,7 +3078,7 @@ const fxLog = (page) => page.evaluate(async () => await window.oreheart.getFxLog
 const clearFx = (page) => page.evaluate(async () => await window.oreheart.clearFxLog());
 const idx = (log, pred, from = 0) => log.findIndex((e, i) => i >= from && pred(e));
 const FRAME = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
-const RARITY_WORD = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', 'ultra-rare': 'Ultra Rare', collector: 'Collector' };
+const RARITY_WORD = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', 'ultra-rare': 'Ultra Rare', collector: 'Legendary' }; // Nov 5: shown as Legendary
 const rgb = (c) => (c.match(/[\d.]+/g) || []).map(Number);
 const quiet = (extra) => ({ ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [], ...extra } });
 

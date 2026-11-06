@@ -50,7 +50,7 @@ const STOP = new Set(['card', 'cards', 'with', 'and', 'the', 'a', 'than', 'cost'
 export function smartMatch(c: any, query: string): boolean {
   const words = query.toLowerCase().replace(/[^a-z0-9+ ]/g, ' ').split(/\s+/).filter((w) => w && !STOP.has(w));
   const ab: string[] = c.abilities || [];
-  const hay = [c.name, c.shortText, c.longText, ab.join(' '), FNAME[c.faction], c.role || '', c.type, c.rarity, c.spellKind || '', String(c.cost)].join(' ').toLowerCase();
+  const hay = [c.name, c.shortText, c.longText, ab.join(' '), FNAME[c.faction], c.role || '', c.type, c.rarity, c.rarity === 'Collector' ? 'legendary' : '', c.spellKind || '', String(c.cost)].join(' ').toLowerCase();
   for (let i = 0; i < words.length; i++) {
     const w = words[i];
     const num = (j: number) => { const n = parseInt(words[j], 10); return isNaN(n) ? null : n; };
@@ -113,7 +113,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const fF = sel('Faction', 'f-faction', ['All', 'Goblins', 'Gnomes', 'Dwarves', 'Neutral']);
   const fT = sel('Type', 'f-type', ['All', 'Miners', 'Fighters', 'Spells', 'Crystal cards']);
   const fC = sel('Cost', 'f-cost', ['Any', '1-2', '3-4', '5-6', '7+']);
-  const fR = sel('Rarity', 'f-rarity', ['All', 'Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector']);
+  const fR = sel('Rarity', 'f-rarity', ['All', 'Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Legendary']);
   let cmdId = 'grubnak';
   const fCmd = { set: (_: string) => {} }; // the Deck Commander combobox is gone: the three portraits choose it
   let query = '';
@@ -156,7 +156,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     if (co === '3-4' && (k < 3 || k > 4)) return false;
     if (co === '5-6' && (k < 5 || k > 6)) return false;
     if (co === '7+' && k < 7) return false;
-    if (r !== 'All' && c.rarity !== r) return false;
+    if (r !== 'All' && c.rarity !== (r === 'Legendary' ? 'Collector' : r)) return false; // Ken, Nov 5: shown as Legendary, stored as 'Collector'
     return true;
   };
   const count = (id: string) => deck.filter((x) => x === id).length;
