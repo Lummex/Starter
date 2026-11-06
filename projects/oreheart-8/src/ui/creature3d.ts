@@ -42,7 +42,7 @@ export function standingBox(o: THREE.Object3D, into = new THREE.Box3()): THREE.B
 }
 
 export type CreatureAnim = 'idle' | 'walk' | 'run' | 'attack' | 'mine' | 'hit' | 'defeat' | 'lifted' | 'special' | 'ability' | 'knockback' | 'bowled' | 'idleBreak';
-export interface PartCfg { file: string; bone: string[]; /** target length as a fraction of the character height */ len: number; /** point along the long axis (0 bottom .. 1 top) that sits on the bone */ grip: number; rot: [number, number, number]; pos?: [number, number, number]; name: string; axis?: 'x' | 'y' | 'z'; /** owner look (Model Editor): exact bone-local transform of the raw part */ look?: LookPart; /** a mount standing under the rider */ mount?: boolean; /** Nov 6: where the rider sits on the mount, as a fraction of its height (default 0.62) */ seat?: number; /** Ken's Studio placement of a WORLD item (not bone-parented): Studio position / rotation (deg, XYZ) / scale with the body at the origin scaled by `body`; the game fixes it to `bone` in the rest pose so it follows the hand */ world?: { bone: string; body: number; pos: [number, number, number]; rot: [number, number, number]; scale: number }; /** true = no Studio placement yet: placed by the default grip rule until Ledger saves one */ auto?: boolean; /** Oct 31: hold the item upright in the character's own frame (as modelled, long axis up) at the hand, measured in the idle pose; `rot` is then an extra turn in that frame */ upright?: boolean }
+export interface PartCfg { file: string; bone: string[]; /** target length as a fraction of the character height */ len: number; /** point along the long axis (0 bottom .. 1 top) that sits on the bone */ grip: number; rot: [number, number, number]; pos?: [number, number, number]; name: string; axis?: 'x' | 'y' | 'z'; /** owner look (Model Editor): exact bone-local transform of the raw part */ look?: LookPart; /** a mount standing under the rider */ mount?: boolean; /** Nov 6: where the rider sits on the mount, as a fraction of its height (default 0.62) */ seat?: number; /** Nov 6: a second rigged body (the Catapult Crew's other goblin): shared-pack clips by role (Spring's picks), it plays what the main body plays and stands across `beside` from it, `h` x the main body's height */ crew?: { clips: Record<string, string>; beside: string; h?: number }; /** Ken's Studio placement of a WORLD item (not bone-parented): Studio position / rotation (deg, XYZ) / scale with the body at the origin scaled by `body`; the game fixes it to `bone` in the rest pose so it follows the hand */ world?: { bone: string; body: number; pos: [number, number, number]; rot: [number, number, number]; scale: number }; /** true = no Studio placement yet: placed by the default grip rule until Ledger saves one */ auto?: boolean; /** Oct 31: hold the item upright in the character's own frame (as modelled, long axis up) at the hand, measured in the idle pose; `rot` is then an extra turn in that frame */ upright?: boolean }
 export interface LookPart { bone: string; pos: [number, number, number]; rot: [number, number, number]; scale: [number, number, number] }
 /** owner looks (factory-design/looks/*.json): height in squares + stretch of the main model */
 export const LOOKS: Record<string, { height: number; stretch: [number, number, number] }> = {
@@ -151,7 +151,7 @@ const PARTS: Record<string, PartCfg[]> = {
   'pox-doctor-ratsbane': [{ name: 'lance', file: 'lance.glb', bone: ['RightHand'], len: 0.8, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-4.562, -1.979, 10.438], rot: [-67.15, -38.39, 153.09], scale: [41.577, 41.577, 41.577] } }, { name: 'backpack-tanks', file: 'backpack-tanks.glb', bone: ['Spine02'], len: 0.5, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [-19.069, 0.599, -23.909], rot: [1.39, 38.6, 0.74], scale: [26.007, 26.007, 26.007] } }], // Nov 6: Clay's props, Spring's placements (backpack added later on Nov 6)
   'snot-sergeant-gurk': [{ name: 'clipboard', file: 'clipboard.glb', bone: ['LeftHand'], len: 0.34, grip: 0.4, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-1.744, 10.809, 3.191], rot: [-42.29, -7.88, 162.9], scale: [17.731, 17.731, 17.731] } }], // Nov 6: Clay's props, Spring's placements
   'fizzwick-fuse-lighter': [{ name: 'match', file: 'match.glb', bone: ['RightHand'], len: 0.28, grip: 0.2, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-0.21, 2.097, 4.445], rot: [-36.36, -41.02, -177.65], scale: [14.42, 14.42, 14.42] } }, { name: 'match-left', file: 'match.glb', bone: ['LeftHand'], len: 0.28, grip: 0.2, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-3.869, 6.603, 4.948], rot: [-72.05, -12.37, 157.13], scale: [14.42, 14.42, 14.42] } }], // Nov 6: Clay's props, Spring's placements
-  'junk-catapult-crew': [{ name: 'catapult', file: 'catapult.glb', bone: ['Hips'], len: 1.0, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [-37.525, -6.659, 46.299], rot: [-173.55, 46.94, -179.44], scale: [52.25, 52.25, 52.25] } }], // Nov 6: Clay's props, Spring's placements
+  'junk-catapult-crew': [{ name: 'catapult', file: 'catapult.glb', bone: ['Hips'], len: 1.0, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [-37.525, -6.659, 46.299], rot: [-173.55, 46.94, -179.44], scale: [52.25, 52.25, 52.25] } }, { name: 'crew-2', file: 'crew-2.glb', bone: [], len: 1, grip: 0.5, rot: [0, 0, 0], crew: { beside: 'catapult', clips: { idle: 'biped-idle-04', idleBreak: 'biped-idleBreak-02', walk: 'biped-walk-03', run: 'biped-run-01', attack: 'biped-ranged-cannon-01', ability: 'biped-throw-01', hit: 'biped-bonk-02', defeat: 'biped-death-03' } } }], // Nov 6: Clay's props, Spring's placements; the second goblin (Meshy run 11 junk-catapult-crew-2) with Spring's crew-2 slots
   'grease-gremlin': [{ name: 'oilcan', file: 'oilcan.glb', bone: ['RightHand'], len: 0.3, grip: 0.75, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [0.698, 15.992, -3.205], rot: [150.46, -39.25, -1.92], scale: [15.288, 15.288, 15.288] } }, { name: 'tank', file: 'tank.glb', bone: ['Spine02'], len: 0.42, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [-12.649, 0.41, -15.36], rot: [1.42, 39.73, 0.7], scale: [21.374, 21.374, 21.374] } }], // Nov 6: Clay's props, Spring's placements
   'bogwater-brewer': [{ name: 'ladle', file: 'ladle.glb', bone: ['RightHand'], len: 0.5, grip: 0.12, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-3.094, -4.842, 9.221], rot: [-42.23, -50.32, 170.1], scale: [25.443, 25.443, 25.443] } }, { name: 'wheelbarrow', file: 'wheelbarrow.glb', bone: ['Hips'], len: 0.8, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [39.489, -18.543, 35.279], rot: [-169.41, 44.62, 177.74], scale: [40.746, 40.746, 40.746] } }], // Nov 6: Clay's props, Spring's placements
   'bang-snap-imp': [{ name: 'firework', file: 'firework.glb', bone: ['Spine01'], len: 0.6, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine01', pos: [14.291, -0.141, 25.44], rot: [-10.87, 29.45, 1.82], scale: [31.307, 31.307, 31.307] } }], // Nov 6: Clay's props, Spring's placements
@@ -184,7 +184,7 @@ const PARTS: Record<string, PartCfg[]> = {
 };
 export const hasCreature3dSlug = (id: string) => id in PARTS;
 
-interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationClip>; parts: Record<string, THREE.Object3D>; info: any; events?: any; shared?: SharedSet | null; picked?: Set<string>; packFree?: Set<string> }
+interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationClip>; parts: Record<string, THREE.Object3D>; info: any; events?: any; shared?: SharedSet | null; picked?: Set<string>; packFree?: Set<string>; crewShared?: Record<string, SharedSet | null> }
 
 // ---------------------------------------------------------------- Oct 30 (Ken's fighting vision): Spring's shared biped animation pack
 // One pack (public/models/anims/biped-pack-v1.glb + .json) is loaded once and retargeted at load time onto every model whose bones match by
@@ -397,7 +397,9 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
         if (info.clips) { try { const er = await fetch(base + 'events.json'); if (er.ok) events = await er.json(); } catch { /* no events file */ } }
         const parts: Record<string, THREE.Object3D> = {};
         for (const r of await Promise.all(partP)) if (r) parts[r[0]] = r[1];
-        const a = { char: c.scene, clips, parts, info, events, shared, picked, packFree };
+        const crewShared: Record<string, SharedSet | null> = {}; // Nov 6: a crew body gets the shared pack fitted to its own skeleton
+        for (const pc of PARTS[id]) if (pc.crew && parts[pc.name]) crewShared[pc.name] = sharedFor(id + '/' + pc.name, parts[pc.name], await loadSharedPack());
+        const a = { char: c.scene, clips, parts, info, events, shared, picked, packFree, crewShared };
         ready.set(id, a);
         return a;
       } catch (e: any) { console.warn('[creature3d] ' + id + ' failed to load: ' + (e?.message || e)); return null; }
@@ -475,6 +477,15 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   const resolve = (n: string): string => (actions[n] ? n : n === 'run' && actions.walk ? 'walk' : n === 'mine' && actions.attack ? 'attack' : (n === 'knockback' || n === 'bowled') && actions.hit ? 'hit' : 'idle'); // Round 28b: knockback / bowled fall back to the hit clip, idleBreak to idle
   const lockLen = (n: string) => (n === 'defeat' ? 1e9 : Math.min(actions[n]?.getClip().duration || 0.8, n === 'hit' ? 0.8 : 1.1));
   let started = 0, shakeT = 0, resting = false, restHold = 0;
+  // Nov 6: crew bodies (the Catapult Crew's second goblin) follow every role the main body plays, with their own clips
+  const crews: { mixer: THREE.AnimationMixer; acts: Record<string, THREE.AnimationAction>; cur: string }[] = [];
+  const crewPlay = (c: (typeof crews)[number], n: string, again = false) => {
+    const r = c.acts[n] ? n : n === 'run' && c.acts.walk ? 'walk' : n === 'mine' && c.acts.attack ? 'attack' : (n === 'knockback' || n === 'bowled') && c.acts.hit ? 'hit' : 'idle';
+    const nx = c.acts[r]; if (!nx || (r === c.cur && !again)) return;
+    const pv = c.acts[c.cur]; nx.reset(); nx.setLoop(once(r) ? THREE.LoopOnce : THREE.LoopRepeat, once(r) ? 1 : Infinity); nx.clampWhenFinished = true;
+    if (pv && pv !== nx) nx.crossFadeFrom(pv, 0.15, false);
+    nx.play(); if (r === 'idle') nx.paused = resting; c.cur = r;
+  };
   const out: C3D = {} as C3D;
   const play = (want: CreatureAnim) => {
     if (!Object.keys(actions).length) {
@@ -493,7 +504,7 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
     next.reset(); next.setLoop(once(n) ? THREE.LoopOnce : THREE.LoopRepeat, once(n) ? 1 : Infinity); next.clampWhenFinished = true;
     const prev = actions[cur]; if (prev && prev !== next) next.crossFadeFrom(prev, 0.15, false);
     if (n === 'idle') randomIdle();
-    next.play(); if (n === 'idle') next.paused = resting; restHold = 0.35; cur = n; started = mixer.time; log.push(n); if (n === 'run') log.push('walk'); out.onPlay?.(n);
+    next.play(); if (n === 'idle') next.paused = resting; restHold = 0.35; cur = n; started = mixer.time; for (const c of crews) crewPlay(c, n); log.push(n); if (n === 'run') log.push('walk'); out.onPlay?.(n);
   };
   play('idle');
   mixer.setTime(0); started = 0;
@@ -507,7 +518,7 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   { const ac = actions.idle, dur = ac ? ac.getClip().duration : 0;
     if (ac && dur > 0.05) { for (let i = 1; i < 8; i++) { mixer.setTime((dur * i) / 8); const s = standingBox(ch, new THREE.Box3()); standH = Math.max(standH, s.max.y - s.min.y); } mixer.setTime(0); started = 0; } }
   for (const pc of PARTS[id]) {
-    const src = a.parts[pc.name]; if (!src || pc.mount) continue;
+    const src = a.parts[pc.name]; if (!src || pc.mount || pc.crew) continue;
     if (pc.world) {
       const bone = ch.getObjectByName(pc.world.bone), bw = restW.get(pc.world.bone);
       if (!bone || !bw) continue;
@@ -547,6 +558,25 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   const st = look ? look.stretch : [1, 1, 1];
   sc.scale.set(k * st[0], k * st[1], k * st[2]);
   sc.add(ch); root.add(sc);
+  for (const pc of PARTS[id]) {
+    const src = a.parts[pc.name]; if (!pc.crew || !src) continue;
+    const body = skeletonClone(src) as THREE.Object3D; prep(body);
+    const m2 = new THREE.AnimationMixer(body), acts: Record<string, THREE.AnimationAction> = {}, csh = a.crewShared?.[pc.name];
+    for (const [role, nm] of Object.entries(pc.crew.clips)) { const cl = csh?.byName[nm]; if (cl) acts[role] = m2.clipAction(cl); }
+    if (acts.idle) { acts.idle.play(); m2.setTime(0); }
+    const cb = standingBox(body, new THREE.Box3()), cH = Math.max(0.01, cb.max.y - cb.min.y);
+    body.position.set(-(cb.min.x + cb.max.x) / 2, -cb.min.y, -(cb.min.z + cb.max.z) / 2);
+    const holder = new THREE.Group(); holder.add(body); holder.scale.setScalar((standH * (pc.crew.h ?? 1)) / cH);
+    // across the item from the main body: mirrored sideways through the item's centre (both face forward)
+    root.updateMatrixWorld(true);
+    const it = objs.get(pc.crew.beside), bc = sc.worldToLocal(standingBox(ch, new THREE.Box3()).getCenter(new THREE.Vector3()));
+    const ic = it ? sc.worldToLocal(new THREE.Box3().setFromObject(it).getCenter(new THREE.Vector3())) : bc.clone().setX(bc.x + standH * 0.35);
+    holder.position.set(2 * ic.x - bc.x, 0, bc.z);
+    sc.add(holder); addItem(pc.name, 'crew', false, holder);
+    sc.position.x -= ic.x * sc.scale.x; // the crew and their item stand centred on the square
+    if (acts.idle) { acts.idle.time = Math.random() * (acts.idle.getClip().duration || 1); acts.idle.timeScale = 0.9 + Math.random() * 0.2; }
+    crews.push({ mixer: m2, acts, cur: acts.idle ? 'idle' : '' });
+  }
   // a mount stands on the ground; the rider sits on its back
   const mt = PARTS[id].find((p) => p.mount);
   if (mt && a.parts[mt.name] && !plowMount(id, a.parts[mt.name], root, sc, ch, prep, (n, o) => addItem(n, 'ground', false, o))) {
@@ -610,11 +640,11 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   /** Oct 30: play a walk / run clip at the speed that matches a pace in board squares per second (feet stay planted) */
   out.setPace = (n: string, pace: number) => { const g = out.gaitSpeed?.(n); const ac = actions[resolve(n)]; if (ac) ac.timeScale = g ? Math.min(1.8, Math.max(0.6, pace / g)) : 1; };
   out.holding = false;
-  /** Ken, Nov 1: one attack animation per swing: restart the clip that is already playing */ out.replay = (want: CreatureAnim) => { const n = resolve(want), a = actions[n]; if (!a || cur !== n) return; a.reset(); a.play(); started = mixer.time; };
-  out.rest = (on: boolean) => { if (on === resting) return; resting = on; const ac = actions.idle; if (ac) ac.paused = on && cur === 'idle'; restHold = 0.35; };
+  /** Ken, Nov 1: one attack animation per swing: restart the clip that is already playing */ out.replay = (want: CreatureAnim) => { const n = resolve(want), a = actions[n]; if (!a || cur !== n) return; a.reset(); a.play(); started = mixer.time; for (const c of crews) crewPlay(c, n, true); };
+  out.rest = (on: boolean) => { if (on === resting) return; resting = on; const ac = actions.idle; if (ac) ac.paused = on && cur === 'idle'; for (const c of crews) if (c.acts.idle) c.acts.idle.paused = on && c.cur === 'idle'; restHold = 0.35; };
   out.setSpeed = (n: string, k: number) => { const ac = actions[resolve(n)]; if (ac) ac.timeScale = k; };
-  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { if (!(resting && cur === 'idle' && restHold <= 0 && !rig)) mixer.update(dt); restHold -= dt; // Nov 1: a still figure (fades done) skips its mixer: the frozen idle frame stays on the bones
- if (cur === 'special' && actions.special && out.holding) { const sg = holdSeg(); if (!actions.special.isRunning()) { actions.special.reset(); actions.special.play(); } if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = (flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares) * kk; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, studioHeight: studioH, boardH, boardK: kk, natural: { standing: +standH.toFixed(4), box: +bodyH.toFixed(4) }, char: ch, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
+  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { if (!(resting && cur === 'idle' && restHold <= 0 && !rig)) { mixer.update(dt); for (const c of crews) c.mixer.update(dt); } restHold -= dt; // Nov 1: a still figure (fades done) skips its mixer: the frozen idle frame stays on the bones
+ if (cur === 'special' && actions.special && out.holding) { const sg = holdSeg(); if (!actions.special.isRunning()) { actions.special.reset(); actions.special.play(); } if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = (flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares) * kk; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), crewClips: () => crews.map((c) => ({ cur: c.cur, clip: c.acts[c.cur]?.getClip().name || '', clips: Object.keys(c.acts) })), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, studioHeight: studioH, boardH, boardK: kk, natural: { standing: +standH.toFixed(4), box: +bodyH.toFixed(4) }, char: ch, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
   if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.ballQuiet = rig.quiet; out.ballHide = rig.hide; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }
   return out;
 }
