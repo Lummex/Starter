@@ -3,13 +3,21 @@
  "from": "Model Editor approved sheet",
  "tasks": {
   "character": "01a1affe-2d55-70e0-823b-ab9afd545d7c",
-  "rig": "01a1b000-afb0-76ed-b1f3-1859316a1889"
+  "rig": "01a1b000-afb0-76ed-b1f3-1859316a1889",
+  "wand": "01a1b024-ea7a-7404-acd9-a423986ccede",
+  "hatstack": "01a1b024-ea77-7347-bb7b-576a8e31fd02"
  },
  "actions": {},
  "rigged": true,
- "parts": [],
+ "parts": [
+  "wand",
+  "hatstack"
+ ],
  "notes": "",
  "fileSizes": {
-  "char.glb": 14198868
- }
+  "char.glb": 14198868,
+  "wand.glb": 7091608,
+  "hatstack.glb": 11237268
+ },
+ "partsAdded": "2026-11-06T09:18:45.924Z"
 }

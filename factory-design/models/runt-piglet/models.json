@@ -2,13 +2,18 @@
  "generated": "2026-11-06T08:48:22.804Z",
  "from": "Model Editor approved sheet",
  "tasks": {
-  "character": "01a1b008-7c94-72b0-9c99-ffd64d677a4c"
+  "character": "01a1b008-7c94-72b0-9c99-ffd64d677a4c",
+  "fork": "01a1b02c-970b-7035-ab3e-eab0469cffba"
  },
  "actions": {},
  "rigged": false,
- "parts": [],
+ "parts": [
+  "fork"
+ ],
  "notes": "",
  "fileSizes": {
-  "char.glb": 14216340
- }
+  "char.glb": 14216340,
+  "fork.glb": 9331060
+ },
+ "partsAdded": "2026-11-06T09:26:28.209Z"
 }

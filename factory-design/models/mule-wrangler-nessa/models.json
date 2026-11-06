@@ -3,13 +3,18 @@
  "from": "Model Editor approved sheet",
  "tasks": {
   "character": "01a1b005-b4e5-7450-9c85-d329c4730940",
-  "rig": "01a1b008-0ecf-74f2-b461-fa2d769268a2"
+  "rig": "01a1b008-0ecf-74f2-b461-fa2d769268a2",
+  "lasso": "01a1b02a-667f-75a8-a775-52b8a3a987cb"
  },
  "actions": {},
  "rigged": true,
- "parts": [],
+ "parts": [
+  "lasso"
+ ],
  "notes": "",
  "fileSizes": {
-  "char.glb": 14358880
- }
+  "char.glb": 14358880,
+  "lasso.glb": 14113460
+ },
+ "partsAdded": "2026-11-06T09:24:45.379Z"
 }

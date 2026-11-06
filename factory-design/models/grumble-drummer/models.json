@@ -3,13 +3,21 @@
  "from": "Model Editor approved sheet",
  "tasks": {
   "character": "01a1affe-565f-766c-ab1c-e792fabd594d",
-  "rig": "01a1b000-d6f6-75c5-b579-8057d50b90ff"
+  "rig": "01a1b000-d6f6-75c5-b579-8057d50b90ff",
+  "drumsticks": "01a1b025-8b0b-7117-9fc1-cee39b439746",
+  "drum": "01a1b025-8a8e-76bf-805d-749468ccde2e"
  },
  "actions": {},
  "rigged": true,
- "parts": [],
+ "parts": [
+  "drumsticks",
+  "drum"
+ ],
  "notes": "",
  "fileSizes": {
-  "char.glb": 14595752
- }
+  "char.glb": 14595752,
+  "drumsticks.glb": 6197264,
+  "drum.glb": 12565460
+ },
+ "partsAdded": "2026-11-06T09:19:26.655Z"
 }

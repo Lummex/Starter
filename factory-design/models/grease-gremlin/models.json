@@ -3,13 +3,21 @@
  "from": "Model Editor approved sheet",
  "tasks": {
   "character": "01a1affe-3008-7347-877a-15c548fdb561",
-  "rig": "01a1b000-d752-73c0-91ad-0461d212ffc5"
+  "rig": "01a1b000-d752-73c0-91ad-0461d212ffc5",
+  "tank": "01a1b025-141d-70cd-b93c-c99e60d3f5ba",
+  "oilcan": "01a1b025-1414-7091-af67-f1b8a9f9365c"
  },
  "actions": {},
  "rigged": true,
- "parts": [],
+ "parts": [
+  "oilcan",
+  "tank"
+ ],
  "notes": "",
  "fileSizes": {
-  "char.glb": 15191076
- }
+  "char.glb": 15191076,
+  "oilcan.glb": 11873916,
+  "tank.glb": 11712188
+ },
+ "partsAdded": "2026-11-06T09:18:56.111Z"
 }
