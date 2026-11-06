@@ -184,7 +184,7 @@ const PARTS: Record<string, PartCfg[]> = {
 };
 export const hasCreature3dSlug = (id: string) => id in PARTS;
 
-interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationClip>; parts: Record<string, THREE.Object3D>; info: any; events?: any; shared?: SharedSet | null; picked?: Set<string>; packFree?: Set<string>; crewShared?: Record<string, SharedSet | null> }
+interface Assets { char: THREE.Object3D; clips: Record<string, THREE.AnimationClip>; parts: Record<string, THREE.Object3D>; info: any; events?: any; shared?: SharedSet | null; picked?: Set<string>; packFree?: Set<string>; crewShared?: Record<string, SharedSet | null>; partAnims?: Record<string, THREE.AnimationClip[]> }
 
 // ---------------------------------------------------------------- Oct 30 (Ken's fighting vision): Spring's shared biped animation pack
 // One pack (public/models/anims/biped-pack-v1.glb + .json) is loaded once and retargeted at load time onto every model whose bones match by
@@ -360,7 +360,8 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
         const info = await r.json();
         const gl = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
         // Oct 31: the items download alongside the body (they used to wait for it, so a unit with gear came up later)
-        const partP = PARTS[id].map((pc) => gl.loadAsync(base + pc.file).then((g) => [pc.name, g.scene] as [string, THREE.Object3D]).catch(() => null /* part missing: the figure still works */));
+        const partAnims: Record<string, THREE.AnimationClip[]> = {}; // Nov 6: a living mount brings its own clips
+        const partP = PARTS[id].map((pc) => gl.loadAsync(base + pc.file).then((g) => { if (g.animations.length) partAnims[pc.name] = g.animations; return [pc.name, g.scene] as [string, THREE.Object3D]; }).catch(() => null /* part missing: the figure still works */));
         const c = await gl.loadAsync(base + 'char.glb');
         const names = Object.keys(info.actions || {});
         const clips: Record<string, THREE.AnimationClip> = {};
@@ -399,7 +400,7 @@ export function loadCreature3d(id: string): Promise<Assets | null> {
         for (const r of await Promise.all(partP)) if (r) parts[r[0]] = r[1];
         const crewShared: Record<string, SharedSet | null> = {}; // Nov 6: a crew body gets the shared pack fitted to its own skeleton
         for (const pc of PARTS[id]) if (pc.crew && parts[pc.name]) crewShared[pc.name] = sharedFor(id + '/' + pc.name, parts[pc.name], await loadSharedPack());
-        const a = { char: c.scene, clips, parts, info, events, shared, picked, packFree, crewShared };
+        const a = { char: c.scene, clips, parts, info, events, shared, picked, packFree, crewShared, partAnims };
         ready.set(id, a);
         return a;
       } catch (e: any) { console.warn('[creature3d] ' + id + ' failed to load: ' + (e?.message || e)); return null; }
@@ -469,6 +470,10 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
       if (cl) { clips[role] = cl; packRoles.add(role); }
     }
   }
+  // Nov 6 (Spring): on a living mount the rider sits still (idle) while the mount walks or runs, so no legs walk in mid-air
+  const mtCfg = PARTS[id].find((p) => p.mount), mInfo = a.info?.mount, mAnims = mtCfg ? a.partAnims?.[mtCfg.name] : undefined;
+  const mountRig = !!(mtCfg && mInfo && mAnims?.length && a.parts[mtCfg.name]);
+  if (mountRig && clips.idle) { clips.walk = clips.idle.clone(); clips.run = clips.idle.clone(); packRoles.delete('walk'); packRoles.delete('run'); }
   for (const k of Object.keys(clips)) actions[k] = mixer.clipAction(clips[k]);
   let cur = '';
   const log: string[] = [];
@@ -478,8 +483,12 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   const lockLen = (n: string) => (n === 'defeat' ? 1e9 : Math.min(actions[n]?.getClip().duration || 0.8, n === 'hit' ? 0.8 : 1.1));
   let started = 0, shakeT = 0, resting = false, restHold = 0;
   // Nov 6: crew bodies (the Catapult Crew's second goblin) follow every role the main body plays, with their own clips
-  const crews: { mixer: THREE.AnimationMixer; acts: Record<string, THREE.AnimationAction>; cur: string }[] = [];
+  const crews: { mixer: THREE.AnimationMixer; acts: Record<string, THREE.AnimationAction>; cur: string; mount?: { bone: THREE.Object3D; local: THREE.Vector3; gait: Record<string, number>; holder: THREE.Object3D } }[] = [];
+  const _sp = new THREE.Vector3();
+  /** the rider sits on the mount's seat bone: it bobs with the walk (measured in the mount's rest pose) */
+  const seatRider = (c: (typeof crews)[number]) => { if (!c.mount) return; c.mount.bone.updateWorldMatrix(true, false); root.updateMatrixWorld(); _sp.copy(c.mount.local); c.mount.bone.localToWorld(_sp); root.worldToLocal(_sp); sc.position.set(_sp.x, _sp.y, _sp.z); };
   const crewPlay = (c: (typeof crews)[number], n: string, again = false) => {
+    if (c.cur === 'defeat') return;
     const r = c.acts[n] ? n : n === 'run' && c.acts.walk ? 'walk' : n === 'mine' && c.acts.attack ? 'attack' : (n === 'knockback' || n === 'bowled') && c.acts.hit ? 'hit' : 'idle';
     const nx = c.acts[r]; if (!nx || (r === c.cur && !again)) return;
     const pv = c.acts[c.cur]; nx.reset(); nx.setLoop(once(r) ? THREE.LoopOnce : THREE.LoopRepeat, once(r) ? 1 : Infinity); nx.clampWhenFinished = true;
@@ -494,6 +503,7 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
       return;
     }
     const n = resolve(want);
+    for (const c of crews) if (c.mount) crewPlay(c, n); // Nov 6: a living mount plays the same role as its rider
     if (!actions[n] || cur === n) return;
     // a started one-shot (attack / hit / mine) finishes before idle or walk take over; defeat never ends
     // Oct 30 (Ken: "moving, but their animation's not playing"): walking or running always takes over at once (only a defeat or an idle break-in
@@ -504,7 +514,7 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
     next.reset(); next.setLoop(once(n) ? THREE.LoopOnce : THREE.LoopRepeat, once(n) ? 1 : Infinity); next.clampWhenFinished = true;
     const prev = actions[cur]; if (prev && prev !== next) next.crossFadeFrom(prev, 0.15, false);
     if (n === 'idle') randomIdle();
-    next.play(); if (n === 'idle') next.paused = resting; restHold = 0.35; cur = n; started = mixer.time; for (const c of crews) crewPlay(c, n); log.push(n); if (n === 'run') log.push('walk'); out.onPlay?.(n);
+    next.play(); if (n === 'idle') next.paused = resting; restHold = 0.35; cur = n; started = mixer.time; for (const c of crews) if (!c.mount) crewPlay(c, n); log.push(n); if (n === 'run') log.push('walk'); out.onPlay?.(n);
   };
   play('idle');
   mixer.setTime(0); started = 0;
@@ -580,7 +590,10 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   // a mount stands on the ground; the rider sits on its back
   const mt = PARTS[id].find((p) => p.mount);
   if (mt && a.parts[mt.name] && !plowMount(id, a.parts[mt.name], root, sc, ch, prep, (n, o) => addItem(n, 'ground', false, o))) {
-    const w = a.parts[mt.name].clone(true); prep(w);
+    const w = mountRig ? skeletonClone(a.parts[mt.name]) as THREE.Object3D : a.parts[mt.name].clone(true); prep(w);
+    // Nov 6 (Spring): the seat point in the mount's rest pose, measured on its seat bone before anything moves
+    let seatBone: THREE.Object3D | null = null; const seatLocal = new THREE.Vector3();
+    if (mountRig && mInfo.seat) { w.updateMatrixWorld(true); const bn = String(mInfo.seat.bone).replace(/::/g, ''); w.traverse((o: any) => { if (!seatBone && (o.name === bn || o.name === mInfo.seat.bone)) seatBone = o; }); if (seatBone) (seatBone as THREE.Object3D).worldToLocal(seatLocal.set(...(mInfo.seat.pos as [number, number, number]))); }
     const wb = new THREE.Box3().setFromObject(w), ws = wb.getSize(new THREE.Vector3()), wc = wb.getCenter(new THREE.Vector3());
     const long = Math.max(ws.x, ws.z);
     const kw = mt.len / Math.max(long, 1e-4);
@@ -591,9 +604,18 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
     root.add(holder);
     const seat = ws.y * kw * (mt.seat ?? 0.62); // Nov 6 (Spring): Wobblewick sits on top of his hat stack (0.97)
     sc.scale.multiplyScalar(0.8);
-    sc.position.y = seat; sc.position.z = -0.02;
+    sc.position.y = seat; sc.position.z = -0.02; // a rigged mount moves it onto the seat bone below
     root.userData.mount = true;
     addItem(mt.name, 'ground', false, holder);
+    if (mountRig) {
+      const m2 = new THREE.AnimationMixer(w), acts: Record<string, THREE.AnimationAction> = {};
+      for (const [role, nm] of Object.entries(mInfo.clips as Record<string, string>)) { const cl = typeof nm === 'string' ? mAnims!.find((x) => x.name === nm) : undefined; if (cl) acts[role] = m2.clipAction(cl); }
+      const idles = (mInfo.clips.idles as string[] | undefined) || []; const pk = idles.length ? mAnims!.find((x) => x.name === idles[Math.floor(Math.random() * idles.length)]) : undefined; if (pk) acts.idle = m2.clipAction(pk);
+      if (acts.idle) { acts.idle.play(); acts.idle.time = Math.random() * (acts.idle.getClip().duration || 1); acts.idle.timeScale = 0.9 + Math.random() * 0.2; }
+      const cr = { mixer: m2, acts, cur: acts.idle ? 'idle' : '', mount: seatBone ? { bone: seatBone as THREE.Object3D, local: seatLocal, gait: (mInfo.gait || {}) as Record<string, number>, holder } : undefined };
+      crews.push(cr);
+      if (cr.mount) seatRider(cr);
+    }
     if (!(id in TABLE_H)) heightSpaces = HEIGHTS[id] ?? (DEFAULT_H[id] || 1.35);
   }
   // Ken (Oct 31): MEASURED, not the old scale multiplied: the standing body (the rider, on a mount or the plow) is heightSpaces x k0 squares tall on the board;
@@ -638,12 +660,13 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   out.eventsOf = (n: string) => { const cl = actions[resolve(n)]?.getClip(); return (cl && sh?.events[cl.name]) || []; };
   out.seek = (n: string, t: number) => { const ac = actions[resolve(n)]; if (ac) ac.time = t; };
   /** Oct 30: play a walk / run clip at the speed that matches a pace in board squares per second (feet stay planted) */
-  out.setPace = (n: string, pace: number) => { const g = out.gaitSpeed?.(n); const ac = actions[resolve(n)]; if (ac) ac.timeScale = g ? Math.min(1.8, Math.max(0.6, pace / g)) : 1; };
+  out.setPace = (n: string, pace: number) => { const g = out.gaitSpeed?.(n); const ac = actions[resolve(n)]; if (ac) ac.timeScale = g ? Math.min(1.8, Math.max(0.6, pace / g)) : 1;
+    for (const c of crews) if (c.mount) { const mc = c.acts[n]; const gm = (c.mount.gait[n] || 0) * root.scale.x * 1.1 * c.mount.holder.scale.x; if (mc) mc.timeScale = gm ? Math.min(1.8, Math.max(0.6, pace / gm)) : 1; } }; // Nov 6: the mount's feet keep to the pace too
   out.holding = false;
   /** Ken, Nov 1: one attack animation per swing: restart the clip that is already playing */ out.replay = (want: CreatureAnim) => { const n = resolve(want), a = actions[n]; if (!a || cur !== n) return; a.reset(); a.play(); started = mixer.time; for (const c of crews) crewPlay(c, n, true); };
   out.rest = (on: boolean) => { if (on === resting) return; resting = on; const ac = actions.idle; if (ac) ac.paused = on && cur === 'idle'; for (const c of crews) if (c.acts.idle) c.acts.idle.paused = on && c.cur === 'idle'; restHold = 0.35; };
   out.setSpeed = (n: string, k: number) => { const ac = actions[resolve(n)]; if (ac) ac.timeScale = k; };
-  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { if (!(resting && cur === 'idle' && restHold <= 0 && !rig)) { mixer.update(dt); for (const c of crews) c.mixer.update(dt); } restHold -= dt; // Nov 1: a still figure (fades done) skips its mixer: the frozen idle frame stays on the bones
+  Object.assign(out, { group: root, mixer, mats, play, current: () => cur, update: (dt: number) => { if (!(resting && cur === 'idle' && restHold <= 0 && !rig)) { mixer.update(dt); for (const c of crews) { c.mixer.update(dt); if (c.mount) seatRider(c); } } restHold -= dt; // Nov 1: a still figure (fades done) skips its mixer: the frozen idle frame stays on the bones
  if (cur === 'special' && actions.special && out.holding) { const sg = holdSeg(); if (!actions.special.isRunning()) { actions.special.reset(); actions.special.play(); } if (actions.special.time > sg[1]) actions.special.time = sg[0]; } if (flyCfg) { flyT += dt; out.lift = (flyCfg.hoverSquares + Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond) * flyCfg.floatSquares) * kk; out.swayNowDeg = Math.sin(flyT * Math.PI * 2 * flyCfg.floatsPerSecond * 0.7) * flyCfg.swayDeg; sc.rotation.z = THREE.MathUtils.degToRad(out.swayNowDeg!); if (shadow) { const rs = root.scale.y || 1; shadow.position.y = 0.01 - out.lift! / rs; shadow.scale.setScalar(1 / rs * (1 - out.lift! * 0.3)); } } if (shakeT > 0) { shakeT = Math.max(0, shakeT - dt); root.position.x = Math.sin(shakeT * 70) * 0.04 * (shakeT / 0.45); if (!shakeT) { root.position.x = 0; if (cur === 'hit') cur = 'idle'; } } if (rig) rig.step(dt); }, attackClip: attackClipName, release, currentClip: () => actions[cur]?.getClip().name || '', partInfo: () => partInfo, partObject: (n: string) => objs.get(n) || null, clipOf: (n: string) => actions[resolve(n)]?.getClip().name || '', clipNames: Object.keys(actions), crewClips: () => crews.map((c) => ({ cur: c.cur, clip: c.acts[c.cur]?.getClip().name || '', clips: Object.keys(c.acts) })), has: (n: string) => !!actions[n], held, worn, height: 1, heightSpaces, studioHeight: studioH, boardH, boardK: kk, natural: { standing: +standH.toFixed(4), box: +bodyH.toFixed(4) }, char: ch, items, log, dur: (n: string) => actions[resolve(n)]?.getClip().duration || 0 });
   if (rig) { out.clipNames = [...out.clipNames, 'bowl', 'spinBall', 'basketShot']; out.special = rig.special; out.trig = rig.trig; out.ballQuiet = rig.quiet; out.ballHide = rig.hide; out.advanceIdle = rig.advanceIdle; out.ballInfo = rig.info; out.effects = rig.effects; const cn = out.clipNames; Object.defineProperty(out, 'current', { value: () => rig.active() || cur }); void cn; }
   return out;

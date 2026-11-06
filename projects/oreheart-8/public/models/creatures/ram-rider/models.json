@@ -15,8 +15,72 @@
  },
  "rigged": true,
  "parts": [],
- "notes": "Owner sheet note: Don't render his pickaxe. Character only for now (owner, Oct 25: accessories come later).",
+ "notes": "Owner sheet note: Don't render his pickaxe. Character only for now (owner, Oct 25: accessories come later). Nov 6: the mount is a living Tripo model (Clay + Spring): own skeleton and 8 clips, the rider rides its seat bone.",
  "fileSizes": {
-  "char.glb": 5564776
+  "char.glb": 5564776,
+  "ram.glb": 1649516
+ },
+ "mount": {
+  "file": "ram.glb",
+  "from": "Clay's rigged Tripo model (factory-design/tripo/ram-rider/slim/ram.glb, main 6a36f52) + Spring's clips on its own Tripo skeleton (studio/spring-nov1/tripo/anim.py); uncompressed",
+  "clips": {
+   "idle": "ram-idle-01",
+   "idles": [
+    "ram-idle-01",
+    "ram-idle-02"
+   ],
+   "idleBreak": "ram-idlebreak-01",
+   "walk": "ram-walk-01",
+   "run": "ram-run-01",
+   "attack": "ram-attack-01",
+   "hit": "ram-bonk-01",
+   "defeat": "ram-death-01"
+  },
+  "gait": {
+   "walk": 0.425,
+   "run": 0.723
+  },
+  "events": {
+   "ram-attack-01": [
+    {
+     "name": "windup",
+     "frame": 6,
+     "time": 0.192
+    },
+    {
+     "name": "hit",
+     "frame": 23,
+     "time": 0.768
+    }
+   ],
+   "ram-bonk-01": [
+    {
+     "name": "impact",
+     "frame": 1,
+     "time": 0.04
+    }
+   ],
+   "ram-death-01": [
+    {
+     "name": "ground",
+     "frame": 41,
+     "time": 1.364
+    },
+    {
+     "name": "poof",
+     "frame": 59,
+     "time": 1.98
+    }
+   ]
+  },
+  "seat": {
+   "bone": "tripo::Spine_1",
+   "pos": [
+    0,
+    0.6641,
+    -0.16
+   ],
+   "frac": 0.748
+  }
  }
 }
