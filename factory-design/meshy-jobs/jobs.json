@@ -1621,6 +1621,16 @@
    ],
    "height": 1,
    "actions": {}
+  },
+  {
+   "id": "rune-scribe-nimbletoe",
+   "char": [
+    "nov5-rune-scribe-nimbletoe--char-front.jpg",
+    "nov5-rune-scribe-nimbletoe--char-side.jpg",
+    "nov5-rune-scribe-nimbletoe--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
   }
  ],
  "nov5_props_round2": {
@@ -1729,6 +1739,11 @@
     "nov5-hexbolt-tinker--crossbow-front.jpg",
     "nov5-hexbolt-tinker--crossbow-side.jpg",
     "nov5-hexbolt-tinker--crossbow-back.jpg"
+   ],
+   "quiver": [
+    "nov5-hexbolt-tinker--quiver-front.jpg",
+    "nov5-hexbolt-tinker--quiver-side.jpg",
+    "nov5-hexbolt-tinker--quiver-back.jpg"
    ]
   },
   "junk-catapult-crew": {
@@ -1883,6 +1898,18 @@
     "nov5-wispmother-tallulah--lantern-front.jpg",
     "nov5-wispmother-tallulah--lantern-side.jpg",
     "nov5-wispmother-tallulah--lantern-back.jpg"
+   ]
+  },
+  "rune-scribe-nimbletoe": {
+   "quill": [
+    "nov5-rune-scribe-nimbletoe--quill-front.jpg",
+    "nov5-rune-scribe-nimbletoe--quill-side.jpg",
+    "nov5-rune-scribe-nimbletoe--quill-back.jpg"
+   ],
+   "scroll": [
+    "nov5-rune-scribe-nimbletoe--scroll-front.jpg",
+    "nov5-rune-scribe-nimbletoe--scroll-side.jpg",
+    "nov5-rune-scribe-nimbletoe--scroll-back.jpg"
    ]
   }
  }
