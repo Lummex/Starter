@@ -146,7 +146,7 @@ select pg_temp.ok('faction pack: every card is of that faction or neutral',
 update public.pack_types set active = false where id = 'dwarf';
 select pg_temp.refused('inactive pack is not for sale', :P1, 'aal1', $q$ select public.open_pack('dwarf', 'k1-dddddddd-0001', false) $q$, 'not for sale');
 select pg_temp.ok('inactive pack is hidden from the shop',
-  (select jsonb_array_length(j -> 'packs') from pg_temp.json_as(:P1, 'aal1', 'select public.shop_info()') j) = 3);
+  (select jsonb_array_length(j -> 'packs') from pg_temp.json_as(:P1, 'aal1', 'select public.shop_info()') j) = 2); -- Oreheart + the goblin pack switched on above
 update public.pack_types set active = false where id = 'dwarf'; -- back to the Nov 6 state
 select pg_temp.refused('unknown pack is refused', :P1, 'aal1', $q$ select public.open_pack('mystery', 'k1-mmmmmmmm-0001', false) $q$, 'not for sale');
 

@@ -137,7 +137,7 @@ async function retryOnce<T>(fn: () => Promise<T>): Promise<T> {
 }
 export const api = {
   async shopInfo(): Promise<ShopInfo> {
-    if (stubMode()) { stubInit(); return JSON.parse(JSON.stringify({ packs: STUB.packs, coins: STUB.coins, free_packs: STUB.free_packs, bundles: STUB.bundles, stash: stubStash(), pity: { limit: STUB.pityLimit, since: STUB.pitySince }, badges: { best_value: 99, most_popular: null }, card_backs: STUB.cardBacks })); }
+    if (stubMode()) { stubInit(); return JSON.parse(JSON.stringify({ packs: STUB.packs, coins: STUB.coins, free_packs: STUB.free_packs, bundles: STUB.bundles, stash: stubStash(), pity: { limit: STUB.pityLimit, since: STUB.pitySince }, badges: { best_value: 99, most_popular: 24 }, card_backs: STUB.cardBacks })); }
     return await rpc<ShopInfo>('shop_info');
   },
   async openPack(packType: string, idemKey: string, useFree: boolean, force?: string): Promise<OpenResult> {
@@ -357,7 +357,7 @@ export function econShow(name: string, ...kids: (El | null)[]): El {
   const main = h('main', { class: 'screen net-screen econ-screen', 'data-screen': 'econ-' + name, 'aria-label': name, tabindex: '-1' }, ...kids);
   root.append(main);
   // Nov 6 (design D): signed in, the D shell goes around the screen (the pack opening keeps its own stage)
-  if (net.active && !stubMode() || (isTestPage() && STUB.pretend)) { const titles: Record<string, string> = { shop: 'The Pack Shop', collection: 'Collection', quests: 'Daily Quests', pack: 'Pack opening' }; if (name !== 'pack') void import('./dashboard').then((m) => m.dashSkin(main, titles[name] || name, () => { backToMenu(); })).catch(() => {}); }
+  if (net.active && !stubMode() || (isTestPage() && STUB.pretend)) { const titles: Record<string, string> = { shop: 'Shop', collection: 'Collection', quests: 'Daily Quests', pack: 'Pack opening' }; const infos: Record<string, string> = { shop: 'Every pack: 11 cards, at least 2 Rares \u00b7 a Legendary within every 40 packs' }; if (name !== 'pack') void import('./dashboard').then((m) => m.dashSkin(main, titles[name] || name, () => { backToMenu(); }, { info: infos[name] })).catch(() => {}); }
   syncInert(root);
   if (!inertWatch) { inertWatch = new MutationObserver(() => syncInert(root)); inertWatch.observe(root, { childList: true }); } // catches every way a screen closes
   main.focus({ preventScroll: true });
