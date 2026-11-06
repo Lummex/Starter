@@ -17,7 +17,7 @@
 //   mineHoldTurns    the longest run of my consecutive turns (from 'turnStart') in which my units mined the same mine square
 //   minerMines       'mine' events by my units whose card is a Miner (Gatherer or Smith)
 // Which side owns a uid: 'summon' / 'defeat' events, then the final board, hands, decks and discard piles.
-import { COMMANDER_PACK_IDS, commanderPackCard } from '../ui/cardfmt';
+import { COMMANDER_PACK_IDS, commanderPackCard } from '../content/card-labels';
 import { CARDS, isMiner } from '../engine';
 
 export interface Summary {

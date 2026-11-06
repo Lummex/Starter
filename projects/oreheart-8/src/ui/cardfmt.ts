@@ -2,16 +2,12 @@ import FORMAT from '../../public/art/card-format/format.json';
 import { makeOHRenderer } from './ohrender';
 import HOLO from '../content/holo-masks.json';
 import { CARDS, COMMANDERS } from '../engine';
+import { TIER_NAMES, RARITY_LABEL, commanderCard } from '../content/card-labels';
+export { TIER4_LABEL, TIER_NAMES, RARITY_LABEL, rarityLabel, commanderCard, COMMANDER_PACK_IDS, isCommanderPackId, commanderPackCard, cardFor } from '../content/card-labels';
 import UPG from '../content/upgrade-art.json';
 import './ohcard.css';
 
 /** Upgraded cards (Nov 5): five tiers, looks only. Tier 1 is the card as painted; tiers 2-5 have their own picture (Brush) and coloured stars. */
-/** Ken renamed the top RARITY to Legendary (Nov 5), which clashes with this tier's name; Forge is asking him for a new tier name: swap it here. */
-export const TIER4_LABEL = 'Legendary';
-export const TIER_NAMES = ['', 'Original', 'Enhanced', 'Overcharged', TIER4_LABEL, 'Mythic'];
-/** The top rarity is stored as 'Collector' everywhere (keys, holo masks, odds); Ken calls it Legendary (Nov 5). Shown through this only. */
-export const RARITY_LABEL: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Legendary' };
-export const rarityLabel = (r: string) => RARITY_LABEL[r] || r;
 const UPG_IDS = new Set<string>((UPG as any).ids || []);
 export const hasUpgradeArt = (id: string) => UPG_IDS.has(id);
 /** The picture for a card at a tier: its upgrade art when painted, else the normal one. */
@@ -73,20 +69,6 @@ export function ohCardEl(card: any, artUrl: string | null): HTMLElement {
   return el;
 }
 
-/** A Commander as a `commander`-layout card (Choose Your Commander, close-ups). */
-export function commanderCard(c: any) {
-  return { id: 'cmd:' + c.id, type: 'commander', faction: c.faction, name: c.name, text: c.abilityText, health: c.health, cost: '', rarity: 'Collector', artPos: c.artPos };
-}
-/** Nov 5 (Ken: Commanders in packs at Rare): the pack / collection card for a Commander, by its pack id 'commander-<id>'. */
-export const COMMANDER_PACK_IDS = ['commander-grubnak', 'commander-sproingle', 'commander-borgo'];
-export const isCommanderPackId = (id: string) => typeof id === 'string' && id.startsWith('commander-');
-export function commanderPackCard(id: string): any | null {
-  if (!isCommanderPackId(id)) return null;
-  const c = COMMANDERS[id.slice(10)];
-  return c ? { ...commanderCard(c), id, commanderId: c.id, rarity: 'Rare', cost: 0 } : null;
-}
-/** A card by id, pack Commanders included (null when unknown). */
-export const cardFor = (id: string): any | null => (CARDS as any)[id] || commanderPackCard(id);
 
 /** The Oreheart card back, drawn from the format's `back` layout. */
 export const ohBackEl = () => ohCardEl({ id: 'back', type: 'back', faction: 'goblins', name: '', text: '' }, null);

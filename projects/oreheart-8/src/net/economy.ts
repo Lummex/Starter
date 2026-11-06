@@ -10,7 +10,7 @@ import { rpc } from './online';
 import { h } from '../ui/app';
 import { CARDS } from '../engine';
 import { setOwnedCounts, deckLimit, ownedOf, copyLimit } from '../ui/decks';
-import { COMMANDER_PACK_IDS, commanderPackCard, cardFor } from '../ui/cardfmt';
+import { COMMANDER_PACK_IDS, commanderPackCard, cardFor } from '../content/card-labels';
 import { summarize, capSummary } from './quest-summary';
 
 type El = HTMLElement;
@@ -24,7 +24,7 @@ export interface PulledCard { card_id: string; rarity: string; is_new: boolean; 
 export interface UpgradeInfo { steps: Record<string, number[]>; drop_bp: Record<string, number>; drop_tiers: Record<string, number>; cards: Record<string, { best: number; owned: number; upgraded: number }> }
 export interface CardCopy { id: string; tier: number; worth: number; since: string }
 export interface UpgradeResult { event_id: string; target: string; card_id: string; spent: number; worth_before: number; worth_after: number; tier_before: number; tier_after: number; next_worth: number | null; repeat: boolean }
-export { TIER_NAMES } from '../ui/cardfmt';
+export { TIER_NAMES } from '../content/card-labels';
 /** Extra copies per step (Enhanced, Overcharged, Legendary, Mythic) by rarity (Ken and Forge, Nov 5); the server's setting upgrade_steps is the truth */
 export const DEFAULT_STEPS: Record<string, number[]> = { Common: [5, 15, 30, 50], Uncommon: [4, 12, 24, 40], Rare: [2, 4, 7, 14], 'Ultra Rare': [1, 2, 3, 4], Collector: [1, 1, 1, 1] };
 export const stepsFor = (rarity: string, steps: Record<string, number[]> = DEFAULT_STEPS) => steps[rarity] || steps.Common || DEFAULT_STEPS.Common;
@@ -41,7 +41,7 @@ export const isTestPage = () => params().get('test') === '1';
 export const stubMode = () => isTestPage() && !net.active;
 export const RARITIES = ['Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector'];
 /** what the player reads for a rarity key (Collector is shown as Legendary, Ken Nov 5) */
-export { rarityLabel } from '../ui/cardfmt';
+export { rarityLabel } from '../content/card-labels';
 export const STREAK_DAYS = 7;
 
 // ------------------------------------------------------------------ test-page stand-in (never used in real play)
