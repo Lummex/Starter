@@ -90,6 +90,8 @@ export interface G3D {
   height: number;
   /** Oct 30: file names reported by the test hook (only set for Commanders other than Grubnak) */
   files?: { source: string; fortress: string; scepter: string };
+  /** Nov 6 (aura): the posed character and the weapon in his hand */
+  char?: THREE.Object3D; weapon?: THREE.Object3D | null;
 }
 
 /** Bounding box that follows the skeleton (Meshy rigs sit under a 0.01-scaled armature, so the raw geometry box is wrong). */
@@ -137,10 +139,10 @@ export function makeGrubnak3d(a: G3DAssets, pose?: OwnerPose): G3D {
   ch.updateMatrixWorld(true);
   const cb0 = box(ch);
   const H0 = cb0.max.y - cb0.min.y;
-  let scepterBone = '';
+  let scepterBone = '', weapon: THREE.Object3D | null = null;
   if (a.scepter) { // Spring, Nov 1: bone-local grip on the right hand (staff upright, hand wraps the shaft), no more chest-diagonal grip rule
     const hb = ch.getObjectByName('RightHand');
-    if (hb) { const sp = a.scepter.clone(true); sp.position.set(19.273, -6.143, 6.595); sp.rotation.set(THREE.MathUtils.degToRad(-85.46), THREE.MathUtils.degToRad(44.47), THREE.MathUtils.degToRad(-119.65), 'XYZ'); sp.scale.setScalar(70.993); hb.add(sp); scepterBone = hb.name; }
+    if (hb) { const sp = a.scepter.clone(true); sp.position.set(19.273, -6.143, 6.595); sp.rotation.set(THREE.MathUtils.degToRad(-85.46), THREE.MathUtils.degToRad(44.47), THREE.MathUtils.degToRad(-119.65), 'XYZ'); sp.scale.setScalar(70.993); hb.add(sp); scepterBone = hb.name; weapon = sp; }
   }
   m0.stopAllAction(); m0.uncacheRoot(ch);
   const ck = (SEAT.k * tH * size) / Math.max(H0, 0.01);
@@ -151,7 +153,9 @@ export function makeGrubnak3d(a: G3DAssets, pose?: OwnerPose): G3D {
   if (onBase) figure.position.set(Math.sin(turn) * SEAT.z * tH, SEAT.y * tH, Math.cos(turn) * SEAT.z * tH); // without the throne he stands on the ground
   figure.rotation.y = turn;
   group.add(figure);
-  return finish(a, group, figure, throne, ch, scepterBone);
+  const g = finish(a, group, figure, throne, ch, scepterBone);
+  g.weapon = weapon;
+  return g;
 }
 
 function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress: THREE.Object3D, ch: THREE.Object3D, scepterBone: string): G3D {
@@ -184,7 +188,7 @@ function finish(a: G3DAssets, group: THREE.Group, figure: THREE.Group, fortress:
   };
   play('idle');
   const total = box(group);
-  return { group, figure, fortress, mixer, play, current: () => cur, update: (dt) => mixer.update(dt), clipNames: Object.keys(actions), scepterBone, held: scepterBone ? { item: 'scepter', bone: scepterBone } : null, height: total.max.y - total.min.y };
+  return { group, figure, fortress, mixer, play, current: () => cur, update: (dt) => mixer.update(dt), clipNames: Object.keys(actions), scepterBone, char: ch, held: scepterBone ? { item: 'scepter', bone: scepterBone } : null, height: total.max.y - total.min.y };
 }
 
 // ---------------------------------------------------------------- Oct 30: other Commanders as 3D models (Thane Borgo first)
@@ -287,5 +291,6 @@ export function makeCommander3d(id: string, a: G3DAssets, keep: THREE.Object3D, 
   const g = finish(a, group, figure, keep, ch, scepterBone);
   g.files = cfg.files;
   (g as any).items = items;
+  g.weapon = items.length ? items[items.length - 1].obj : null;
   return g;
 }

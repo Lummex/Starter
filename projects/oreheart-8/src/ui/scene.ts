@@ -5,6 +5,7 @@ import { COLORS, FACTIONS, CARDS, CONFIG, isActed, weaponOf, isMiner } from '../
 import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missingClipList, hasCreature3dSlug, standingBox, type C3D } from './creature3d';
 import { stagePlow, plowFrame } from './plow';
 import { SHOTS, isShooter, createProjectiles, preloadShots, type ShotSpec } from './projectiles';
+import { makeCommanderAura, CommanderAura } from './commander-aura';
 import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D, loadCommander3d, makeCommander3d, commander3dReady, commanderIds3d } from './grubnak3d';
 import { makeMineFx, MineFx } from './mineFx';
 import { createSpellFx, fxImpactMs, type SpellFxRequest } from './spell-fx';
@@ -66,6 +67,8 @@ export interface BoardView {
   piecePoses(): any;
   playEmote(side: string, name: string): void;
   focusCommander(side: string): void;
+  /** Nov 6: the upgrade tier of a side's Commander copy (1 Original .. 5 Mythic); 2 and up shows its aura */
+  setCommanderTier?(side: 'player' | 'opponent', tier: number): void;
   onViewChange?: () => void;
   cellQuad(row: number, col: number): { x: number; y: number }[];
   screenRects(): any;
@@ -268,7 +271,7 @@ export function createBoardView(container: HTMLElement, low: boolean, arenaFacti
   // glowing crystal mines inside spiked palisades
   const mines: MineArt[] = [];
   const mineFx: MineFx[] = [];
-  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
+  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; o.setCommanderTier = (side: 'player' | 'opponent', tier: number) => { cmdTier[side] = Math.max(1, Math.min(5, Math.round(tier) || 1)); applyAura(side); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
   for (let mi = 0; mi < CONFIG.mineCount; mi++) {
     const m = makeMine(low, mi);
     m.recolor('#ffffff');
@@ -386,7 +389,7 @@ const _embV = new THREE.Vector3();
   }
 
   // strongholds + commanders
-  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; g3d: G3D | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null; baseYaw?: number; yaw?: number; lookUntil?: number; impatient?: number; elog?: string[]; fwdUntil?: number };
+  type Cmd = { group: THREE.Group; keep: StrongholdArt | null; fig: THREE.Group; grub: GrubnakArt | null; g3d: G3D | null; body: THREE.Mesh; emote: { kind: string; t: number } | null; baseK?: number; faction: string; id: string; retreat: { t: number; barrel: THREE.Group } | null; baseYaw?: number; yaw?: number; lookUntil?: number; impatient?: number; elog?: string[]; fwdUntil?: number; aura?: CommanderAura | null };
   const cmd: Record<string, Cmd> = {};
   for (const side of ['player', 'opponent'] as const) {
     const g = new THREE.Group();
@@ -397,8 +400,20 @@ const _embV = new THREE.Vector3();
     scene.add(g);
     cmd[side] = { group: g, keep: null, fig, grub: null, g3d: null, body, emote: null, faction: '', id: '', retreat: null };
   }
+  // Nov 6 (Ken): an upgraded Commander wears his tier's aura. The tier comes from the match (setCommanderTier: the copy in play) or, for a look
+  // before the collection is live, ?cmdTier=5 (both) / ?cmdTier=p5,o3 in the address.
+  const cmdTier: Record<string, number> = { player: 1, opponent: 1 };
+  try { const q = new URLSearchParams(location.search).get('cmdTier') || ''; for (const part of q.split(',')) { const m = /^([po]?)([1-5])$/.exec(part.trim()); if (m) { if (m[1] !== 'o') cmdTier.player = +m[2]; if (m[1] !== 'p') cmdTier.opponent = +m[2]; } } } catch { /* no address */ }
+  function applyAura(side: 'player' | 'opponent') {
+    const cm = cmd[side];
+    cm.aura?.dispose(); cm.aura = null;
+    if (cmdTier[side] < 2 || !cm.id) return;
+    const host = cm.g3d ? cm.g3d.figure : cm.fig;
+    cm.aura = makeCommanderAura({ id: cm.id, faction: cm.faction, tier: cmdTier[side], low, host, char: cm.g3d?.char || host, weapon: cm.g3d?.weapon || null });
+  }
   function buildCommander(side: 'player' | 'opponent', faction: string, id: string) {
     const cm = cmd[side];
+    cm.aura?.dispose(); cm.aura = null;
     cm.group.clear();
     cm.g3d = null;
     const a3 = id === 'grubnak' ? grubnak3dReady() : commander3dReady(id);
@@ -455,6 +470,7 @@ const _embV = new THREE.Vector3();
     }
     if (cm.g3d) cm.group.scale.setScalar(1);
     cm.baseK = cm.group.scale.y;
+    applyAura(side);
   }
   loadGrubnak3d().then((a) => { if (a && !disposed) for (const side of ['player', 'opponent'] as const) if (cmd[side].id === 'grubnak' && !cmd[side].g3d) buildCommander(side, cmd[side].faction, 'grubnak'); });
   // Oct 30: only the Commanders in this match download their model (each is ~3 MB); buildCommander asks for it
@@ -1795,6 +1811,7 @@ const _embV = new THREE.Vector3();
       const cm = cmd[side];
       cm.fig.position.y = cm.g3d ? 0 : Math.sin(now / 600 + (side === 'player' ? 0 : 2)) * 0.02;
       if (cm.g3d) cm.g3d.update(Math.min(0.1, Math.max(0, (now - (cm.g3d as any)._t || 0) / 1000))), ((cm.g3d as any)._t = now);
+      if (cm.aura) { cm.aura.update(Math.min(0.1, Math.max(0, (now - ((cm as any)._at || now)) / 1000)), camera); (cm as any)._at = now; }
       if (cm.g3d && !testMode) { // Nov 1 (Spring): now and then a Commander fidgets, never in sync
         if (cm.g3d.current() !== 'idle') (cm as any).breakAt = 0;
         else if (!(cm as any).breakAt) (cm as any).breakAt = now + 12000 + Math.random() * 18000;
@@ -1915,7 +1932,7 @@ const _embV = new THREE.Vector3();
             projectiles: proj.active(), projectileLog: proj.log(), attackLog: attackLog.map((x) => ({ ...x })), aimLog: aimLog.map((x) => ({ ...x })), aimNow: aimNow(),
             canvas: canvasInfo(),
             missingClips: missingClipList.map((m) => ({ ...m })),
-            commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, commanderId: cm.id, source: cm.g3d ? (cm.g3d.files?.source || 'grubnak.glb') : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? (cm.g3d.files?.fortress || 'grubnak-fortress.glb') : '', scepter: cm.g3d ? (cm.g3d.files?.scepter ?? 'grubnak-scepter.glb') : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, items: (((cm.g3d as any)?.items || []) as { name: string; bone: string; obj: THREE.Object3D | null }[]).map((i) => { let o: THREE.Object3D | null = i.obj, vis = !!o, size = 0; while (o) { if (!o.visible) vis = false; o = o.parent; } if (i.obj) { const ib = new THREE.Box3().setFromObject(i.obj, true); if (!ib.isEmpty()) size = +ib.getSize(new THREE.Vector3()).length().toFixed(3); } return { name: i.name, bone: i.bone, visible: vis, size }; }), animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
+            commanderModels: (['player', 'opponent'] as const).map((side) => { const cm = cmd[side]; const f = facing(side); return { side, aura: cm.aura ? cm.aura.info() : { tier: cmdTier[side] }, commanderId: cm.id, source: cm.g3d ? (cm.g3d.files?.source || 'grubnak.glb') : 'placeholder', height: (c3(side) as any).heightSpaces || 0, animations: cm.g3d ? cm.g3d.clipNames : [], currentAnimation: cm.g3d ? cm.g3d.current() : 'idle', animationLog: cm.g3d ? ((cm.g3d as any).log || []) : [], fortress: cm.g3d ? (cm.g3d.files?.fortress || 'grubnak-fortress.glb') : '', scepter: cm.g3d ? (cm.g3d.files?.scepter ?? 'grubnak-scepter.glb') : '', scepterBone: (cm.g3d as any)?.scepterBone || '', held: (cm.g3d as any)?.held || null, items: (((cm.g3d as any)?.items || []) as { name: string; bone: string; obj: THREE.Object3D | null }[]).map((i) => { let o: THREE.Object3D | null = i.obj, vis = !!o, size = 0; while (o) { if (!o.visible) vis = false; o = o.parent; } if (i.obj) { const ib = new THREE.Box3().setFromObject(i.obj, true); if (!ib.isEmpty()) size = +ib.getSize(new THREE.Vector3()).length().toFixed(3); } return { name: i.name, bone: i.bone, visible: vis, size }; }), animation: cm.g3d ? cm.g3d.current() : 'idle', ...f }; }),
             commanders: { player: { commanderId: cmd.player.id, model: cmd.player.grub || cmd.player.g3d ? 'finished' : 'placeholder', ...c3('player') }, opponent: { commanderId: cmd.opponent.id, model: cmd.opponent.grub || cmd.opponent.g3d ? 'finished' : 'placeholder', ...c3('opponent') } },
             strongholds: { player: 'finished', opponent: 'finished' }, mines: 'finished', mineModels: mines.map((m, i) => { const cl = m.group.userData.cell || { row: 0, col: 0 }, bx = mineBox(cl.row, cl.col), cv = canvas.getBoundingClientRect(); return { row: cl.row, col: cl.col, screenBox: { x: bx.x + cv.left, y: bx.y + cv.top, width: bx.width, height: bx.height }, effects: mineFx[i].stats(), source: m.group.userData.mineModel === 'crystal-node' ? 'model:crystal-node.glb' : 'code:buildMineModel', ring: false, decal: { kind: 'glow-rubble', flat: true, color: m.group.userData.decalHex || m.group.userData.tintHex || '#ffffff' }, tiltDeg: (Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z)) * 180 / Math.PI, tilt: Math.abs(m.group.rotation.x) + Math.abs(m.group.rotation.z) + Math.abs(m.crystals.rotation.x) + Math.abs(m.crystals.rotation.z), baseY: new THREE.Box3().setFromObject(m.crystals).min.y - m.group.position.y, scale: m.group.scale.x, parts: ['rubble', 'pedestal', 'banner', 'crystal'], shards: 11, pulsing: true, height: m.group.userData.mineHeight || 0, owner: flowOwner[i] || 'neutral', tint: m.group.userData.tintHex || '#ffffff' }; }), mineModel: 'code-built', crystalFlow: { shards: flowShown, streams: flowOwner.filter((o) => o && o !== 'neutral').length, swirls: flowOwner.filter((o) => !o || o === 'neutral').length, shape: 'faceted', path: 's-curve', target: 'bank' },
           });
@@ -1930,7 +1947,7 @@ const _embV = new THREE.Vector3();
     spellShards: (at: { row: number; col: number }, countered: string | null) => spellFx.shatter(at, countered),
     isBusy: () => boardBusy(performance.now()), swingMs: SWING_MS,
     topAt: (row: number, col: number) => thingBox(row, col),
-    is3D: true, setCarry, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setCarry, setCommanderTier(side: 'player' | 'opponent', tier: number) { cmdTier[side] = Math.max(1, Math.min(5, Math.round(tier) || 1)); applyAura(side); }, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       spellFx.dispose(); proj.dispose();
       disposed = true; for (const ev of inputEvs) window.removeEventListener(ev, onInput, true); window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);
