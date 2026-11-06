@@ -54,7 +54,7 @@ export function upgradePanel(c: any, opts: UpgradePanelOpts): UpgradePanel {
   const quick = h('div', { class: 'col-upg-quick' }, h('span', {}, 'Combine with'), qn, qt, h('span', {}, 'copies'), qgo);
   const looks = h('div', { class: 'upg-looks', 'data-testid': 'upg-looks', role: 'group', 'aria-label': 'The five looks' });
   panel.append(list, quick, status, h('div', { class: 'net-actions col-upg-actions' }, nextBtn, btn), h('h3', { class: 'upg-looks-h' }, 'The five looks'), looks,
-    hasUpgradeArt(c.id) ? null : h('p', { class: 'col-upg-note' }, 'This card\'s upgraded pictures are still being painted; its stars change now.'));
+    ...(hasUpgradeArt(c.id) ? [] : [h('p', { class: 'col-upg-note' }, 'This card\'s upgraded pictures are still being painted; its stars change now.')])); // Nov 6: append(null) wrote the word "null" into the panel
   let copies: CardCopy[] = [];
   let target = '';
   const picked = new Set<string>();

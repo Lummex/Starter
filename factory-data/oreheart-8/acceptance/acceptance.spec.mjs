@@ -4253,8 +4253,7 @@ test('AC137: menu buttons are plain white text with a hover glow, no boxes or bo
   expect(await boxedButtons(page, ['Back']), 'rules').toEqual([]);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
-  expect(await boxedButtons(page, ['Auto-fill', 'Save', 'Rename', 'New Deck', 'Back']), 'deck builder').toEqual([]);
-  expect(await unframed(page, ['Auto-fill', 'Save', 'Rename', 'New Deck', 'Back']), 'deck builder gem frames (Ken, Oct 30)').toEqual([]);
+  for (const name of ['Auto-fill', 'Save', 'Rename', 'New Deck', 'Back']) await expect(page.getByRole('button', { name, exact: true })).toBeVisible(); // Nov 6: the Deck Builder is a design-D screen (silver panels and buttons, Ken approved Nov 5); the unboxed rule is for the title menu
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Normal', exact: true }).click();
@@ -4410,6 +4409,8 @@ test('AC143: the deck list always shows about 8 rows; it scrolls inside its pane
   expect(await visibleRows(page), '1280x720').toBeGreaterThanOrEqual(8);
   await page.setViewportSize({ width: 844, height: 390 });
   await page.waitForTimeout(500);
+  await page.getByRole('button', { name: 'List', exact: true }).click(); // Nov 6 (design D, Ken approved Nov 5): on the phone the deck list is the List tab
+  await page.waitForTimeout(300);
   expect(await visibleRows(page), '844x390').toBeGreaterThanOrEqual(7);
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true);
 });
@@ -4810,7 +4811,7 @@ async function smallText(page) {
       const t = w.currentNode;
       const txt = t.textContent.trim();
       const el = t.parentElement;
-      if (!txt || !el || el.closest('[data-card-id],[data-card-back],[aria-hidden="true"]')) continue;
+      if (!txt || !el || el.closest('[data-card-id],[data-card-back],[aria-hidden="true"],.dash')) continue; // Nov 6: the design-D screens (Settings, Choose Your Commander, Deck Builder; Ken approved Nov 5) use the D kit's phone sizes
       if (el.checkVisibility && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
       const r = el.getBoundingClientRect();
       if (r.width <= 2 || r.height <= 2 || r.right <= 0 || r.bottom <= 0 || r.left >= innerWidth || r.top >= innerHeight) continue;
@@ -6885,19 +6886,22 @@ async function menuPieceBoxes(page, request, screenId) {
 
 test.describe('round 9c menus 1920x1080', () => {
   test.use({ viewport: { width: 1920, height: 1080 } });
-  test('AC233: main menu, Deck Builder and Choose Your Commander pieces sit in the owner boxes', async ({ page, request }) => {
+  test('AC233: main menu pieces sit in the owner boxes; the Deck Builder and Choose Your Commander are design-D screens (Nov 6) and fill the window without owner boxes', async ({ page, request }) => {
     await openTest(page);
     await page.waitForTimeout(2500);
     expect(await menuPieceBoxes(page, request, 'main')).toEqual([]);
+    // Nov 6 (design D, Ken approved Nov 5): the Deck Builder and Choose Your Commander no longer read their Menu Builder zones
     await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
     await page.waitForTimeout(2000);
-    expect(await menuPieceBoxes(page, request, 'deck')).toEqual([]);
+    await fillsWindow(page, 'deck-builder', 'deck builder (design D)');
+    expect(await page.locator('[data-screen="deck-builder"] [data-menu-piece]').count(), 'no owner boxes on the D Deck Builder').toBe(0);
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('button', { name: 'Play', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Choose Your Commander' })).toBeVisible();
     await page.waitForTimeout(2000);
-    expect(await menuPieceBoxes(page, request, 'commander')).toEqual([]);
+    await fillsWindow(page, 'select', 'choose your commander (design D)');
+    expect(await page.locator('[data-screen="select"] [data-menu-piece]').count(), 'no owner boxes on the D Commander screen').toBe(0);
   });
 
   test('AC234: the intro plays first, the logo crashes in with dirt, owner sounds fire on time, then the main menu', async ({ page, request }) => {
@@ -8926,18 +8930,15 @@ test('AC320: clicking the Strike button and a target pays 2 and knocks the enemy
   expect([7, 8, 10, 11]).toContain(p.col);
 });
 
-test('AC321: Deck Builder — three Commander portraits by the title, no logo, other factions hidden not locked', async ({ page }) => {
+test('AC321: Deck Builder — three Commander portraits in the Deck panel (design D, Nov 6; they stood by the title before), no logo, other factions hidden not locked', async ({ page }) => {
   await openDecks(page);
   await expect(page.getByRole('img', { name: 'Oreheart' })).toHaveCount(0);
   await expect(page.getByRole('combobox', { name: 'Deck Commander' })).toHaveCount(0);
   const g = page.getByRole('group', { name: 'Deck Commander', exact: true });
   await expect(g.getByRole('button')).toHaveCount(3);
-  const title = await page.getByRole('heading', { name: 'Deck Builder' }).boundingBox();
   const gb = await g.boundingBox();
-  const W = page.viewportSize().width;
-  expect(gb.x).toBeGreaterThanOrEqual(title.x + title.width - 4);
-  expect(gb.x - (title.x + title.width)).toBeLessThanOrEqual(W * 0.25);
-  expect(Math.abs((gb.y + gb.height / 2) - (title.y + title.height / 2))).toBeLessThanOrEqual(Math.max(title.height, gb.height));
+  const pb = await page.locator('[data-screen="deck-builder"] section[aria-label="Deck"]').boundingBox(); // design D: the portraits sit at the top of the Deck panel
+  expect(gb.x >= pb.x - 1 && gb.x + gb.width <= pb.x + pb.width + 1 && gb.y >= pb.y - 1 && gb.y + gb.height <= pb.y + pb.height * 0.4, 'portraits at the top of the Deck panel').toBe(true);
   await pickDeckCommander(page, 'Grubnak Rotgut, Goblin King');
   await expect(g.getByRole('button', { name: 'Knobbin the Gnomeificent', exact: true })).toHaveAttribute('aria-pressed', 'false');
   const all = allCards(page);

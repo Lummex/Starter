@@ -1,0 +1,392 @@
+{
+ "note": "Nov 6, 2026 (Anvil): the Deck Builder was rebuilt to design D (studio/screens-D-nov5/set2/deck-builder-*.png, Ken approved Nov 5). These are the Menu Builder zones of the old screen (screen id deck in src/content/menus.json), kept as they were; the screen no longer reads them. See factory-design/studio/reports/anvil-online-nov6-deck-builder.md for what the Menu Builder (Ledger) needs now.",
+ "screen": {
+  "id": "deck",
+  "name": "Deck builder",
+  "kind": "deck",
+  "bg": {
+   "src": "dbbg",
+   "color": "#120d16",
+   "dim": 0.2,
+   "vignette": 0.4
+  },
+  "music": "tense-cycle",
+  "transition": {
+   "type": "fade",
+   "ms": 400
+  },
+  "pieces": [
+   {
+    "id": "dTitle",
+    "kind": "text",
+    "name": "Title",
+    "x": 2,
+    "y": 1.5,
+    "w": 18,
+    "h": 7,
+    "text": {
+     "content": "Deck Builder",
+     "size": 5,
+     "color": "#E4E9F2",
+     "font": "display",
+     "bold": true,
+     "italic": true,
+     "align": "left",
+     "valign": "center",
+     "shadow": 0.8,
+     "glow": 0,
+     "glowColor": "#9FD0FF"
+    },
+    "anim": {
+     "in": "fade",
+     "delay": 0,
+     "dur": 700,
+     "ease": "smooth",
+     "from": "bottom",
+     "dist": 8,
+     "loop": "none",
+     "loopSpeed": 1,
+     "loopAmt": 1,
+     "loopColor": "#9FD0FF"
+    },
+    "sounds": []
+   },
+   {
+    "id": "dFilters",
+    "kind": "zone",
+    "name": "Game area: filters & search",
+    "x": 3.19,
+    "y": 12.25,
+    "w": 60.64,
+    "h": 6.46,
+    "zone": {
+     "label": "Filters & search",
+     "st": {
+      "font": "display",
+      "size": 2.2,
+      "color": "#B8C4D6",
+      "accent": "#B8C4D6",
+      "faction": false,
+      "bold": false,
+      "italic": false,
+      "align": "left",
+      "spacing": 0,
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#9FD0FF",
+      "halo": 0,
+      "haloColor": "#9FD0FF",
+      "haloSize": 20,
+      "_for": "filters"
+     },
+     "words": {}
+    },
+    "anim": {
+     "in": "none",
+     "delay": 0,
+     "dur": 700,
+     "ease": "smooth",
+     "from": "bottom",
+     "dist": 8,
+     "loop": "none",
+     "loopSpeed": 1,
+     "loopAmt": 1,
+     "loopColor": "#9FD0FF"
+    },
+    "sounds": []
+   },
+   {
+    "id": "dGrid",
+    "kind": "zone",
+    "name": "Game area: card collection",
+    "x": 2,
+    "y": 18,
+    "w": 62,
+    "h": 72,
+    "zone": {
+     "label": "Card collection (grid of cards)"
+    },
+    "anim": {
+     "in": "none",
+     "delay": 0,
+     "dur": 700,
+     "ease": "smooth",
+     "from": "bottom",
+     "dist": 8,
+     "loop": "none",
+     "loopSpeed": 1,
+     "loopAmt": 1,
+     "loopColor": "#9FD0FF"
+    }
+   },
+   {
+    "id": "dList",
+    "kind": "zone",
+    "name": "Game area: deck list",
+    "x": 67.04,
+    "y": 24,
+    "w": 31,
+    "h": 48,
+    "zone": {
+     "label": "Deck list (cards in the deck, + and −)",
+     "st": {
+      "font": "display",
+      "size": 2.2,
+      "color": "#ffffff",
+      "accent": "#E4E9F2",
+      "faction": false,
+      "bold": false,
+      "italic": false,
+      "align": "left",
+      "spacing": 0,
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#9FD0FF",
+      "halo": 0,
+      "haloColor": "#9FD0FF",
+      "haloSize": 20,
+      "_for": "decklist"
+     },
+     "words": {}
+    },
+    "anim": {
+     "in": "none",
+     "delay": 0,
+     "dur": 700,
+     "ease": "smooth",
+     "from": "bottom",
+     "dist": 8,
+     "loop": "none",
+     "loopSpeed": 1,
+     "loopAmt": 1,
+     "loopColor": "#9FD0FF"
+    },
+    "sounds": []
+   },
+   {
+    "id": "dCount",
+    "kind": "zone",
+    "name": "Game area: card counts",
+    "x": 67,
+    "y": 73,
+    "w": 31,
+    "h": 7,
+    "zone": {
+     "label": "Cards 50–100 · Creatures · Spells · Crystal cards",
+     "st": {
+      "font": "display",
+      "size": 2.2,
+      "color": "#ffffff",
+      "accent": "#E4E9F2",
+      "faction": false,
+      "bold": false,
+      "italic": false,
+      "align": "left",
+      "spacing": 0,
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#9FD0FF",
+      "halo": 0,
+      "haloColor": "#9FD0FF",
+      "haloSize": 20,
+      "_for": "counts"
+     }
+    },
+    "anim": {
+     "in": "none",
+     "delay": 0,
+     "dur": 700,
+     "ease": "smooth",
+     "from": "bottom",
+     "dist": 8,
+     "loop": "none",
+     "loopSpeed": 1,
+     "loopAmt": 1,
+     "loopColor": "#9FD0FF"
+    }
+   },
+   {
+    "id": "dActions",
+    "kind": "zone",
+    "name": "Game area: deck actions",
+    "x": 67,
+    "y": 81,
+    "w": 31,
+    "h": 8,
+    "zone": {
+     "label": "Autofill · Save · Rename · New deck · Play",
+     "st": {
+      "font": "display",
+      "size": 2.2,
+      "color": "#E4E9F2",
+      "accent": "#E4E9F2",
+      "faction": false,
+      "bold": true,
+      "italic": true,
+      "align": "left",
+      "spacing": 0,
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#9FD0FF",
+      "halo": 0,
+      "haloColor": "#9FD0FF",
+      "haloSize": 20,
+      "_for": "actions"
+     }
+    },
+    "anim": {
+     "in": "slide",
+     "delay": 0,
+     "dur": 700,
+     "ease": "smooth",
+     "from": "right",
+     "dist": 8,
+     "loop": "none",
+     "loopSpeed": 1,
+     "loopAmt": 1,
+     "loopColor": "#9FD0FF"
+    },
+    "sounds": []
+   },
+   {
+    "id": "dBack",
+    "kind": "button",
+    "name": "Button: Back",
+    "x": 2,
+    "y": 91.5,
+    "w": 12,
+    "h": 6.5,
+    "text": {
+     "content": "Back",
+     "size": 6.4,
+     "color": "#FFFFFF",
+     "font": "display",
+     "bold": true,
+     "italic": true,
+     "align": "center",
+     "valign": "center",
+     "shadow": 0.8,
+     "glow": 0,
+     "glowColor": "#9FD0FF"
+    },
+    "button": {
+     "goto": "main",
+     "hoverColor": "#FFFFFF",
+     "hoverGlow": 1,
+     "hoverGlowColor": "#dfe8f7",
+     "skin": true,
+     "skinFac": "neutral",
+     "_plain": {
+      "color": "#ffffff",
+      "hc": "#F4F9FF",
+      "hg": "#9FD0FF",
+      "box": null
+     }
+    },
+    "anim": {
+     "in": "slide",
+     "delay": 0,
+     "dur": 600,
+     "ease": "smooth",
+     "from": "bottom",
+     "dist": 8,
+     "loop": "none",
+     "loopSpeed": 1,
+     "loopAmt": 1,
+     "loopColor": "#9FD0FF"
+    },
+    "sounds": []
+   },
+   {
+    "id": "dDecks",
+    "kind": "zone",
+    "name": "Game area: your decks",
+    "x": 67,
+    "y": 3,
+    "w": 31,
+    "h": 20,
+    "zone": {
+     "label": "Your decks (arrows to scroll, + New deck)",
+     "show": "deckpick",
+     "st": {
+      "font": "display",
+      "size": 2,
+      "color": "#E4E9F2",
+      "accent": "#E4E9F2",
+      "faction": true,
+      "bold": true,
+      "italic": true,
+      "align": "center",
+      "spacing": 0,
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#9FD0FF",
+      "halo": 0,
+      "haloColor": "#9FD0FF",
+      "haloSize": 20,
+      "_for": "deckpick"
+     }
+    },
+    "anim": {
+     "in": "none",
+     "delay": 0,
+     "dur": 700,
+     "ease": "smooth",
+     "from": "bottom",
+     "dist": 8,
+     "loop": "none",
+     "loopSpeed": 1,
+     "loopAmt": 1,
+     "loopColor": "#9FD0FF"
+    },
+    "sounds": []
+   },
+   {
+    "id": "dSlider",
+    "kind": "zone",
+    "name": "Game area: cards-per-row slider",
+    "x": 40,
+    "y": 7.4,
+    "w": 22,
+    "h": 4.6,
+    "zone": {
+     "label": "Cards per row slider",
+     "show": "rowslider",
+     "st": {
+      "font": "display",
+      "size": 2.2,
+      "color": "#B8C4D6",
+      "accent": "#E4E9F2",
+      "faction": false,
+      "bold": true,
+      "italic": true,
+      "align": "left",
+      "spacing": 0,
+      "shadow": 0.8,
+      "glow": 0,
+      "glowColor": "#9FD0FF",
+      "halo": 0,
+      "haloColor": "#9FD0FF",
+      "haloSize": 20,
+      "_for": "rowslider"
+     },
+     "words": {}
+    },
+    "anim": {
+     "in": "none",
+     "delay": 0,
+     "dur": 700,
+     "ease": "smooth",
+     "from": "bottom",
+     "dist": 8,
+     "loop": "none",
+     "loopSpeed": 1,
+     "loopAmt": 1,
+     "loopColor": "#9FD0FF"
+    },
+    "sounds": []
+   }
+  ],
+  "sounds": []
+ }
+}

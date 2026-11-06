@@ -593,3 +593,6 @@ html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .ds-acts{display:flex!im
 @media (max-width:900px){html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .deck-row,html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .deck-wrap,html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .cs-deckbox{margin:0!important;left:auto!important;right:auto!important;transform:none!important;width:auto!important;max-width:none!important}html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .main{grid-template-columns:1fr minmax(13em,32%)!important}}
 
 @media (max-width:900px){html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .deck-row{width:100%!important;max-width:100%!important;min-width:0!important;align-self:stretch!important;flex:none!important;box-sizing:border-box}html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .deck-wrap{min-width:0;width:100%}}
+
+/* Nov 6: a long deck name must not widen its row (AC205): the name clips, every row keeps the same width */
+html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dstack{min-width:0!important}html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dstack .ds-name{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}

@@ -1,7 +1,9 @@
 // Testing deck builder: every card unlocked and unlimited; up to 5 decks saved on the device.
-import { ownerBox, freeBox } from './menus';
 import { CARDS, FACTIONS, COMMANDERS, CONFIG, isMiner, deckCounts, deckProblems, basicMiner } from '../engine';
-import { h, btn, combo, App, faceKids, rarityKey, FRAME, commanderPortrait } from './app';
+import { h, btn, combo, App, faceKids, rarityKey, FRAME, commanderPortrait, pictureOf } from './app';
+import { ohCardEl } from './cardfmt';
+import '../net/dashboard.css'; // the D kit (offline too)
+import './deck-d.css'; // the Deck Builder in design D (Ken approved Nov 5; built Nov 6)
 
 import { net } from '../net/state';
 import { TIER_NAMES } from '../content/card-labels';
@@ -152,7 +154,8 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   let cmdId = 'grubnak';
   const fCmd = { set: (_: string) => {} }; // the Deck Commander combobox is gone: the three portraits choose it
   let query = '';
-  let perRow = Math.max(2, Math.min(8, parseInt(localStorage.getItem('oreheart.cardsPerRow') || '4', 10) || 4));
+  const savedRow = parseInt(localStorage.getItem('oreheart.cardsPerRow') || '', 10);
+  let perRow = savedRow >= 2 && savedRow <= 8 ? savedRow : 0; // 0: not chosen yet; fitRow picks a size from the pool's width (design D: about 160 px per card, so names stay readable)
   const cardsEl = h('div', { class: 'db-cards', 'aria-label': 'All cards', role: 'group' });
   const pileEl = h('div', { class: 'db-pile', 'aria-label': 'Deck pile', role: 'group' });
   const carEl = h('div', { class: 'db-car' });
@@ -243,9 +246,13 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   function tile(c: any) {
     const own = ownedOf(c.id);
     const summary = tierSummary(c.id); // Nov 5: "Overcharged ×1 · Original ×5" on a card with upgraded copies
-    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : '') + (own === 0 ? ' unowned' : ''), 'data-owned': own == null ? null : String(own), 'data-locked': lockedFor(c.id) ? 'true' : null, 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': summary ? `${c.name}: ${summary}` : c.name, 'data-card': c.id }, cardFace(c), summary ? h('span', { class: 'db-tiersum', 'aria-hidden': 'true' }, summary) : null, lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, own == null ? null : h('span', { class: 'db-owned', 'aria-label': `You own ${own}` }, own === 0 ? '' : `owned ×${own}`), h('span', { hidden: '' }, c.longText || '')) as any;
+    const indeck = h('span', { class: 'db-indeck', 'aria-hidden': 'true' }, ''); // design D: "2/4 in deck" on the tile
+    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : '') + (own === 0 ? ' unowned' : '') + (c.id === selId ? ' sel' : ''), 'data-owned': own == null ? null : String(own), 'data-locked': lockedFor(c.id) ? 'true' : null, 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': summary ? `${c.name}: ${summary}` : c.name, 'data-card': c.id }, cardFace(c), indeck, summary ? h('span', { class: 'db-tiersum', 'aria-hidden': 'true' }, summary) : null, lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, own == null ? null : h('span', { class: 'db-owned', 'aria-label': `You own ${own}` }, own === 0 ? '' : `owned ×${own}`), h('span', { hidden: '' }, c.longText || '')) as any;
+    el._indeck = indeck;
     let timer: any = null;
+    el.addEventListener('focus', () => select(c.id));
     el.addEventListener('click', () => {
+      select(c.id);
       if (el._dragged) return;
       if (timer) { clearTimeout(timer); timer = null; addCard(c.id); return; }
       timer = setTimeout(() => { timer = null; enlarge(c); }, 300);
@@ -256,9 +263,11 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     return el;
   }
   function fitRow() {
-    cardsEl.style.gridTemplateColumns = `repeat(${perRow},minmax(0,1fr))`;
+    if (!perRow && cardsEl.clientWidth) { perRow = Math.max(2, Math.min(8, Math.round(cardsEl.clientWidth / 160))); slider.value = String(perRow); }
+    const n = perRow || 4;
+    cardsEl.style.gridTemplateColumns = `repeat(${n},minmax(0,1fr))`;
     const w = cardsEl.clientWidth || (app.root as HTMLElement).clientWidth * 0.6;
-    cardsEl.style.setProperty('--cw', Math.max(40, (w - 8 - (perRow - 1) * 10) / perRow) + 'px');
+    cardsEl.style.setProperty('--cw', Math.max(40, (w - 8 - (n - 1) * 10) / n) + 'px');
   }
   function setPerRow(n: number) {
     perRow = Math.max(2, Math.min(8, Math.round(n)));
@@ -267,14 +276,24 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     fitRow();
   }
   // Owner (Ken, Oct 30): the background hall follows the faction filter, else the deck's Commander; Neutral shows the tavern
-  const setHall = () => { const f = fF.sel.value; const hall = f === 'Goblins' ? 'goblins' : f === 'Gnomes' ? 'gnomes' : f === 'Dwarves' ? 'dwarves' : f === 'Neutral' ? 'neutral' : (COMMANDERS[cmdId]?.faction || 'neutral'); const s = app.root.querySelector('.db-screen') as HTMLElement | null; if (s && s.dataset.hall !== hall) s.dataset.hall = hall; };
+  const setHall = () => { const f = fF.sel.value; const hall = f === 'Goblins' ? 'goblins' : f === 'Gnomes' ? 'gnomes' : f === 'Dwarves' ? 'dwarves' : f === 'Neutral' ? 'neutral' : (COMMANDERS[cmdId]?.faction || 'neutral'); const s = app.root.querySelector('.deck-d') as HTMLElement | null; if (s && s.dataset.hall !== hall) s.dataset.hall = hall; };
   // Zero start (Ken, Nov 4): a new player owns no cards, so the builder says where cards come from instead of showing a wall of locks with no way on
   const emptyNote = () => h('div', { class: 'db-empty', role: 'status', 'data-testid': 'db-empty' },
     h('p', { class: 'db-empty-head' }, 'Your card chest is empty!'),
     h('p', {}, "Not a single card of your own yet, just dust and one confused rat. The three starter decks are yours to play any time, but a deck of your own is built from cards you own, and those come out of packs."),
     h('div', { class: 'row' }, btn('To the Shop', 'primary', () => { if (net.openShop) net.openShop(); else status.textContent = 'The Shop is on the main menu.'; }, { 'data-testid': 'db-empty-shop' }),
       btn('Play a starter deck', '', () => app.showMenu(), { 'data-testid': 'db-empty-play' })));
-  function renderCards() { setHall(); cardsEl.replaceChildren(...(ownsNothing() ? [emptyNote()] : []), ...ALL.filter((c) => !c.disabled && !lockedFor(c.id) && matches(c)).map(tile)); fitRow(); }
+  const poolMore = h('span', { class: 'more', 'aria-hidden': 'true' }, '');
+  function renderCards() {
+    setHall();
+    const pool = ALL.filter((c) => !c.disabled && !lockedFor(c.id));
+    const shown = pool.filter(matches);
+    cardsEl.replaceChildren(...(ownsNothing() ? [emptyNote()] : []), ...shown.map(tile));
+    poolMore.textContent = `${shown.length} of ${pool.length} shown`;
+    fitRow();
+    syncIndeck();
+    if (!selId || !CARDS[selId]) { if (shown.length) select(shown[0].id); else renderDetail(); }
+  }
   const slider = h('input', { type: 'range', id: 'cards-per-row', min: '2', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
   slider.addEventListener('input', () => setPerRow(+slider.value));
   const pickCmd = (id: string) => { cmdId = id; fCmd.set(CMD_NAMES[id]); renderCards(); renderDeck(); };
@@ -332,7 +351,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
         const cnt = h('span', { class: 'db-cnt' }, '');
         const plus = btn('+', 'small', () => addCard(id, null, true), { 'aria-label': `Add ${nm}` }) as HTMLButtonElement;
         const tiersEl = h('span', { class: 'db-tiers', role: 'group', 'aria-label': `${nm}: which copies` });
-        li = h('li', {}, h('span', { class: 'db-lbl' }, cnt, ' ', h('span', { class: 'db-nm' }, nm), tiersEl), plus, btn('−', 'small', () => removeCard(id), { 'aria-label': `Remove ${nm}` })) as HTMLElement;
+        li = h('li', { class: id === selId ? 'sel' : '' }, h('span', { class: 'db-lbl', onclick: () => select(id) }, cnt, ' ', h('span', { class: 'db-nm' }, nm), tiersEl), plus, btn('−', 'small', () => removeCard(id), { 'aria-label': `Remove ${nm}` })) as HTMLElement;
         (li as any)._cnt = cnt; (li as any)._plus = plus; (li as any)._tiers = tiersEl;
         rows.set(id, li);
       }
@@ -366,10 +385,20 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     }));
     const p = deckProblems(deck, cmdId);
     probEl.replaceChildren(...(p.length ? p : ['Deck is legal']).map((m) => h('li', { class: p.length ? 'bad' : 'good' }, m)));
+    // design D: the curve's words, the tile badges, the detail's count and the "n of max" decks line
+    const nonCr = deck.filter((id) => CARDS[id].type !== 'crystal');
+    curveNote.textContent = nonCr.length ? `avg cost ${(nonCr.reduce((s, id) => s + CARDS[id].cost, 0) / nonCr.length).toFixed(1)} · ${c.crystals} crystal card${c.crystals === 1 ? '' : 's'}` : 'no cards yet';
+    syncIndeck();
+    decksMore.textContent = `${saved.length} of ${maxDecks()}`;
     renderCarousel();
     const full = saved.length >= maxDecks();
     limitMsg.textContent = full ? `You can save up to ${maxDecks()} decks.` : '';
     newBtn.disabled = full;
+  }
+  /** the "2/4 in deck" badge on every tile and the detail's count line follow the deck */
+  function syncIndeck() {
+    for (const t of cardsEl.querySelectorAll('.db-tile')) { const id = (t as HTMLElement).dataset.card!; const b = (t as any)._indeck as HTMLElement | undefined; if (!b) continue; const k = count(id); const lim = deckLimit(id); const txt = k ? (lim >= 99 ? `${k} in deck` : `${k}/${lim} in deck`) : ''; if (b.textContent !== txt) b.textContent = txt; }
+    syncDetailCount();
   }
   // ---- deck carousel (saved decks only, plus the "+ New Deck" slot)
   let carDrag = false;
@@ -396,8 +425,9 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     renderDeck();
   }
   function renderCarousel() {
-    const items = saved.map((d, i) => h('button', { type: 'button', class: 'db-deck', 'aria-label': `${d.name}, ${d.cards.length} ${d.cards.length === 1 ? 'card' : 'cards'}`, 'aria-current': i === cur ? 'true' : null, tabindex: i === cur ? '0' : '-1', 'data-i': String(i), 'data-faction': ((COMMANDERS[d.commander || cmdId] || {}).faction || '').replace(/s$/, '').replace('dwarve', 'dwarf') },
-      h('img', { class: 'deck-img', src: '/art/deck/deck-menu.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, d.name)));
+    const items = saved.map((d, i) => { const cm = d.commander && CMD_NAMES[d.commander] ? d.commander : cmdId; const ok = deckLegal(d, cm); return h('button', { type: 'button', class: 'db-deck', 'aria-label': `${d.name}, ${d.cards.length} ${d.cards.length === 1 ? 'card' : 'cards'}`, 'aria-current': i === cur ? 'true' : null, tabindex: i === cur ? '0' : '-1', 'data-i': String(i), 'data-faction': ((COMMANDERS[d.commander || cmdId] || {}).faction || '').replace(/s$/, '').replace('dwarve', 'dwarf') },
+      h('img', { class: 'deck-img', src: '/art/deck/deck-menu.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, d.name),
+      h('span', { class: 'ds-sub', 'aria-hidden': 'true' }, CMD_NAMES[cm], ' · ', h('span', { class: ok ? 'ok' : 'bad' }, ok ? 'Valid' : 'Not ready'), h('span', { class: 'n' }, `${d.cards.length}`))); });
     items.push(h('button', { type: 'button', class: 'db-deck new', 'aria-label': '+ New Deck', 'aria-current': cur === saved.length ? 'true' : null, tabindex: cur === saved.length ? '0' : '-1', 'data-i': String(saved.length) },
       h('img', { class: 'deck-img', src: '/art/deck/deck-menu.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, '+ New Deck')));
     items.forEach((b, i) => {
@@ -424,7 +454,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
       if (moved) {
         const dx = m.clientX - sx;
         const it = track.children[0] as HTMLElement | undefined;
-        const iw = it ? (track.children[1] ? (track.children[1] as HTMLElement).offsetLeft - it.offsetLeft : it.offsetWidth) : 100;
+        const iw = (it ? (track.children[1] ? (track.children[1] as HTMLElement).offsetLeft - it.offsetLeft : it.offsetWidth) : 100) || (it ? it.offsetWidth : 100); // design D: the decks stack vertically, so a sideways drag of about a row's width is one step
         const thr = Math.min(120, iw / 2);
         if (Math.abs(dx) >= thr) { const steps = Math.max(1, Math.round(Math.abs(dx) / iw)); setCur(cur - Math.sign(dx) * steps); } else place(0, true);
         setTimeout(() => { carDrag = false; }, 0);
@@ -473,29 +503,87 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     cardsEl.setAttribute('aria-hidden', 'true');
   }
 
-  pileEl.append(h('div', { class: 'db-carwrap', 'aria-label': 'My decks', role: 'group' }, btn('◀', 'small scroll', () => setCur(cur - 1), { 'aria-label': 'Previous deck' }), carEl, btn('▶', 'small scroll', () => setCur(cur + 1), { 'aria-label': 'Next deck' })), nameEl, sizeEl);
+  // ---- design D (Ken approved Nov 5; built Nov 6): the card detail column, the selected card
+  // The old Menu Builder zones (dTitle / dFilters / dSlider / dGrid / dDecks / dList / dCount / dActions / dBack in
+  // src/content/menus.json) are not used by this screen any more; a copy sits in _discontinued/menu-builder-deck-zones-nov6.json.
+  let selId = '';
+  let detailSeq = 0;
+  let upgMod: Promise<any> | null = null;
+  const RAR: Record<string, string> = { Common: 'r-Common', Uncommon: 'r-Uncommon', Rare: 'r-Rare', 'Ultra Rare': 'r-Ultra', Collector: 'r-Collector', Legendary: 'r-Legendary' };
+  const detailEl = h('section', { class: 'panel db-detail', 'aria-label': 'Card detail' });
+  const detailCount = h('p', { class: 'db-dcount' });
+  function syncDetailCount() { if (!selId || !CARDS[selId]) return; const o = ownedOf(selId); detailCount.replaceChildren('In this deck ', h('b', {}, deckLimit(selId) >= 99 ? String(count(selId)) : `${count(selId)} / ${deckLimit(selId)}`), ...(o == null ? [] : [' · own ', h('b', {}, String(o))])); }
+  const detailFace = (c: any, tier: number) => h('div', { class: `face hand-card static f-${c.faction} ${c.type}`, 'data-card-id': c.id, 'data-frame': FRAME[c.faction] || 'neutral', 'data-rarity': rarityKey(c) }, ohCardEl({ ...c, tier }, pictureOf(c)));
+  function renderDetail() {
+    const c = selId ? CARDS[selId] : null;
+    const seq = ++detailSeq;
+    if (!c) { detailEl.replaceChildren(h('div', { class: 'ptitle h' }, 'Card'), h('p', { class: 'db-dnone' }, 'Tap a card in the pool to see it here: its text, how many are in the deck' + (ownedMode() ? ', your copies and the upgrade looks.' : '.'))); return; }
+    const holder = h('div', { class: 'db-dcard' }, detailFace(c, 1));
+    const swap = (t: number) => { holder.replaceChildren(detailFace(c, t)); };
+    const stats = c.type === 'creature' ? h('b', {}, `Attack ${c.attack} · Health ${c.health} · Move ${c.move}. `) : null;
+    const words = h('div', { class: 'db-dwords' },
+      h('h3', { class: 'db-dname' }, c.name),
+      h('p', { class: 'db-dmeta' }, h('span', { class: 'fdot ' + c.faction, 'aria-hidden': 'true' }), `${FNAME[c.faction]} · ${kindOf(c)} · `, h('span', { class: RAR[c.rarity] || '' }, c.rarity), ` · Cost ${c.cost}`),
+      h('p', { class: 'db-dtext' }, ...(stats ? [stats] : []), c.longText || c.shortText || ''),
+      detailCount,
+      h('div', { class: 'db-dacts' }, h('button', { type: 'button', class: 'sbtn panel', onclick: () => addCard(c.id, null, true) }, 'Add to deck'), h('button', { type: 'button', class: 'sbtn panel', onclick: () => { if (count(c.id) > 0) removeCard(c.id); } }, 'Take one out'), h('button', { type: 'button', class: 'sbtn panel', onclick: () => enlarge(c) }, 'See it large')));
+    detailEl.replaceChildren(h('div', { class: 'db-dtop' }, holder, words));
+    syncDetailCount();
+    if (ownedMode()) {
+      // signed in: the same Upgrade panel as the close-up (your copies, Combine, the five looks), inline
+      upgMod ||= import('../net/upgrade-panel');
+      void upgMod.then((m) => {
+        if (seq !== detailSeq) return;
+        const panel = m.upgradePanel(c, { pic: m.upgradePicture(c), onChange: () => { swap(panel.best()); renderCards(); renderDeck(); }, onLook: swap });
+        detailEl.append(panel.el);
+        void panel.load().then(() => { if (seq === detailSeq) swap(panel.best()); });
+      }).catch(() => {});
+    } else detailEl.append(h('p', { class: 'db-dhint' }, net.active ? 'Your copies and their upgrade looks show here once your collection has loaded.' : 'Double-click a card to add it, click it once to see it large. Practice decks may use every card.'));
+  }
+  function select(id: string) {
+    if (selId === id) return;
+    selId = id;
+    for (const t of cardsEl.querySelectorAll('.db-tile')) t.classList.toggle('sel', (t as HTMLElement).dataset.card === id);
+    for (const [k, li] of (((listEl as any)._rows || new Map()) as Map<string, HTMLElement>)) li.classList.toggle('sel', k === id);
+    renderDetail();
+  }
+  const decksMore = h('span', { class: 'more', 'aria-hidden': 'true' }, '');
+  const curveNote = h('span', {}, '');
+  const online = net.active;
+  // left: your decks (the My decks group keeps its arrows and keys; the list stands vertically) and the deck check
+  const carWrap = h('div', { class: 'db-carwrap', 'aria-label': 'My decks', role: 'group' },
+    h('div', { class: 'db-carnav', style: 'display:flex;gap:.3em' }, btn('▲', 'small scroll', () => setCur(cur - 1), { 'aria-label': 'Previous deck' }), btn('▼', 'small scroll', () => setCur(cur + 1), { 'aria-label': 'Next deck' })), carEl);
+  const renameBtn = online && net.under13 ? null : btn('Rename', '', rename);
+  const actsL = h('div', { class: 'row db-actions db-acts-l' }, newBtn, ...(renameBtn ? [renameBtn] : []));
+  const limits = CONFIG.copyLimits || {};
+  const rulesP = h('p', { class: 'db-rules' }, h('b', {}, `${CONFIG.deckMin} to ${CONFIG.deckMax} cards`), ', one Commander. Up to ', h('b', {}, `${limits.Rare ?? 3} copies`), ' of each Rare, Ultra Rare and Collector card. Up to ', h('b', {}, `${CONFIG.crystalCardLimit} crystal cards`), '. Online, a deck only uses copies ', h('b', {}, 'you own'), '.');
+  // middle: the card pool
   const rowLab = h('label', { for: 'cards-per-row' }, 'Cards per row');
-    const title = h('h1', { class: 'section cinzel db-title' }, 'Deck Builder');
-  const actions = h('div', { class: 'row db-actions' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), btn('Save', 'primary', save), ...(net.active && net.under13 ? [] : [btn('Rename', '', rename)]), newBtn, playBtn);
-  const stage = h('div', { class: 'mb-stage db-stage', 'aria-label': 'Deck panel' },
-    ownerBox('deck', 'dTitle', title),
-        freeBox(40, 1.8, 22, 5, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), 'db-searchbox'),
-    freeBox(21, 0.6, 17, 11, cmdWrap, 'db-cmdbox'),
-    ownerBox('deck', 'dFilters', h('div', { class: 'db-filters' }, fF.wrap, fT.wrap, fC.wrap, fR.wrap), 'db-filterbox'),
-    ownerBox('deck', 'dSlider', h('div', { class: 'f-field' }, rowLab, slider), 'db-sliderbox'),
-    ownerBox('deck', 'dGrid', cardsEl, 'db-gridbox'),
-    ownerBox('deck', 'dDecks', pileEl, 'db-decksbox'),
-    ownerBox('deck', 'dList', h('div', { class: 'db-listwrap' }, probEl, chartEl, h('div', { class: 'db-deck-list', 'aria-label': 'Deck list', role: 'group' }, h('h2', {}, 'Deck list'), listEl)), 'db-listbox'),
-    ownerBox('deck', 'dCount', countsEl, 'db-countbox'),
-    ownerBox('deck', 'dActions', actions, 'db-actionbox'),
-    freeBox(67, 89.2, 19, 8, h('p', { class: 'db-msgs' }, status, limitMsg, alertEl), 'db-msgbox'),
-    ownerBox('deck', 'dBack', btn('Back', 'db-back', () => app.showMenu()), 'db-backbox'));
-  const mainEl = h('main', { class: 'screen db-screen', 'data-screen': 'deck-builder' }, stage);
+  const filtersEl = h('div', { class: 'db-filters' }, fF.wrap, fT.wrap, fC.wrap, fR.wrap, h('div', { class: 'f-field db-rowfield' }, rowLab, slider));
+  // right: the deck (the Deck pile keeps the deck image, the name and the size), the Commander, the curve, the list, Save
+  pileEl.append(h('img', { class: 'deck-img db-pileimg', src: '/art/deck/deck-menu.png', alt: '', draggable: 'false' }), h('div', { class: 'db-pilewords' }, nameEl, sizeEl));
+  const listWrap = h('div', { class: 'db-listwrap' }, h('div', { class: 'db-sub' }, 'Crystal curve', curveNote), chartEl, h('div', { class: 'db-deck-list', 'aria-label': 'Deck list', role: 'group' }, h('h2', {}, 'Deck list'), listEl));
+  const actsR = h('div', { class: 'row db-actions db-acts-r' }, btn('Auto-fill', '', () => { deck = autoFill(deck, COMMANDERS[cmdId].faction); status.textContent = ''; renderDeck(); }), playBtn);
+  const saveBtn = h('button', { type: 'button', class: 'btn panel play db-save', 'aria-label': 'Save', onclick: save }, h('img', { src: '/art/ui/silver/icon-deck.webp', alt: '', draggable: 'false' }), 'Save deck');
+  // the shell: top bar (online), header with Back / ‹ Dashboard, the phone tabs
+  const title = h('h1', { class: 'h ttl db-title' }, 'Deck Builder');
+  const backBtn = btn(online ? '‹ Dashboard' : 'Back', 'panel back-btn db-back', () => app.showMenu());
+  const ptabs = h('div', { class: 'db-ptabs', role: 'group', 'aria-label': 'Deck Builder panels' }, ...[['decks', 'Decks'], ['cards', 'Cards'], ['list', 'List']].map(([k, l]) => h('button', { type: 'button', class: 'sbtn panel db-ptab', 'aria-pressed': String(k === 'cards'), 'data-tab': k, onclick: () => { mainEl.dataset.ptab = k; for (const b of ptabs.querySelectorAll('.db-ptab')) b.setAttribute('aria-pressed', String((b as HTMLElement).dataset.tab === k)); } }, l)));
+  const top = h('div', { class: 'top', 'aria-hidden': 'true' });
+  const mainEl = h('main', { class: 'screen dash deck-d' + (online ? '' : ' offline'), 'data-screen': 'deck-builder', 'data-ptab': 'cards' },
+    top, h('div', { class: 'logo', 'aria-hidden': 'true' }),
+    h('div', { class: 'hdr' }, backBtn, title, h('div', { class: 'info' }, 'Pick a deck, add cards from the pool, then save.'), ptabs),
+    h('div', { class: 'main' },
+      h('div', { class: 'col dd-left' },
+        h('section', { class: 'panel db-decksbox', 'aria-label': 'Your decks' }, h('div', { class: 'ptitle h' }, 'Your decks', decksMore), carWrap, actsL),
+        h('section', { class: 'panel db-check', 'aria-label': 'Deck check' }, h('div', { class: 'ptitle h' }, 'Deck check'), probEl, countsEl, h('div', { class: 'db-sub' }, 'Deck rules'), rulesP)),
+      h('section', { class: 'panel db-pool', 'aria-label': 'Card pool' }, h('div', { class: 'ptitle h' }, 'Card pool', poolMore), filtersEl, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), cardsEl),
+      detailEl,
+      h('section', { class: 'panel dd-right', 'aria-label': 'Deck' }, pileEl, h('div', { class: 'db-cmdrow' }, h('span', { class: 'f-label', 'aria-hidden': 'true' }, 'Commander'), cmdWrap), listWrap, actsR, saveBtn, h('p', { class: 'db-msgs' }, status, limitMsg, alertEl))));
   app.root.append(mainEl);
-  if (net.active) void import('../net/dashboard').then((m) => m.dashSkin(mainEl, 'Deck Builder', () => app.showMenu())).catch(() => {}); // Nov 6 (design D)
-  const screen = app.root.querySelector('.db-screen') as HTMLElement;
+  if (online) void import('../net/dashboard').then((m) => m.loadAll().then((d) => { if (top.isConnected) { const t = m.topBar(d); t.setAttribute('aria-hidden', 'true'); top.replaceWith(t); } })).catch(() => {});
   const wake = () => cardsEl.removeAttribute('aria-hidden');
-  for (const ev of ['pointermove', 'pointerdown', 'keydown', 'change', 'focusin']) screen.addEventListener(ev, wake);
+  for (const ev of ['pointermove', 'pointerdown', 'keydown', 'change', 'focusin']) mainEl.addEventListener(ev, wake);
   setCur(opts.focus != null && opts.focus >= 0 && opts.focus < saved.length ? opts.focus : saved.length);
   requestAnimationFrame(fitRow);
 }
