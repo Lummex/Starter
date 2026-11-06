@@ -587,7 +587,7 @@ test('AC682: modes: the menu offers Ranked, Unranked and Play a friend with a ra
   const a = await openAs(browser, 'alice' + id), b = await openAs(browser, 'bob' + id);
   await atMenu(a); await atMenu(b);
   for (const t of ['pvp-ranked', 'pvp-unranked', 'pvp-play-friend']) await expect(a.locator(`[data-testid="${t}"]`)).toBeVisible();
-  await expect(a.locator('[data-testid="pvp-rank"]')).toContainText(/Ranked: 1000 Ore/, { timeout: 10000 });
+  await expect(a.locator('[data-testid="pvp-rank"]')).toContainText(/Ranked: 1000 Sapphire III/, { timeout: 10000 });
   // Alice waits in the unranked queue; Bob joins it 3 s later and the server pairs them
   const pa = a.evaluate(() => window.oreheart.pvp.queue('unranked', 'grubnak', 'goblin-warband'));
   await expect(a.locator('[data-testid="pvp-queue-status"]')).toContainText(/Looking for an opponent \(rating 1000/, { timeout: 10000 });

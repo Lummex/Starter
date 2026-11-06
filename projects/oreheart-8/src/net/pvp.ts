@@ -4,6 +4,7 @@
 // full snapshot (`view`) of what this player may see. In that view this player is ALWAYS engine side 'player' (the server mirrors the
 // board for the second player and hides the other hand, both decks and the rng), so the match screen works unchanged.
 import './pvp.css';
+import './dashboard.css';
 import { applyAction, legalActions as engineLegal, brewActions, hasMovesLeft, COMMANDERS, STARTER_DECK_LIST, warbandOf, deckProblems, CARDS, mulliganActions } from '../engine';
 import { net } from './state';
 import { getPlayerName } from '../ui/players';
@@ -421,12 +422,41 @@ function h(tag: string, attrs: Record<string, any> = {}, ...kids: (string | Node
 }
 const nbtn = (label: string, onclick: (e: Event) => void, cls = '', attrs: Record<string, any> = {}) => h('button', { type: 'button', class: `net-btn ${cls}`.trim(), onclick, ...attrs }, label) as HTMLButtonElement;
 
+const TITLES: Record<string, string> = { queue: 'PvP Lobby', friend: 'Play a friend', make: 'Make a code', join: 'I have a code', code: 'Your secret code' };
+let lobbyCols: { left: El; right: El } | null = null;
+/** Nov 6 (Ken approved the D screens): the PvP Lobby shell: top bar, '‹ Dashboard' and the title, three columns. The screen's own
+ *  content goes in the middle stage; the left column holds the server note and the friend-code doors, the right one your army and
+ *  your rank. Element ids and classes the checks use are unchanged. */
 function screen(name: string, ...kids: (El | null)[]): El {
   stopRoomPoll();
   app!.clear();
-  const panel = h('div', { class: 'net-panel pvp-panel' }, ...kids);
+  const panel = h('div', { class: 'txt pvp-panel' }, ...kids);
   const bar = h('div', { class: 'test-server-bar', 'data-testid': 'test-server-bar' }, isMockPvp() ? 'TEST — local practice server' : 'TEST SERVER — practice accounts only');
-  app!.root.append(h('main', { class: 'screen net-screen pvp-screen', 'data-screen': 'pvp-' + name }, bar, panel));
+  const top = h('div', { class: 'top', 'aria-hidden': 'true' });
+  const left = h('div', { class: 'col left' });
+  const right = h('div', { class: 'col right' });
+  const stage = h('div', { class: 'panel stage', 'data-testid': 'lobby-stage' }, h('div', { class: 'art', 'aria-hidden': 'true' }), panel);
+  const back = h('button', { type: 'button', class: 'btn panel back-btn', 'data-testid': 'lobby-back', onclick: () => { stopQueuePoll(); stopRoomPoll(); void transport().call('leave', {}).catch(() => {}); app!.showMenu(); } }, '‹ Dashboard');
+  const head = h('div', { class: 'hdr' }, back, h('div', { class: 'h ttl' }, TITLES[name] || 'PvP'), h('div', { class: 'info', 'data-testid': 'lobby-info' }, ''));
+  app!.root.append(h('main', { class: 'screen net-screen pvp-screen dash lobby', 'data-screen': 'pvp-' + name }, bar, top, h('div', { class: 'logo', 'aria-hidden': 'true' }), head, h('div', { class: 'main' }, left, stage, right)));
+  lobbyCols = { left, right };
+  // the left column: the server (one for now; the regions job adds the picker) and the friend-code doors
+  left.append(
+    h('section', { class: 'panel', 'data-testid': 'lobby-server', 'aria-label': 'Server' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/silver/icon-play.webp', alt: '' }), 'Server'),
+      h('div', { class: 'srv well sel' }, h('h4', {}, h('span', { class: 'radio on' }), isMockPvp() ? 'Local practice server' : 'Test server', h('small', {}, 'the only one for now')), h('p', { class: 'auto' }, 'US East, Central and West servers with live player counts come next.'))),
+    h('section', { class: 'panel', 'data-testid': 'lobby-friend', 'aria-label': 'Play a friend', style: 'flex:1' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/silver/icon-deck.webp', alt: '' }), 'Play a friend'),
+      h('p', { class: 'lbl' }, 'Make a secret code and send it, or type in the one a friend sent you.'),
+      h('div', { class: 'frow' }, nbtn('Make a code', () => showMake(), 'sbtn panel pvp-make', { 'data-testid': 'lobby-make' }), nbtn('I have a code', () => showJoin(), 'sbtn panel join pvp-join', { 'data-testid': 'lobby-join' })),
+      h('div', { class: 'frow' }, nbtn('Practice with a friend', () => showMake(true), 'sbtn panel pvp-practice', { 'data-testid': 'lobby-practice', title: 'A code like any other, but nothing is paid or counted: no coins, no quests, no rank' }))));
+  // the right column: your rank (the army panel joins it when a screen has a picker)
+  const rankBox = h('section', { class: 'panel', 'data-testid': 'lobby-rank', 'aria-label': 'Your rank' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/rank-charms/diamond.webp', alt: '' }), 'Your rank', h('button', { type: 'button', class: 'more', onclick: () => { void import('./dashboard').then((m) => m.showRankings(app!)); } }, 'Rankings ›')),
+    h('div', { class: 'mini-rk' }, h('img', { class: 'rk-charm', src: '/art/ui/rank-charms/sapphire.webp', alt: '' }), h('div', {}, h('b', { class: 'rk-label' }, lastRank ? lastRank.name : 'Unranked'), h('small', { class: 'rk-line' }, lastRank ? rankText(lastRank) : 'Play a ranked match to be placed'))));
+  right.append(rankBox);
+  const paintRank = (r: any) => { lastRank = r; const img = rankBox.querySelector('.rk-charm') as HTMLImageElement; const nm = String(r.name || '').split(' ')[0].toLowerCase(); if (nm) img.src = `/art/ui/rank-charms/${nm}.webp`; (rankBox.querySelector('.rk-label') as El).textContent = r.name; (rankBox.querySelector('.rk-line') as El).textContent = rankText(r); };
+  if (lastRank) paintRank(lastRank);
+  void transport().call('rank', {}).then((r: any) => { if (r && r.ok && r.rank && rankBox.isConnected) paintRank(r.rank); }).catch(() => {});
+  // the top bar fills itself from the Dashboard's data (coins, packs, avatar); the mock pages have no shop, so it stays plain there
+  if (!isMockPvp()) void import('./dashboard').then((m) => m.loadAll().then((d) => { if (top.isConnected) { const t = m.topBar(d); t.setAttribute('aria-hidden', 'true'); top.replaceWith(t); } })).catch(() => {});
   return panel;
 }
 const alertEl = () => h('p', { class: 'net-alert', role: 'alert' });
@@ -472,7 +502,7 @@ export async function resumePvp(): Promise<boolean> {
 export function showFriend() {
   screen('friend',
     h('div', { class: 'pvp-hero', 'aria-hidden': 'true' }, h('img', { class: 'pvp-swords', src: '/art/ui/badges/icon-sword-silver.webp', alt: '' })),
-    h('h1', {}, 'Play a friend'),
+    h('div', { class: 'h stage-h' }, 'Play a friend'),
     h('p', {}, 'Make a secret code and send it to a friend, or type in the code a friend sent you.'),
     h('div', { class: 'net-actions pvp-choice' },
       nbtn('Make a code', () => showMake(), 'primary pvp-make', { 'data-testid': 'pvp-make' }),
@@ -553,9 +583,11 @@ function showMake(practice = false) {
     const r = await makeCode(p.value(), practice);
     if (!r.ok) { go.disabled = false; err.textContent = r.error || ''; }
   }, 'primary pvp-go', { 'data-testid': 'pvp-create' });
-  screen('make', h('h1', {}, practice ? 'Practice code' : 'Make a code'),
+  go.classList.add('btn', 'panel', 'play');
+  screen('make', h('div', { class: 'h stage-h' }, practice ? 'Practice code' : 'Make a code'),
     practice ? h('p', { class: 'pvp-practice-note', 'data-testid': 'pvp-practice-note' }, 'Practice: a friendly bout that pays and counts nothing. No coins, no quests, no rank.') : null,
-    p.el, err, h('div', { class: 'net-actions' }, go, nbtn('Back', () => showFriend())));
+    err, h('div', { class: 'net-actions' }, go, nbtn('Back', () => showFriend(), 'sbtn panel')));
+  if (lobbyCols) lobbyCols.right.prepend(h('section', { class: 'panel', 'data-testid': 'lobby-army', 'aria-label': 'Your army' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/silver/icon-deck.webp', alt: '' }), 'Your army'), p.el));
 }
 
 /** Nov 5: the Ranked / Unranked queue. One call every 2 s keeps the player in it and brings back the match when someone fits. */
@@ -569,9 +601,17 @@ function showQueue(mode: 'ranked' | 'unranked') {
     : 'Unranked: the next player who is looking, whatever their rank. Coins and quests count as usual.');
   const go = nbtn('Find a match', () => { go.disabled = true; err.textContent = ''; void startQueue(mode, p.value(), waiting, err, go, cancel, timer, avg); }, 'primary pvp-go', { 'data-testid': 'pvp-queue-go' });
   const cancel = nbtn('Back', () => { stopQueuePoll(); void transport().call('leave', {}).catch(() => {}); app!.showMenu(); }, 'pvp-cancel', { 'data-testid': 'pvp-queue-cancel' });
-  screen('queue', h('h1', {}, mode === 'ranked' ? 'Ranked match' : 'Unranked match'), info,
+  const chips = h('div', { class: 'mode', role: 'group', 'aria-label': 'How to play' },
+    h('button', { type: 'button', class: 'chip panel' + (mode === 'ranked' ? ' on' : ''), 'aria-pressed': String(mode === 'ranked'), onclick: () => { if (mode !== 'ranked') showQueue('ranked'); } }, 'Ranked'),
+    h('button', { type: 'button', class: 'chip panel' + (mode === 'unranked' ? ' on' : ''), 'aria-pressed': String(mode === 'unranked'), onclick: () => { if (mode !== 'unranked') showQueue('unranked'); } }, 'Unranked'),
+    h('button', { type: 'button', class: 'chip panel', onclick: () => showFriend() }, 'Friend code'),
+    h('button', { type: 'button', class: 'chip panel', onclick: () => app!.showSetup() }, 'Practice vs computer'));
+  go.classList.add('btn', 'panel', 'play'); go.replaceChildren(h('img', { src: '/art/ui/silver/icon-play.webp', alt: '' }), 'Find a match');
+  cancel.classList.add('sbtn', 'panel');
+  screen('queue', h('div', { class: 'h stage-h' }, mode === 'ranked' ? 'Ranked' : 'Unranked'), info,
     lastRank && mode === 'ranked' ? h('p', { class: 'pvp-rank' }, rankText(lastRank)) : null,
-    p.el, waiting, h('div', { class: 'pvp-wait-box' }, timer, avg), err, h('div', { class: 'net-actions' }, go, cancel));
+    chips, waiting, h('div', { class: 'pvp-wait-box search' }, timer, avg), err, h('div', { class: 'net-actions' }, go, cancel));
+  if (lobbyCols) lobbyCols.right.prepend(h('section', { class: 'panel', 'data-testid': 'lobby-army', 'aria-label': 'Your army' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/silver/icon-deck.webp', alt: '' }), 'Your army', h('button', { type: 'button', class: 'more', onclick: () => { void import('../ui/decks').then((m) => m.showDecks(app!)); } }, 'Deck Builder ›')), p.el));
 }
 async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string; deckId?: string; cards?: string[] }, waiting: El, err: El, go: El, cancel: El, timer?: El, avg?: El): Promise<{ ok: boolean; matchId?: string; error?: string }> {
   stopQueuePoll();
@@ -637,7 +677,7 @@ function showCode(code: string) {
     try { await transport().call('cancel', { code }); } catch { /* it expires by itself */ }
     roomCode = null; showFriend();
   }, 'pvp-cancel');
-  const panel = screen('code', h('h1', {}, 'Your secret code'),
+  const panel = screen('code', h('div', { class: 'h stage-h' }, 'Your secret code'),
     h('p', {}, 'Send these letters to your friend. The battle starts the moment they type them in.'),
     h('div', { class: 'pvp-code', 'data-code': code, 'aria-label': 'Room code ' + code.split('').join(' '), role: 'img' }, ...code.split('').map((ch, i) => h('span', { class: 'pvp-letter', style: `--i:${i}`, 'aria-hidden': 'true' }, ch))),
     h('div', { class: 'pvp-copy-row' }, copy, copyNote),
@@ -679,7 +719,9 @@ function showJoin() {
   input.addEventListener('input', () => { const c = cleanCode(input.value); if (c !== input.value) input.value = c; err.textContent = ''; go.disabled = !codeOk(c); });
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go.click(); });
   go.disabled = true;
-  screen('join', h('h1', {}, 'I have a code'), h('label', { for: 'pvp-code-input', class: 'pvp-code-label' }, "Your friend's code"), input, p.el, err, h('div', { class: 'net-actions' }, go, nbtn('Back', () => showFriend())));
+  go.classList.add('btn', 'panel', 'play');
+  screen('join', h('div', { class: 'h stage-h' }, 'I have a code'), h('label', { for: 'pvp-code-input', class: 'pvp-code-label lbl' }, "Your friend's code"), input, err, h('div', { class: 'net-actions' }, go, nbtn('Back', () => showFriend(), 'sbtn panel')));
+  if (lobbyCols) lobbyCols.right.prepend(h('section', { class: 'panel', 'data-testid': 'lobby-army', 'aria-label': 'Your army' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/silver/icon-deck.webp', alt: '' }), 'Your army'), p.el));
   setTimeout(() => input.focus(), 0);
 }
 

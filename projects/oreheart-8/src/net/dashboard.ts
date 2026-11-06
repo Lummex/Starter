@@ -22,8 +22,8 @@ let app: App | null = null;
 let dashMode = ((): string => { try { return localStorage.getItem('oreheart.playMode') || 'ranked'; } catch { return 'ranked'; } })();
 const MODES: [string, string][] = [['ranked', 'Ranked'], ['unranked', 'Unranked'], ['friend', 'Friend'], ['computer', 'Computer']];
 
-interface Data { shop: ShopInfo | null; quests: QuestsInfo | null; rank: RankCard | null; news: NewsFeed | null; owned: Record<string, number> | null; online: boolean }
-async function loadAll(): Promise<Data> {
+export interface Data { shop: ShopInfo | null; quests: QuestsInfo | null; rank: RankCard | null; news: NewsFeed | null; owned: Record<string, number> | null; online: boolean }
+export async function loadAll(): Promise<Data> {
   const [shop, quests, rank, news, owned] = await Promise.allSettled([api.shopInfo(), api.myQuests(), api.myRank(), api.newsFeed(), api.myCollection()]);
   const v = <T,>(r: PromiseSettledResult<T>): T | null => (r.status === 'fulfilled' ? r.value : null);
   const s = v(shop); if (s) setShop(s);
@@ -52,7 +52,7 @@ export async function showDashboard(a: App): Promise<void> {
   if (isTestPage()) (window as any).__dash = { data: () => data, mode: () => dashMode };
 }
 
-function topBar(data: Data, extra: El[] = []): El {
+export function topBar(data: Data, extra: El[] = []): El {
   const name = getPlayerName();
   const avatarId = (data.rank && (data.rank as any).avatar) || net.avatar || null;
   const rk = data.rank ? data.rank.rank : null;
@@ -60,7 +60,7 @@ function topBar(data: Data, extra: El[] = []): El {
   const free = data.shop ? (data.shop.free_packs || 0) : 0;
   const stashN = data.shop && data.shop.stash ? Object.values(data.shop.stash.packs || {}).reduce((s, n) => s + (Number(n) || 0), 0) : 0;
   return h('div', { class: 'top' },
-    h('button', { type: 'button', class: 'who panel', 'aria-label': `${name}, ${rk ? rk.label : 'unranked'}: profile`, 'data-testid': 'dash-who', onclick: () => net.openProfile?.() },
+    h('button', { type: 'button', class: 'who panel', 'aria-label': 'Profile', title: `${name}, ${rk ? rk.label : 'unranked'}: your profile`, 'data-testid': 'dash-who', onclick: () => net.openProfile?.() },
       h('img', { class: 'av', src: avatarPicture(avatarId), alt: avatarName(avatarId) }),
       h('div', {}, h('b', {}, name), h('small', {}, rk ? ico(ladderCharm(rk.name)) : null, rk ? rk.label : 'Unranked'))),
     h('button', { type: 'button', class: 'coins panel', 'aria-label': `${coins == null ? '' : fmt(coins) + ' '}coins: open the shop`, 'data-testid': 'dash-coins', onclick: () => { void openScreen('shop'); } }, ico(COIN), coins == null ? '…' : fmt(coins), h('span', { class: 'plus' }, '+')),

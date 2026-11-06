@@ -1,5 +1,6 @@
 // Online Phase A screens and start-up flow: server check, login, sign-up (age question first), parent consent,
 // avatar, welcome, profile, ban, forgot / set password, Contact us, server decks.
+import { COMMANDERS } from '../engine';
 import './net.css';
 import { economyMenu } from './economy';
 import { pvpMenu, bindPvpApp, resumePvp, isMockPvp } from './pvp';
@@ -543,23 +544,62 @@ export function menuExtras(el: El) {
   else if (net.offlineChosen) el.append(h('button', { type: 'button', class: 'net-chip', onclick: () => { void signOut(); } }, 'Offline — Sign in'));
 }
 
+/** Nov 6 (design D, Brush's Profile): identity with Change avatar, this season's stats from the rank card, lifetime / recent matches /
+ *  badges as "coming soon" until they exist, the account block with the documents, Contact us and Sign out. */
 function showProfile() {
   const s = status!;
-  const joined = h('p', {}, '');
-  menuShow('profile', h('h1', {}, 'Profile'),
-    h('div', { class: 'net-profile' },
-      h('img', { class: 'net-avatar-big', src: avatarPicture(s.avatar), alt: avatarName(s.avatar) }),
-      h('div', {}, h('p', { class: 'net-username' }, s.username), joined, h('p', {}, 'No online matches yet'))),
-    h('div', { class: 'net-actions' },
-      nbtn('Change avatar', () => avatarScreen(s, showProfile)),
-      ...docButtons(showProfile),
-      nbtn('Contact us', () => showContact({ back: showProfile, email: undefined, player: s.username })),
-      nbtn('Sign out', () => { void signOut(); }),
-      nbtn('Back', () => app.showMenu())));
+  app.clear();
+  const ic = (src: string) => h('img', { src, alt: '', draggable: 'false' });
+  const joined = h('p', { class: 'meta' }, '');
+  const emailEl = h('b', { 'data-testid': 'profile-email' }, '…');
+  const rkLabel = h('div', { class: 'rkl' }, ic('/art/ui/rank-charms/sapphire.webp'), h('span', {}, 'Unranked'));
+  const stats = h('div', { class: 'st2' }, ...[['…', 'Matches'], ['…', 'Wins'], ['…', 'Losses'], ['…', 'Win rate']].map(([v, l]) => h('div', { class: 'stat' }, h('b', {}, v), h('small', {}, l))));
+  const best = h('div', { class: 'st2 life' }, ...[['…', 'Best rating'], ['…', 'Place'], ['…', 'Season'], ['…', 'Season ends']].map(([v, l]) => h('div', { class: 'stat' }, h('b', {}, v), h('small', {}, l))));
+  const fav = (() => { try { const p = JSON.parse(localStorage.getItem('oreheart.picks') || '{}'); return p.cmd || null; } catch { return null; } })();
+  const favCmd = fav ? (COMMANDERS as any)[fav] : null;
+  const por = (id: string) => (id === 'grubnak' ? '/art/owner/goblin/grubnak-on-throne-art.png' : id === 'sproingle' ? '/art/owner/gnome/sproingle-portrait.webp' : id === 'borgo' ? '/art/owner/dwarf/borgo-portrait.webp' : `/art/commanders/${id}.webp`);
+  const topEl = h('div', { class: 'top', 'aria-hidden': 'true' });
+  const root = h('main', { class: 'screen net-screen dash profile', 'data-screen': 'profile', 'aria-label': 'Profile' }, topEl, h('div', { class: 'logo', 'aria-hidden': 'true' }),
+    h('div', { class: 'hdr' }, h('button', { type: 'button', class: 'btn panel back-btn', onclick: () => app.showMenu() }, '‹ Dashboard'), h('div', { class: 'h ttl' }, 'Profile'), h('div', { class: 'info' }, 'Public profile: friends see your name, avatar, rank and badges')),
+    h('div', { class: 'main' },
+      h('div', { class: 'col' },
+        h('section', { class: 'panel idc', 'data-testid': 'profile-identity', 'aria-label': 'Who you are' },
+          h('img', { class: 'bigav net-avatar-big', src: avatarPicture(s.avatar), alt: avatarName(s.avatar) }),
+          h('div', { class: 'uname' }, h('b', { class: 'net-username' }, s.username)), rkLabel, joined,
+          nbtn('Change avatar', () => avatarScreen(s, showProfile), 'btn panel play avatar-btn')),
+        favCmd ? h('section', { class: 'panel', 'aria-label': 'Favourite Commander' }, h('div', { class: 'ptitle h' }, ic('/art/ui/silver/icon-deck.webp'), 'Favourite Commander'),
+          h('div', { class: 'fav' }, h('div', { class: 'por', style: `background-image:url(${por(fav)})` }), h('div', {}, h('h4', {}, favCmd.name), h('p', {}, favCmd.abilityText || ''), h('p', { class: 'dash-note' }, 'The last one you picked')))) : null,
+        h('section', { class: 'panel', 'data-testid': 'profile-account', 'aria-label': 'Account' }, h('div', { class: 'ptitle h' }, ic('/art/ui/silver/icon-settings.webp'), 'Account'),
+          h('div', { class: 'acc' }, h('span', {}, 'Email'), emailEl),
+          h('div', { class: 'acc' }, h('span', {}, 'Name'), h('b', {}, s.username), h('small', { class: 'dash-note' }, 'an admin can rename you')),
+          h('div', { class: 'frow' }, ...docButtons(showProfile).map((b) => { b.classList.add('sbtn', 'panel'); return b; }), nbtn('Contact us', () => showContact({ back: showProfile, email: undefined, player: s.username }), 'sbtn panel')),
+          nbtn('Sign out', () => { void signOut(); }, 'btn panel signout'))),
+      h('div', { class: 'col' },
+        h('section', { class: 'panel', 'data-testid': 'profile-stats', 'aria-label': 'Stats' }, h('div', { class: 'ptitle h' }, ic('/art/ui/rank-charms/diamond.webp'), 'Stats', h('span', { class: 'more' }, 'this season')), stats, h('div', { class: 'sub-h' }, 'Season'), best,
+          h('div', { class: 'sub-h' }, 'Lifetime'), h('p', { class: 'dash-note' }, 'Coming soon: lifetime matches, creatures played, damage dealt, quests done.')),
+        h('section', { class: 'panel', 'aria-label': 'Win rate by faction' }, h('div', { class: 'ptitle h' }, ic('/art/ui/silver/icon-howto.webp'), 'Win rate by faction'), h('p', { class: 'dash-note' }, 'Coming soon: your record with Goblins, Gnomes and Dwarves.'))),
+      h('div', { class: 'col' },
+        h('section', { class: 'panel', 'aria-label': 'Recent matches', style: 'flex:1' }, h('div', { class: 'ptitle h' }, ic('/art/ui/silver/icon-play.webp'), 'Recent matches'), h('p', { class: 'dash-note' }, 'Coming soon: your last matches with the rating change of each.')),
+        h('section', { class: 'panel', 'aria-label': 'Badges' }, h('div', { class: 'ptitle h' }, ic('/art/ui/rank-charms/oreheart.webp'), 'Badges'), h('p', { class: 'dash-note' }, 'Coming soon: badges for firsts, streaks and seasons.')))));
+  app.root.append(root);
+  void import('./dashboard').then((m) => m.loadAll().then((d) => {
+    if (!root.isConnected) return;
+    const t = m.topBar(d); t.setAttribute('aria-hidden', 'true'); topEl.replaceWith(t);
+    const r = d.rank;
+    if (r) {
+      rkLabel.replaceChildren(ic(`/art/ui/rank-charms/${r.rank.name.toLowerCase()}.webp`), h('span', {}, `${r.rank.label} · ${Number(r.rating).toLocaleString('en-US')}`));
+      const vals = [String(r.games), String(r.wins), String(r.losses), r.games ? `${Math.round((r.wins / r.games) * 100)}%` : '—'];
+      stats.querySelectorAll('b').forEach((b, i) => { b.textContent = vals[i]; });
+      const ends = r.season_end ? new Date(r.season_end) : null;
+      const bv = [Number(r.peak).toLocaleString('en-US'), r.place ? `#${r.place}` : '—', String(r.season || '').replace(/^\d{4}-/, ''), ends ? ends.toLocaleDateString() : '—'];
+      best.querySelectorAll('b').forEach((b, i) => { b.textContent = bv[i]; });
+    }
+  })).catch(() => {});
   client().auth.getUser().then(({ data }) => {
     const c = data.user?.created_at;
-    joined.textContent = c ? `Joined ${new Date(c).toLocaleDateString()}` : '';
-    const em = data.user?.email; void em;
+    joined.textContent = c ? `Member since ${new Date(c).toLocaleDateString()}` : '';
+    const em = data.user?.email || '';
+    emailEl.textContent = em ? em.replace(/^(.{2})[^@]*(@.*)$/, '$1…$2') : '—';
   });
   // refresh the name (an admin may have renamed the player)
   myStatus().then((n) => { status = n; (document.querySelector('.net-username') as El | null)?.replaceChildren(n.username); }).catch(() => {});

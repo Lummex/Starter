@@ -12,6 +12,7 @@ import { Tutorial, tutorialGame, tutorialOrders } from './tutorial';
 import { STANCES } from '../ai/stances';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters, maxDecks } from './decks';
 import { net } from '../net/state';
+import { rankOfRating, ladderCharm } from '../content/ladder';
 import { brewActions, flowShardCount, deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
 import { createBoardView, createFlatView, BoardView } from './scene';
 import { audio, pickArena } from './audio';
@@ -4130,6 +4131,7 @@ export class App {
     const st = this.game.state;
     this.clear();
     const win = winner === 'player';
+    if (this.netGame) { this.showNetEnd(win, st); return; } // Nov 6 (Ken approved the D screens): online matches end on the D screen
     const sx = st.stats || { mined: { player: 0, opponent: 0 }, summoned: { player: 0, opponent: 0 }, lost: { player: 0, opponent: 0 }, damage: {} };
     let mvp = 'None';
     const best = Object.entries(sx.damage as Record<string, number>).sort((a, b) => b[1] - a[1])[0];
@@ -4154,6 +4156,52 @@ export class App {
       this.netGame ? h('div', { class: 'row' }, btn('Back to menu', 'primary', () => this.showMenu())) : h('div', { class: 'row' },
         btn(this.game.mode === 'compvscomp' ? 'Rematch' : 'Play again', 'primary', () => { if (this.lastTutorial) this.beginTutorial(); else { const o = { ...this.lastOptions }; this.beginMatch(o); } }),
         btn('Menu', '', () => this.showMenu(), this.game.mode === 'compvscomp' ? { 'aria-label': 'Exit to menu' } : {}))));
+  }
+
+  /** Nov 6 (design D, Brush's Match End): VICTORY / DEFEAT with the two sides, Rating (before -> after with the bar inside the division),
+   *  Coins, Quests and Match stats, then Dashboard and Play again. Only for online matches; vs-computer keeps its own end screen. */
+  showNetEnd(win: boolean, st: any) {
+    const ng: any = this.netGame, res = ng.result;
+    const sx = st.stats || { mined: { player: 0, opponent: 0 }, summoned: { player: 0, opponent: 0 }, lost: { player: 0, opponent: 0 }, damage: {} };
+    const them = ng.names?.them || 'your rival', me = ng.names?.me || 'You';
+    const mode = res ? (res.mode === 'ranked' ? 'Ranked' : res.mode === 'practice' ? 'Practice' : res.mode === 'unranked' ? 'Unranked' : 'Friend') : 'Friend';
+    const why = !res ? '' : res.reason === 'surrender' ? (res.won ? `${them} gave up.` : 'You gave up.') : res.reason === 'timeout' ? (res.won ? `${them} ran out of time.` : 'You ran out of time.') : res.reason === 'abandoned' ? 'Both of you left, so the match was dropped. Nobody won, and nobody gets coins for it.' : '';
+    const cmdName = (id: string) => (COMMANDERS as any)[id]?.name || '';
+    const ic = (src: string) => h('img', { src, alt: '', draggable: 'false' });
+    const av = (id: string | null | undefined) => (id ? `/art/avatars/${id}.webp` : '/art/owner/goblin/grubnak-on-throne-art.png');
+    const myCmd = st.players?.player?.commanderId, theirCmd = st.players?.opponent?.commanderId;
+    const side = (name: string, avatar: string | null, cmd: string, winner: boolean, tier: number) => h('div', { class: 'side' + (winner ? ' won' : ' lost') },
+      h('div', { class: 'med' + (winner ? '' : ' lost'), style: `background-image:url(${av(avatar)})` }), h('b', {}, name), h('small', {}, tier > 1 ? `${TIER_NAMES[tier]} ` : '', cmdName(cmd)), h('span', { class: 'flag ' + (winner ? 'w' : 'r') }, winner ? 'Winner' : 'Retreated'));
+    // rating: before -> after, and the bar inside the division (the 10-step ladder)
+    let ratingPanel: El | '' = '';
+    if (res && res.rating) {
+      const b = Number(res.rating.before) || 1000, a = Number(res.rating.after) || b, d = a - b;
+      const rb = rankOfRating(b), ra = rankOfRating(a);
+      const span = Math.max(1, (ra.divNext ?? ra.divFloor + 1) - ra.divFloor);
+      const posA = Math.min(100, Math.max(0, ((a - ra.divFloor) / span) * 100)), posB = ra.label === rb.label ? Math.min(100, Math.max(0, ((b - ra.divFloor) / span) * 100)) : (d >= 0 ? 0 : 100);
+      ratingPanel = h('section', { class: 'panel', 'data-testid': 'end-rating', 'aria-label': 'Rating' }, h('div', { class: 'ptitle h' }, ic(ladderCharm('diamond')), 'Rating', h('span', { class: 'more' }, `${mode} match`)),
+        h('div', { class: 'rate' }, ic(ladderCharm(ra.name)), h('div', {}, h('div', { class: 'from' }, b.toLocaleString('en-US')), h('div', { class: 'to', 'data-testid': 'pvp-end-rating' }, a.toLocaleString('en-US'))), h('div', { class: 'arrow' }, '›'), h('div', { class: 'delta ' + (d >= 0 ? 'up' : 'dn') }, `${d >= 0 ? '+' : ''}${d}`)),
+        h('div', { class: 'mbar' }, h('div', { class: 'old', style: `width:${Math.min(posA, posB)}%` }), d >= 0 ? h('div', { class: 'gain', style: `left:${posB}%;width:${Math.max(0, posA - posB)}%` }) : h('div', { class: 'lossbit', style: `left:${posA}%;width:${Math.max(0, posB - posA)}%` })),
+        h('div', { class: 'mlab' }, h('span', {}, `${ra.label} · `, h('b', {}, `${a - ra.divFloor} / ${span}`)), h('span', {}, ra.divNext == null ? 'the top of the ladder' : ra.label !== rb.label ? (d >= 0 ? h('b', { class: 'ok' }, `Up to ${ra.label}!`) : h('b', { class: 'bad' }, `Down to ${ra.label}`)) : h('span', {}, h('b', {}, String(ra.divNext - a)), ` more to ${ra.division === 'I' ? 'the next step' : ra.name + ' ' + (ra.division === 'III' ? 'II' : 'I')}`))));
+    }
+    const coins = Number(res && res.coins) || 0;
+    const coinsPanel = h('section', { class: 'panel', 'data-testid': 'end-coins', 'aria-label': 'Coins' }, h('div', { class: 'ptitle h' }, ic('/art/packs/icons/coin.webp'), 'Coins'),
+      h('div', { class: 'coinbig' }, ic('/art/packs/icons/coin-pile.webp'), h('b', {}, coins ? `+${coins}` : '+0'), h('small', {}, coins ? `for this ${mode.toLowerCase()} match` : mode === 'Practice' ? 'practice pays nothing' : res && res.reason === 'abandoned' ? 'a dropped match pays nothing' : 'nothing this time')));
+    const questsPanel = h('section', { class: 'panel', 'data-testid': 'end-quests', 'aria-label': 'Quests' }, h('div', { class: 'ptitle h' }, ic('/art/packs/icons/quest.webp'), 'Quests', net.openShop ? h('button', { type: 'button', class: 'more', onclick: () => { void import('../net/economy').then((m) => m.openScreen('quests')); } }, 'All quests ›') : null),
+      h('p', { class: 'dash-note' }, mode === 'Practice' ? 'Practice counts for no quest.' : 'This match counted toward your daily quests. The Dashboard shows the new progress.'));
+    const dmg = Object.values((sx.damage || {}) as Record<string, number>).reduce((s, n) => s + (Number(n) || 0), 0);
+    const stat = (v: string | number, label: string) => h('div', { class: 'stat' }, h('b', {}, String(v)), h('small', {}, label));
+    const statsPanel = h('section', { class: 'panel', 'data-testid': 'end-stats', 'aria-label': 'Match stats' }, h('div', { class: 'ptitle h' }, ic('/art/ui/silver/icon-howto.webp'), 'Match stats'),
+      h('div', { class: 'sg' }, stat(st.turn, 'Turns'), stat(sx.summoned.player, 'Units played'), stat(dmg, 'Damage dealt'), stat(sx.mined.player, 'Crystal Flow mined'), stat(sx.lost.player, 'Units lost'), stat(sx.summoned.opponent, 'Rival units played')));
+    const again = h('button', { type: 'button', class: 'btn panel play', 'data-testid': 'end-again', onclick: () => { const m = res && res.mode; if (m === 'ranked' || m === 'unranked') net.openPvp?.(m); else net.openPvp?.('friend'); } }, ic('/art/ui/silver/icon-play.webp'), 'Play again', h('span', { class: 'sub' }, mode));
+    const home = h('button', { type: 'button', class: 'btn panel', 'data-testid': 'end-home', onclick: () => this.showMenu() }, ic('/art/ui/silver/icon-quit.webp'), 'Dashboard');
+    this.root.append(h('main', { class: 'screen end dash matchend' + (win ? ' won' : ' lost'), 'data-screen': 'end', 'data-result': win ? 'won' : 'lost', 'aria-label': win ? 'Victory' : 'Defeat' },
+      h('div', { class: 'ban' },
+        side(me, ng.avatars?.me, myCmd, win, this.commanderTier('player')),
+        h('div', { class: 'word' }, h('h1', { class: 'end-title' }, win ? 'VICTORY' : 'DEFEAT'), h('div', { class: 'rule' }), h('p', { class: 'pvp-end-vs' }, win ? `${cmdName(theirCmd) || them} retreats! ` : `${cmdName(myCmd) || 'Your Commander'} retreats. `, h('b', {}, `${mode} match vs ${them}`), ` · turn ${st.turn}`), why ? h('p', { class: 'pvp-end-why' }, why) : null),
+        side(them, ng.avatars?.them, theirCmd, !win, this.commanderTier('opponent'))),
+      h('div', { class: 'row4' }, ratingPanel || h('section', { class: 'panel', 'data-testid': 'end-rating', 'aria-label': 'Rating' }, h('div', { class: 'ptitle h' }, ic(ladderCharm('diamond')), 'Rating'), h('p', { class: 'dash-note' }, mode === 'Ranked' ? 'No rating change was reported.' : `${mode} matches do not move your rating.`)), coinsPanel, questsPanel, statsPanel),
+      h('div', { class: 'acts' }, home, again)));
   }
 
   // ------------------------------------------------------------ board geometry / hit testing
