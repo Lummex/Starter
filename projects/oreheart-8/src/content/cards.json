@@ -856,7 +856,7 @@
   "name": "Starfall Cataclysm",
   "type": "spell",
   "faction": "gnomes",
-  "rarity": "Ultra Rare",
+  "rarity": "Collector",
   "spellKind": "regular",
   "cost": 6,
   "effect": "areaDamage",
