@@ -42,7 +42,7 @@ export function standingBox(o: THREE.Object3D, into = new THREE.Box3()): THREE.B
 }
 
 export type CreatureAnim = 'idle' | 'walk' | 'run' | 'attack' | 'mine' | 'hit' | 'defeat' | 'lifted' | 'special' | 'ability' | 'knockback' | 'bowled' | 'idleBreak';
-export interface PartCfg { file: string; bone: string[]; /** target length as a fraction of the character height */ len: number; /** point along the long axis (0 bottom .. 1 top) that sits on the bone */ grip: number; rot: [number, number, number]; pos?: [number, number, number]; name: string; axis?: 'x' | 'y' | 'z'; /** owner look (Model Editor): exact bone-local transform of the raw part */ look?: LookPart; /** a mount standing under the rider */ mount?: boolean; /** Ken's Studio placement of a WORLD item (not bone-parented): Studio position / rotation (deg, XYZ) / scale with the body at the origin scaled by `body`; the game fixes it to `bone` in the rest pose so it follows the hand */ world?: { bone: string; body: number; pos: [number, number, number]; rot: [number, number, number]; scale: number }; /** true = no Studio placement yet: placed by the default grip rule until Ledger saves one */ auto?: boolean; /** Oct 31: hold the item upright in the character's own frame (as modelled, long axis up) at the hand, measured in the idle pose; `rot` is then an extra turn in that frame */ upright?: boolean }
+export interface PartCfg { file: string; bone: string[]; /** target length as a fraction of the character height */ len: number; /** point along the long axis (0 bottom .. 1 top) that sits on the bone */ grip: number; rot: [number, number, number]; pos?: [number, number, number]; name: string; axis?: 'x' | 'y' | 'z'; /** owner look (Model Editor): exact bone-local transform of the raw part */ look?: LookPart; /** a mount standing under the rider */ mount?: boolean; /** Nov 6: where the rider sits on the mount, as a fraction of its height (default 0.62) */ seat?: number; /** Ken's Studio placement of a WORLD item (not bone-parented): Studio position / rotation (deg, XYZ) / scale with the body at the origin scaled by `body`; the game fixes it to `bone` in the rest pose so it follows the hand */ world?: { bone: string; body: number; pos: [number, number, number]; rot: [number, number, number]; scale: number }; /** true = no Studio placement yet: placed by the default grip rule until Ledger saves one */ auto?: boolean; /** Oct 31: hold the item upright in the character's own frame (as modelled, long axis up) at the hand, measured in the idle pose; `rot` is then an extra turn in that frame */ upright?: boolean }
 export interface LookPart { bone: string; pos: [number, number, number]; rot: [number, number, number]; scale: [number, number, number] }
 /** owner looks (factory-design/looks/*.json): height in squares + stretch of the main model */
 export const LOOKS: Record<string, { height: number; stretch: [number, number, number] }> = {
@@ -147,38 +147,38 @@ const PARTS: Record<string, PartCfg[]> = {
   'spark-gnome': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-2.63, 8.57, 0.056], rot: [-128.277, -22.025, 141.36], scale: [41, 51.25, 41] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'the-great-steam-golem': [],
   // Nov 6: the new cards (Clay, Meshy run 11); no props yet (Clay's second run), shared-pack clips
-  'mama-grubsnout': [],
-  'pox-doctor-ratsbane': [],
-  'snot-sergeant-gurk': [],
-  'fizzwick-fuse-lighter': [],
-  'junk-catapult-crew': [],
-  'grease-gremlin': [],
-  'bogwater-brewer': [],
-  'bang-snap-imp': [],
-  'sludge-lobber': [],
-  'wispmother-tallulah': [],
-  'jinxmaster-wobblewick': [],
+  'mama-grubsnout': [{ name: 'crystal', file: 'crystal.glb', bone: ['RightHand'], len: 0.28, grip: 0.35, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [0.149, 4.563, 1.667], rot: [-26.59, -44.01, -173.42], scale: [15.319, 15.319, 15.319] } }], // Nov 6: Clay's props, Spring's placements
+  'pox-doctor-ratsbane': [{ name: 'lance', file: 'lance.glb', bone: ['RightHand'], len: 0.8, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-4.562, -1.979, 10.438], rot: [-67.15, -38.39, 153.09], scale: [41.577, 41.577, 41.577] } }], // Nov 6: Clay's props, Spring's placements
+  'snot-sergeant-gurk': [{ name: 'clipboard', file: 'clipboard.glb', bone: ['LeftHand'], len: 0.34, grip: 0.4, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-1.744, 10.809, 3.191], rot: [-42.29, -7.88, 162.9], scale: [17.731, 17.731, 17.731] } }], // Nov 6: Clay's props, Spring's placements
+  'fizzwick-fuse-lighter': [{ name: 'match', file: 'match.glb', bone: ['RightHand'], len: 0.28, grip: 0.2, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-0.21, 2.097, 4.445], rot: [-36.36, -41.02, -177.65], scale: [14.42, 14.42, 14.42] } }, { name: 'match-left', file: 'match.glb', bone: ['LeftHand'], len: 0.28, grip: 0.2, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-3.869, 6.603, 4.948], rot: [-72.05, -12.37, 157.13], scale: [14.42, 14.42, 14.42] } }], // Nov 6: Clay's props, Spring's placements
+  'junk-catapult-crew': [{ name: 'catapult', file: 'catapult.glb', bone: ['Hips'], len: 1.0, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [-37.525, -6.659, 46.299], rot: [-173.55, 46.94, -179.44], scale: [52.25, 52.25, 52.25] } }], // Nov 6: Clay's props, Spring's placements
+  'grease-gremlin': [{ name: 'oilcan', file: 'oilcan.glb', bone: ['RightHand'], len: 0.3, grip: 0.75, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [0.698, 15.992, -3.205], rot: [150.46, -39.25, -1.92], scale: [15.288, 15.288, 15.288] } }, { name: 'tank', file: 'tank.glb', bone: ['Spine02'], len: 0.42, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [-12.649, 0.41, -15.36], rot: [1.42, 39.73, 0.7], scale: [21.374, 21.374, 21.374] } }], // Nov 6: Clay's props, Spring's placements
+  'bogwater-brewer': [{ name: 'ladle', file: 'ladle.glb', bone: ['RightHand'], len: 0.5, grip: 0.12, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-3.094, -4.842, 9.221], rot: [-42.23, -50.32, 170.1], scale: [25.443, 25.443, 25.443] } }, { name: 'wheelbarrow', file: 'wheelbarrow.glb', bone: ['Hips'], len: 0.8, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [39.489, -18.543, 35.279], rot: [-169.41, 44.62, 177.74], scale: [40.746, 40.746, 40.746] } }], // Nov 6: Clay's props, Spring's placements
+  'bang-snap-imp': [{ name: 'firework', file: 'firework.glb', bone: ['Spine01'], len: 0.6, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine01', pos: [14.291, -0.141, 25.44], rot: [-10.87, 29.45, 1.82], scale: [31.307, 31.307, 31.307] } }], // Nov 6: Clay's props, Spring's placements
+  'sludge-lobber': [{ name: 'slingshot', file: 'slingshot.glb', bone: ['RightHand'], len: 0.34, grip: 0.15, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-2.154, 2.823, 7.918], rot: [-60.63, -36.18, 163.96], scale: [17.955, 17.955, 17.955] } }, { name: 'bucket', file: 'bucket.glb', bone: ['LeftHand'], len: 0.28, grip: 0.9, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [6.045, 17.244, -7.736], rot: [-50.85, -6.93, 151.32], scale: [14.788, 14.788, 14.788] } }], // Nov 6: Clay's props, Spring's placements
+  'wispmother-tallulah': [{ name: 'lantern', file: 'lantern.glb', bone: ['RightHand'], len: 0.95, grip: 0.4, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [0.824, 1.177, 5.324], rot: [-28.82, -33.87, -172.59], scale: [51.422, 51.422, 51.422] } }], // Nov 6: Clay's props, Spring's placements
+  'jinxmaster-wobblewick': [{ name: 'wand', file: 'wand.glb', bone: ['RightHand'], len: 0.36, grip: 0.15, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [3.707, -2.865, 6.972], rot: [-22.27, -29.35, -161.16], scale: [20.269, 20.269, 20.269] } }, { name: 'hatstack', file: 'hatstack.glb', bone: [], len: 0.55, grip: 0.5, rot: [0, 0, 0], mount: true, seat: 0.97 }], // Nov 6: Clay's props, Spring's placements
   'hexfuse-battery-golem': [],
-  'rune-scribe-nimbletoe': [],
-  'lens-grinder-lorelei': [],
-  'hexbolt-tinker': [],
-  'spark-caddy': [],
-  'hex-cadet': [],
-  'ratchet-runt': [],
-  'engineer-cogsworth': [],
-  'forgemaster-hildegrim': [],
-  'shieldwall-sergeant-brasha': [],
-  'master-smith-durga': [],
-  'grumble-drummer': [],
-  'mule-wrangler-nessa': [],
-  'stonebreaker-miner': [],
-  'shield-cadet': [],
-  'pebble-tosser': [],
-  'hammerhand-apprentice': [],
+  'rune-scribe-nimbletoe': [{ name: 'quill', file: 'quill.glb', bone: ['RightHand'], len: 0.26, grip: 0.2, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-0.405, 0.406, 4.406], rot: [-26.57, -43.67, -176.89], scale: [14.556, 14.556, 14.556] } }, { name: 'scroll', file: 'scroll.glb', bone: ['LeftHand'], len: 0.35, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [0.546, 8.25, 0.88], rot: [-35.43, -1.54, 140.7], scale: [19.533, 19.533, 19.533] } }], // Nov 6: Clay's props, Spring's placements
+  'lens-grinder-lorelei': [{ name: 'lens', file: 'lens.glb', bone: ['LeftHand'], len: 0.5, grip: 0.5, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-1.197, 15.918, 2.091], rot: [-60.36, -7.46, 136.01], scale: [26.328, 26.328, 26.328] } }], // Nov 6: Clay's props, Spring's placements
+  'hexbolt-tinker': [{ name: 'crossbow', file: 'crossbow.glb', bone: ['RightHand'], len: 0.42, grip: 0.3, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-4.989, 9.276, 7.29], rot: [-113.79, -24.35, 148.25], scale: [22.831, 22.831, 22.831] } }, { name: 'quiver', file: 'quiver.glb', bone: ['Spine02'], len: 0.42, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [-17.111, 0.512, -21.175], rot: [1.4, 38.93, -14.27], scale: [22.831, 22.831, 22.831] } }], // Nov 6: Clay's props, Spring's placements
+  'spark-caddy': [{ name: 'cart', file: 'cart.glb', bone: ['Hips'], len: 0.8, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [-43.765, 9.174, -48.138], rot: [-169.59, 47.3, -179.0], scale: [42.041, 42.041, 42.041] } }], // Nov 6: Clay's props, Spring's placements
+  'hex-cadet': [{ name: 'wrench', file: 'wrench.glb', bone: ['RightHand'], len: 0.45, grip: 0.12, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [5.003, -5.066, 10.73], rot: [-23.9, -42.89, -156.68], scale: [23.174, 23.174, 23.174] } }], // Nov 6: Clay's props, Spring's placements
+  'ratchet-runt': [{ name: 'ratchet', file: 'ratchet.glb', bone: ['RightHand'], len: 0.36, grip: 0.12, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-1.004, -1.287, 7.904], rot: [-40.78, -39.82, 177.37], scale: [19.111, 19.111, 19.111] } }], // Nov 6: Clay's props, Spring's placements
+  'engineer-cogsworth': [{ name: 'wrench', file: 'wrench.glb', bone: ['RightHand'], len: 0.42, grip: 0.12, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-5.787, 1.707, 8.473], rot: [-68.39, -42.31, 145.68], scale: [21.73, 21.73, 21.73] } }], // Nov 6: Clay's props, Spring's placements
+  'forgemaster-hildegrim': [{ name: 'hammer', file: 'hammer.glb', bone: ['RightHand'], len: 0.5, grip: 0.1, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-8.75, -3.51, 11.425], rot: [-70.27, -45.41, 139.98], scale: [27.079, 27.079, 27.079] } }, { name: 'tongs', file: 'tongs.glb', bone: ['LeftHand'], len: 0.45, grip: 0.12, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-1.847, 2.179, 14.487], rot: [-60.17, -5.57, 175.31], scale: [24.379, 24.379, 24.379] } }], // Nov 6: Clay's props, Spring's placements
+  'shieldwall-sergeant-brasha': [{ name: 'shield', file: 'shield.glb', bone: ['LeftHand'], len: 0.58, grip: 0.45, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-2.121, 13.942, 4.802], rot: [-63.16, -9.41, 154.46], scale: [33.169, 33.169, 33.169] } }], // Nov 6: Clay's props, Spring's placements
+  'master-smith-durga': [{ name: 'hammer', file: 'hammer.glb', bone: ['RightHand'], len: 0.45, grip: 0.1, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-6.114, -1.32, 9.724], rot: [-69.28, -44.27, 141.84], scale: [24.542, 24.542, 24.542] } }, { name: 'hammer-left', file: 'hammer.glb', bone: ['LeftHand'], len: 0.45, grip: 0.1, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-5.758, 4.232, 15.481], rot: [-68.57, -1.48, 162.91], scale: [24.542, 24.542, 24.542] } }], // Nov 6: Clay's props, Spring's placements
+  'grumble-drummer': [{ name: 'drum', file: 'drum.glb', bone: ['Spine'], len: 0.42, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine', pos: [13.437, 14.372, 40.584], rot: [-22.43, 17.25, 1.86], scale: [24.242, 24.242, 24.242] } }, { name: 'drumstick', file: 'drumsticks.glb', bone: ['RightHand'], len: 0.24, grip: 0.2, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-1.254, 10.39, 1.049], rot: [-86.09, -39.21, 136.11], scale: [13.852, 13.852, 13.852] } }, { name: 'drumstick-left', file: 'drumsticks.glb', bone: ['LeftHand'], len: 0.24, grip: 0.2, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-0.933, 12.337, 2.547], rot: [-87.96, 4.83, 164.83], scale: [13.852, 13.852, 13.852] } }], // Nov 6: Clay's props, Spring's placements
+  'mule-wrangler-nessa': [{ name: 'lasso', file: 'lasso.glb', bone: ['RightHand'], len: 0.4, grip: 0.85, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [3.21, 20.31, -9.131], rot: [-45.86, -53.41, 168.04], scale: [20.346, 20.346, 20.346] } }], // Nov 6: Clay's props, Spring's placements
+  'stonebreaker-miner': [{ name: 'pickaxe', file: 'pickaxe.glb', bone: ['RightHand'], len: 0.9, grip: 0.1, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-6.228, -18.344, 19.149], rot: [-47.86, -57.41, 162.19], scale: [47.663, 47.663, 47.663] } }, { name: 'pack', file: 'pack.glb', bone: ['Spine02'], len: 0.42, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [-21.214, 0.636, -27.076], rot: [1.38, 38.08, 0.75], scale: [22.277, 22.277, 22.277] } }, { name: 'canteen', file: 'canteen.glb', bone: ['Hips'], len: 0.2, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [26.857, 4.339, -24.008], rot: [12.14, 42.36, -1.28], scale: [10.581, 10.581, 10.581] } }], // Nov 6: Clay's props, Spring's placements
+  'shield-cadet': [{ name: 'shield', file: 'shield.glb', bone: ['LeftHand'], len: 0.68, grip: 0.45, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-2.129, 11.792, 4.377], rot: [-61.25, -8.01, 157.28], scale: [36.216, 36.216, 36.216] } }, { name: 'backpack', file: 'backpack.glb', bone: ['Spine02'], len: 0.42, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [-22.166, 0.67, -27.468], rot: [1.4, 38.93, 0.73], scale: [22.4, 22.4, 22.4] } }], // Nov 6: Clay's props, Spring's placements
+  'pebble-tosser': [{ name: 'sling', file: 'sling.glb', bone: ['RightHand'], len: 0.35, grip: 0.15, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-4.831, 1.783, 6.205], rot: [-67.99, -45.64, 140.93], scale: [19.075, 19.075, 19.075] } }, { name: 'sack', file: 'sack.glb', bone: ['LeftHand'], len: 0.3, grip: 0.9, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [0.742, 18.141, -9.943], rot: [-54.52, -5.84, 176.14], scale: [16.352, 16.352, 16.352] } }], // Nov 6: Clay's props, Spring's placements
+  'hammerhand-apprentice': [{ name: 'hammer', file: 'hammer.glb', bone: ['RightHand'], len: 0.45, grip: 0.1, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-6.48, -3.615, 8.494], rot: [-74.91, -46.58, 132.66], scale: [22.856, 22.856, 22.856] } }, { name: 'tongs', file: 'tongs.glb', bone: ['LeftHand'], len: 0.42, grip: 0.12, rot: [0, 0, 0], look: { bone: 'LeftHand', pos: [-0.671, 0.925, 13.222], rot: [-60.61, -4.73, 179.07], scale: [21.33, 21.33, 21.33] } }], // Nov 6: Clay's props, Spring's placements
   // Nov 6: Spring's own rigs and clips (quadruped piglets and mule, floating wisps)
   'piglet': [],
-  'runt-piglet': [],
-  'clockwork-mule': [],
+  'runt-piglet': [{ name: 'fork', file: 'fork.glb', bone: ['Head'], len: 0.62, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Head', pos: [0.661, 0.083, 0.002], rot: [1.0, 0.0, -0.0], scale: [0.539, 0.539, 0.539] } }], // Nov 6: Clay's props, Spring's placements
+  'clockwork-mule': [{ name: 'cart', file: 'cart.glb', bone: ['Hips'], len: 0.75, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Hips', pos: [0.001, -0.482, -1.373], rot: [-0.0, 90.0, -0.0], scale: [0.749, 0.749, 0.749] } }], // Nov 6: Clay's props, Spring's placements
   'stray-spark-wisp': [],
   'spark-wisp': [],
 };
@@ -559,7 +559,7 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
     holder.add(w); holder.scale.setScalar(kw);
     if (ws.x > ws.z) holder.rotation.y = Math.PI / 2; // long axis along the facing (+Z)
     root.add(holder);
-    const seat = ws.y * kw * 0.62;
+    const seat = ws.y * kw * (mt.seat ?? 0.62); // Nov 6 (Spring): Wobblewick sits on top of his hat stack (0.97)
     sc.scale.multiplyScalar(0.8);
     sc.position.y = seat; sc.position.z = -0.02;
     root.userData.mount = true;
