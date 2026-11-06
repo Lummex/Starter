@@ -4,6 +4,7 @@ import factionsJson from '../content/factions.json';
 import colorsJson from '../content/crystal-colors.json';
 import abilitiesJson from '../content/abilities.json';
 import decksJson from '../content/starter-decks.json';
+import aiDecksJson from '../content/ai-decks.json';
 import configJson from '../content/game-config.json';
 import flavorJson from '../content/card-flavor.json';
 import { cardCost, cardFeet } from './cost';
@@ -16,6 +17,9 @@ export const COLORS: Record<string, any> = Object.fromEntries((colorsJson as any
 export const ABILITIES: Record<string, any> = abilitiesJson as any;
 export const STARTER_DECK_LIST: { id: string; name: string; faction: string; style: string; cards: string[] }[] = Object.entries(decksJson as any).map(([id, d]: any) => ({ id, ...d }));
 export const STARTER_DECKS: Record<string, string[]> = Object.fromEntries(STARTER_DECK_LIST.map((d) => [d.id, d.cards]));
+/** Nov 5: decks only the computer plays (the new cards), never in the deck picker. */
+export const AI_DECK_LIST: { id: string; name: string; faction: string; style: string; cards: string[] }[] = Object.entries(aiDecksJson as any).filter(([k]) => !k.startsWith('_')).map(([id, d]: any) => ({ id, ...d }));
+export const AI_DECKS: Record<string, string[]> = Object.fromEntries(AI_DECK_LIST.map((d) => [d.id, d.cards]));
 /** The default (Warband) deck id for a faction id such as "goblins". */
 export const warbandOf = (faction: string) => STARTER_DECK_LIST.find((d) => d.faction === faction && d.style === 'warband')!.id;
 export const CONFIG: any = configJson;

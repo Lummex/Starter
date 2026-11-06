@@ -125,6 +125,11 @@ class SupabaseStore {
     if (error) throw new Error(error.message);
     return (data && typeof data === 'object') ? data : {};
   }
+  async hasCopy(userId: string, cardId: string, tier: number) {
+    const { data, error } = await this.db.rpc('pvp_has_copy', { p_user: userId, p_card: cardId, p_tier: tier });
+    if (error) throw new Error(error.message);
+    return data === true;
+  }
   async seen(matchId: string, userId: string) { const { error } = await this.db.rpc('pvp_seen', { p_match: matchId, p_user: userId }); if (error) console.error('pvp_seen', error.message); }
   newId() { return crypto.randomUUID(); }
   random() { const u = new Uint32Array(1); crypto.getRandomValues(u); return u[0] / 4294967296; }

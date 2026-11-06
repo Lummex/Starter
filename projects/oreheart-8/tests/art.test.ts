@@ -11,14 +11,14 @@ describe('Phase 1B content', () => {
       expect(c.flavor?.length, c.id).toBeGreaterThan(0);
     }
   });
-  it('every Goblin creature has a card picture entry and an image file under 200 KB', () => {
+  it('every Goblin creature has a card picture entry and an image file under 300 KB (Nov 6: the owner art from Brush is 1024x1536 at about 230 KB; the game budget is 300 MB (Ken, Nov 6))', () => {
     for (const c of Object.values(CARDS).filter((x: any) => x.type === 'creature' && x.faction === 'goblins')) {
       const e = (art as any[]).find((a) => a.cardId === c.id);
       expect(e, c.id).toBeTruthy();
       expect(e.prompt).toContain('no text');
       const f = `public/${e.file}`;
       expect(fs.existsSync(f), f).toBe(true);
-      expect(fs.statSync(f).size).toBeLessThan(200_000);
+      expect(fs.statSync(f).size).toBeLessThan(300_000);
     }
   });
   it('CREDITS.md names the fonts and the card pictures', () => {

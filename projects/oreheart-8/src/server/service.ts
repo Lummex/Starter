@@ -52,6 +52,8 @@ export interface Store {
   rankOf(userId: string): Promise<RankInfo>;
   /** Nov 5 (upgraded cards): the best tier this player owns of each of these cards (card id -> 2..5); {} when none */
   tiersOf(userId: string, cards: string[] | null): Promise<Record<string, number>>;
+  /** Nov 6: does the player own a copy of this card at this tier (1 = Original)? */
+  hasCopy(userId: string, cardId: string, tier: number): Promise<boolean>;
 }
 
 export interface ServiceOptions {
@@ -120,17 +122,19 @@ export class PvpService {
     if (!COMMANDERS[commander]) fail('Pick a Commander first.');
     const deckId = body?.deckId != null ? String(body.deckId) : '';
     if (!deckId) fail('Pick a deck first.');
+    // Nov 6 (Ken): the Commander copy (tier) to fight as, 1..5; checked against his collection in tiersFor
+    const commanderTier = body?.commanderTier != null && Number.isFinite(Number(body.commanderTier)) ? Math.max(1, Math.min(5, Math.round(Number(body.commanderTier)))) : null;
     if (STARTER_DECKS[deckId]) {
       const v = validateDeck(STARTER_DECKS[deckId].slice(), commander);
       if (!v.legal) fail(`That starter deck can't go with ${COMMANDERS[commander].name}.`);
-      return { commander, cards: null, deckId };
+      return { commander, cards: null, deckId, commanderTier };
     }
     const saved = await this.store.getSavedDeck(user.userId, deckId);
     if (!saved) fail("That deck isn't one of yours.");
     const v = validateDeck(saved.cards.slice(), commander);
     if (!v.legal) fail('That deck is not legal: ' + v.problems.join('; '));
     const tiers = Array.isArray(saved.tiers) && saved.tiers.length === saved.cards.length ? saved.tiers.map((t) => Math.max(1, Math.min(5, Number(t) || 1))) : null;
-    return { commander, cards: saved.cards.slice(), deckId, tiers };
+    return { commander, cards: saved.cards.slice(), deckId, tiers, commanderTier };
   }
 
   async create(body: any, user: PlayerInfo, now: number) {
@@ -239,7 +243,13 @@ export class PvpService {
     const cardsOf = (d: DeckChoice): string[] => ['commander-' + d.commander]; // Nov 5 (Ken): a card's tier is its own copy's, carried in the deck; only the Commander's best tier comes from the collection
     try {
       m.tiers = { a: await this.store.tiersOf(m.players.a.userId, cardsOf(m.decks.a)), b: await this.store.tiersOf(m.players.b.userId, cardsOf(m.decks.b)) };
-    } catch { m.tiers = { a: {}, b: {} }; }
+      // Nov 6 (Ken): the player picks WHICH Commander copy fights. His pick counts when he owns a copy of that tier; otherwise his best copy stands.
+      for (const seat of ['a', 'b'] as const) {
+        const d = m.decks[seat], want = d.commanderTier, key = 'commander-' + d.commander;
+        if (!want || !(await this.store.hasCopy(m.players[seat].userId, key, want))) continue;
+        if (want > 1) m.tiers[seat][key] = want; else delete m.tiers[seat][key];
+      }
+    } catch { m.tiers = m.tiers || { a: {}, b: {} }; }
   }
 
   /** Loads the match, runs due timeouts, saves if anything changed, then `fn`. */

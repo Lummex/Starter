@@ -388,7 +388,7 @@ describe('revision 7', () => {
     const c = (id: string) => CARDS[id];
     expect([c('rotgut-grenadier').cost, c('rotgut-grenadier').attack, c('rotgut-grenadier').health]).toEqual([3, 2, 2]); // Nov 1 cost formula
     expect([c('grimhold-ravager').cost, c('grimhold-ravager').rarity]).toEqual([4, 'Uncommon']);
-    expect(Object.values(CARDS).filter((x: any) => x.type === 'creature').length).toBe(48);
+    expect(Object.values(CARDS).filter((x: any) => x.type === 'creature').length).toBe(81); // Nov 5: 48 + 30 new creatures + 3 tokens
     expect([weaponOf(c('goblin-scrounger')), weaponOf(c('goblin-smith-miner')), weaponOf(c('shard-guzzler')), weaponOf(c('goblin-scrapper')), weaponOf(c('goblin-slinger')), weaponOf(c('hexwright-apprentice')),
       weaponOf(c('deepforge-crossbowman')), weaponOf(c('axe-thrower')), weaponOf(c('shieldbeard')), weaponOf(c('ram-rider')), weaponOf(c('gyrocopter-ace')), weaponOf(c('the-great-steam-golem')), weaponOf(c('fireball'))])
       .toEqual(['pick', 'pick-hammer', 'sword' /* shard-guzzler is now the Goblin Rocket Rider, a Fighter, not a Gatherer */, 'sword', 'sling', 'wand', 'crossbow', 'axes', 'sword-shield', 'lance', 'signature'.replace('signature', 'gyro'), 'signature', null]);

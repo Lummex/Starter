@@ -131,7 +131,7 @@ export class Game {
     this.rand = makeRand(seed + 977);
     this.workerSeed = (seed * 7 + 311) | 0;
     this.pendingId = 0; this.stateVersion++;
-    this.state = createMatch({ ...options, seed, testMode: this.testMode });
+    this.state = createMatch({ ...options, seed, testMode: this.testMode, computerDecks: options.computerDecks ?? !this.testMode }); // Nov 5: live matches may deal the computer one of its new-card decks
     this.state.difficulty = this.difficulty;
     for (const w of ['player', 'opponent']) { ownUids[w] = new Set(); for (const h of [...this.state.players[w].deck, ...this.state.players[w].hand]) ownUids[w].add(h.uid); }
     for (const k of Object.keys(aiAudit)) (aiAudit as any)[k] = typeof (aiAudit as any)[k] === 'number' ? 0 : '';

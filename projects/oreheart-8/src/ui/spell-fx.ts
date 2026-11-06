@@ -87,8 +87,10 @@ export interface SpellFxRequest {
   delay?: number;
   kind?: 'cast' | 'counter' | 'replay';
   countered?: string | null;
-  /** Thunderhorn Blast: the caster's units at cast time (uid + square), to time the per-unit glow */
+  /** Thunderhorn Blast and Stand Fast, Lads!: the caster's units at cast time (uid + square), to time the per-unit glow */
   units?: { uid: string; row: number; col: number }[];
+  /** Nov 6: a Chain Lightning jump: the same bolt again from the last target, with no sound word, shake, flash or slow-mo */
+  noWord?: boolean; quiet?: boolean;
 }
 
 interface LayerState { visible: boolean; pos: THREE.Vector3; scale: number; alpha: number; rot: number }
@@ -216,9 +218,9 @@ export function createSpellFx(host: SpellFxHost) {
     }
     // slow-mo (0.35x for 300 ms right at impact) and the shake + tint flash at impact (real time, frame-independent)
     const impactReal = t0 + impact;
-    const slow = !!s.slowmo;
+    const slow = !!s.slowmo && !req.quiet;
     if (slow) slowWins.push([impactReal, impactReal + SLOW_MS]);
-    const shakeAmt = Math.min(1, Math.max(0, +(fxAct(s, 'shake')?.amount ?? s.shake ?? 0)));
+    const shakeAmt = req.quiet ? 0 : Math.min(1, Math.max(0, +(fxAct(s, 'shake')?.amount ?? s.shake ?? 0)));
     const shakePx = host.low ? 0 : Math.min(SHAKE_MAX_PX, SHAKE_MAX_PX * shakeAmt);
     const fl = fxAct(s, 'flash');
     const flash = fl && !fl.skip && shakeAmt > 0 ? { color: fl.color || s.tint, opacity: FLASH_OPACITY, ms: FLASH_MS } : null;
@@ -260,7 +262,7 @@ export function createSpellFx(host: SpellFxHost) {
     if (req.spell === 'prospectors-prayer' && (req.kind || 'cast') !== 'counter') gemsAt(req.caster, (destP || toP).clone(), impactReal, fx.log);
     spellFxLog.push(fx.log);
     fxs.push(fx);
-    if (req.spell === 'battle-cry') for (const u of req.units || []) {
+    if (req.spell === 'battle-cry' || req.spell === 'stand-fast-lads') for (const u of req.units || []) {
       const d = Math.hypot(u.row - req.from.row, u.col - req.from.col);
       buffStart.set(u.uid, impactReal + Math.min(700, d * 70));
     }
@@ -343,7 +345,7 @@ export function createSpellFx(host: SpellFxHost) {
       st.visible = st.alpha > 0.001; return st;
     }
     // word: pops 0 -> 1.25 -> 1.0 over 220 ms, wobbles +/-6 deg, holds, fades over 250 ms; always faces the camera
-    if (t < imp || !a1) return st;
+    if (t < imp || !a1 || fx.req.noWord) return st;
     const wt = t - imp, hold = fx.log.word.holdMs;
     if (wt >= POP_MS + hold + FADE_MS) return st;
     const size = a1.size_squares || 1.8;
@@ -378,16 +380,17 @@ export function createSpellFx(host: SpellFxHost) {
   const buffStart = new Map<string, number>();
   const buffGlows = new Map<string, THREE.Sprite>();
   let buffInfo: { uid: string; side: string; shownAt: number }[] = [];
-  function syncBuff(units: { uid: string; side: string; pos: THREE.Vector3; h: number }[], now: number) {
+  function syncBuff(units: { uid: string; side: string; pos: THREE.Vector3; h: number; spell?: string }[], now: number) {
     const keep = new Set<string>();
     buffInfo = [];
     for (const u of units) {
       keep.add(u.uid);
       let g = buffGlows.get(u.uid);
       if (!g) {
-        g = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(url('battle-cry', 'glow')), transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, toneMapped: false, opacity: 0 }));
-        const asp = SPELL_FX_SPEC.spells['battle-cry'].layers.glow[phone ? 'px_phone' : 'px'];
-        g.scale.set(0.8, 0.8 * asp[1] / asp[0], 1); g.renderOrder = 9; g.name = 'spellfx-battle-cry-buff'; g.frustumCulled = false;
+        const sp = u.spell || 'battle-cry'; // Nov 6: Stand Fast, Lads! keeps its own rune glow on each Dwarf
+        g = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(url(sp, 'glow')), transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, toneMapped: false, opacity: 0 }));
+        const asp = SPELL_FX_SPEC.spells[sp].layers.glow[phone ? 'px_phone' : 'px'];
+        g.scale.set(0.8, 0.8 * asp[1] / asp[0], 1); g.renderOrder = 9; g.name = `spellfx-${sp}-buff`; g.frustumCulled = false;
         scene.add(g); buffGlows.set(u.uid, g);
       }
       const at = buffStart.get(u.uid) ?? 0;

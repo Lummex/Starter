@@ -23,23 +23,27 @@ const RARITIES = ['Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector'];
 const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
 
 const rows = [];
+const deckIds = [...cards].filter((c) => !c.token).map((c) => c.id).sort();
 for (const c of [...cards].sort((a, b) => a.id.localeCompare(b.id))) {
   if (!/^[a-z0-9-]{1,64}$/.test(c.id)) throw new Error(`bad card id: ${c.id}`);
   if (!RARITIES.includes(c.rarity)) throw new Error(`unknown rarity "${c.rarity}" on ${c.id}`);
+  if (c.token) continue; // Nov 6: tokens (Piglet, Spark Wisp, Clockwork Mule) appear in play only: never in the catalog, packs, collections or decks
   const disabled = !!c.disabled;
-  // Crystals are never in packs: free and unlimited (Ken). Disabled cards are kept but never dealt.
-  const inPacks = (c.type === 'creature' || c.type === 'spell') && !disabled;
+  // Packs v2 (Ken, Nov 5): crystals are in the pool at their own rarity like any card. Disabled cards are kept but never dealt.
+  const inPacks = (c.type === 'creature' || c.type === 'spell' || c.type === 'crystal') && !disabled;
   rows.push(`  (${q(c.id)}, ${q(c.name)}, ${q(c.type)}, ${q(c.faction || 'any')}, ${q(c.rarity)}, ${Number(c.cost) | 0}, ${inPacks}, ${disabled}, ${q(version)})`);
 }
 
 const block = [
   BEGIN,
-  `-- ${cards.length} cards from cards.json (${rows.filter((r) => r.includes(', true, false,')).length} can be dealt in packs); content_version ${version}.`,
+  `-- ${rows.length} cards from cards.json (${rows.filter((r) => r.includes(', true, false,')).length} can be dealt in packs; ${cards.length - rows.length} tokens left out); content_version ${version}.`,
   'insert into public.cards (id, name, type, faction, rarity, cost, in_packs, disabled, content_version) values',
   rows.join(',\n'),
   'on conflict (id) do update set name = excluded.name, type = excluded.type, faction = excluded.faction,',
   '  rarity = excluded.rarity, cost = excluded.cost, in_packs = excluded.in_packs, disabled = excluded.disabled,',
   '  content_version = excluded.content_version;',
+  '-- the deck checks know every deck card id (settings card_ids), tokens left out',
+  `update public.settings set value = ${q(JSON.stringify(deckIds))}::jsonb, updated_at = now() where key = 'card_ids';`,
   END,
 ].join('\n');
 

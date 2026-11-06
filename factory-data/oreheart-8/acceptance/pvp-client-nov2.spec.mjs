@@ -877,3 +877,27 @@ test('AC695: server regions (Ken, Nov 5): the lobby lists US East, Central and W
   expect(rc.matchId).toBe(rd.matchId);
   await closeAll(c, d);
 });
+
+test('AC696: Commander copies (Ken, Nov 6): the player picks WHICH Commander copy fights; the server takes a copy he owns (else his best), and the board shows that tier on BOTH screens', async ({ browser }) => {
+  test.setTimeout(120000);
+  const id = uniq();
+  const a = await openAs(browser, 'alice' + id), b = await openAs(browser, 'bob' + id);
+  await atMenu(a); await atMenu(b);
+  // alice owns an Overcharged Grubnak (the mock's collection) and picked it; bob asks for a Mythic Borgo he does not own
+  const own = await (await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/tier?user=${encodeURIComponent('alice' + id)}&card=commander-grubnak&tier=3`)).json();
+  expect(own.ok, 'mock collection: ' + JSON.stringify(own)).toBe(true);
+  await a.evaluate(() => localStorage.setItem('oreheart.cmdTier', JSON.stringify({ grubnak: 3 })));
+  await b.evaluate(() => localStorage.setItem('oreheart.cmdTier', JSON.stringify({ borgo: 5 })));
+  const made = await hook(a, 'create', 'grubnak', 'goblin-warband');
+  expect(made && made.ok, 'create: ' + JSON.stringify(made)).toBe(true);
+  const joined = await hook(b, 'join', made.code, 'borgo', 'dwarf-warband');
+  expect(joined && joined.ok, 'join: ' + JSON.stringify(joined)).toBe(true);
+  await inMatch(b); await inMatch(a);
+  await expect.poll(async () => { const x = await view(a); return x && x.tiers && x.tiers.me ? x.tiers.me['commander-grubnak'] : null; }, { timeout: 8000 }).toBe(3);
+  await expect.poll(async () => { const x = await view(b); return x && x.tiers && x.tiers.them ? x.tiers.them['commander-grubnak'] : null; }, { timeout: 8000 }).toBe(3);
+  expect(((await view(b)).tiers.me || {})['commander-borgo'] || 1, 'a copy he does not own is not granted').toBe(1);
+  // the board: alice's own Commander wears tier 3 and bob's stays Original, on both screens
+  await expect.poll(() => a.evaluate(() => (window.oreheart.commanderTiers ? window.oreheart.commanderTiers() : null)), { timeout: 15000 }).toEqual({ player: 3, opponent: 1 });
+  await expect.poll(() => b.evaluate(() => (window.oreheart.commanderTiers ? window.oreheart.commanderTiers() : null)), { timeout: 15000 }).toEqual({ player: 1, opponent: 3 });
+  await closeAll(a, b);
+});

@@ -69,6 +69,13 @@ const server = http.createServer(async (req, res) => {
     await store.putViews(m, viewsFor(m, []));
     return json(res, 200, { ok: true, uid: c.uid });
   }
+  if (url.pathname === '/debug/tier' && req.method === 'GET' && !url.searchParams.get('matchId')) { // checks only (Nov 6): the player OWNS a copy of that card at that tier (the Commander copy he may fight as)
+    const u = userOf(url.searchParams.get('user'));
+    if (!u) return json(res, 200, { ok: false });
+    const tier = Math.max(1, Math.min(5, Number(url.searchParams.get('tier')) || 5)), card = url.searchParams.get('card');
+    const t = store.tiers.get(u.userId) || {}; t[card] = tier; store.tiers.set(u.userId, t);
+    return json(res, 200, { ok: true, owned: { [card]: tier } });
+  }
   if (url.pathname === '/debug/tier' && req.method === 'GET') { // checks only: one of a player's cards is an upgraded one (tier 2..5) in this match
     const m = await store.getMatch(url.searchParams.get('matchId'));
     const u = users.get(url.searchParams.get('user'));

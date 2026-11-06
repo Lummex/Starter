@@ -10,6 +10,8 @@ import { net } from './state';
 import { getPlayerName } from '../ui/players';
 import { currentRegion, edgeOf, regionPanel, regionById } from './regions';
 import type { App } from '../ui/app';
+import { chosenCommanderTier, setChosenCommanderTier, setCommanderTiersOwned, commanderTiersOwned } from './cmd-tier';
+import { TIER_NAMES } from '../content/card-labels';
 
 type El = HTMLElement;
 type Listener = (state: any, events: any[]) => void;
@@ -529,11 +531,27 @@ function picker() {
     if (mine.length) { const g = h('optgroup', { label: 'My decks' }); for (const { d, i } of mine) g.append(h('option', { value: 'saved:' + i }, d.name)); sel.append(g); }
     sel.value = 'starter:' + warbandOf(fac);
   };
+  // Nov 6 (Ken): which Commander copy fights: the tiers the player owns (by_tier) as a row of choices under the Commanders; hidden with one copy
+  const tierRow = h('div', { class: 'pvp-cmd-tiers', role: 'radiogroup', 'aria-label': 'Commander copy', 'data-testid': 'pvp-cmd-tiers', hidden: true });
+  const fillTiers = () => {
+    const have = commanderTiersOwned(cmd) || [1];
+    tierRow.replaceChildren();
+    tierRow.hidden = have.length < 2;
+    if (have.length < 2) return;
+    const picked = chosenCommanderTier(cmd);
+    tierRow.append(h('span', { class: 'pvp-cmd-tiers-label' }, 'Fight as'));
+    for (const t of have) tierRow.append(h('button', { type: 'button', class: 'pvp-cmd-tier', role: 'radio', 'aria-checked': String(t === picked), 'data-tier': String(t),
+      onclick: () => { setChosenCommanderTier(cmd, t); fillTiers(); } }, `${TIER_NAMES[t]} ${'\u2605'.repeat(t)}`));
+  };
+  if (net.active) void import('./economy').then((m) => m.api.myUpgradeInfo()).then((u) => {
+    for (const id of ids) { const info: any = u?.cards?.['commander-' + id]; const byTier: number[] = Array.isArray(info?.by_tier) ? info.by_tier.map((n: any) => Number(n) || 0) : []; const best = Math.max(1, Math.min(5, Number(info?.best) || 1)); setCommanderTiersOwned(id, [1, 2, 3, 4, 5].filter((t) => (byTier.length ? byTier[t - 1] > 0 : t <= best))); }
+    fillTiers();
+  }).catch(() => {});
   for (const id of ids) {
     const c = (COMMANDERS as any)[id];
     const b = h('button', { type: 'button', class: 'pvp-cmd', role: 'radio', 'aria-checked': String(id === cmd), 'aria-label': c.name, 'data-commander': id, 'data-faction': c.faction, title: c.name },
       h('img', { src: portrait(id), alt: '', draggable: 'false' }), h('span', { class: 'pvp-cmd-name', 'aria-hidden': 'true' }, ({ grubnak: 'Grubnak', sproingle: 'Knobbin', borgo: 'Borgo' } as Record<string, string>)[id] || String(c.name).split(/[ ,]/)[0]));
-    b.addEventListener('click', () => { cmd = id; cmdRow.querySelectorAll('.pvp-cmd').forEach((x) => x.setAttribute('aria-checked', String((x as El).dataset.commander === id))); fillDecks(); sel.dispatchEvent(new Event('deckschanged')); });
+    b.addEventListener('click', () => { cmd = id; cmdRow.querySelectorAll('.pvp-cmd').forEach((x) => x.setAttribute('aria-checked', String((x as El).dataset.commander === id))); fillDecks(); fillTiers(); sel.dispatchEvent(new Event('deckschanged')); });
     cmdRow.append(b);
   }
   fillDecks();
@@ -565,14 +583,15 @@ function picker() {
   deckMenu.addEventListener('focusout', (e: FocusEvent) => { if (!deckMenu.hidden && !deckMenu.contains(e.relatedTarget as Node) && e.relatedTarget !== deckBtn) closeDeck(); });
   sel.addEventListener('deckschanged', showDeck);
   showDeck();
-  const el = h('div', { class: 'pvp-picker' }, cmdRow, h('div', { class: 'pvp-deck-label' }, h('span', {}, 'Deck'), h('div', { class: 'pvp-deck-box' }, deckBtn, deckMenu, sel)));
+  const el = h('div', { class: 'pvp-picker' }, cmdRow, tierRow, h('div', { class: 'pvp-deck-label' }, h('span', {}, 'Deck'), h('div', { class: 'pvp-deck-box' }, deckBtn, deckMenu, sel)));
   return {
     el,
-    value(): { commander: string; deckId?: string; cards?: string[] } {
+    value(): { commander: string; deckId?: string; cards?: string[]; commanderTier?: number } {
       const v = sel.value || '';
+      const commanderTier = chosenCommanderTier(cmd); // Nov 6: the Commander copy to fight as (the server checks he owns it)
       // a saved deck goes by its server id (the server re-reads and re-checks it); its card list only if it has no id
-      if (v.startsWith('saved:')) { const d = net.decks[+v.slice(6)]; if (d) return d.id ? { commander: cmd, deckId: d.id } : { commander: cmd, cards: d.cards.slice() }; }
-      return { commander: cmd, deckId: v.startsWith('starter:') ? v.slice(8) : warbandOf((COMMANDERS as any)[cmd].faction) };
+      if (v.startsWith('saved:')) { const d = net.decks[+v.slice(6)]; if (d) return d.id ? { commander: cmd, deckId: d.id, commanderTier } : { commander: cmd, cards: d.cards.slice(), commanderTier }; }
+      return { commander: cmd, deckId: v.startsWith('starter:') ? v.slice(8) : warbandOf((COMMANDERS as any)[cmd].faction), commanderTier };
     },
   };
 }
@@ -615,12 +634,12 @@ function showQueue(mode: 'ranked' | 'unranked') {
     chips, waiting, h('div', { class: 'pvp-wait-box search' }, timer, avg, anyBox), err, h('div', { class: 'net-actions' }, go, cancel));
   if (lobbyCols) lobbyCols.right.prepend(h('section', { class: 'panel', 'data-testid': 'lobby-army', 'aria-label': 'Your army' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/silver/icon-deck.webp', alt: '' }), 'Your army', h('button', { type: 'button', class: 'more', onclick: () => { void import('../ui/decks').then((m) => m.showDecks(app!)); } }, 'Deck Builder ›')), p.el));
 }
-async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string; deckId?: string; cards?: string[] }, waiting: El, err: El, go: El, cancel: El, timer?: El, avg?: El, anyBox?: El, where?: { region?: string | null; anyRegion?: boolean }): Promise<{ ok: boolean; matchId?: string; error?: string }> {
+async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string; deckId?: string; cards?: string[]; commanderTier?: number }, waiting: El, err: El, go: El, cancel: El, timer?: El, avg?: El, anyBox?: El, where?: { region?: string | null; anyRegion?: boolean }): Promise<{ ok: boolean; matchId?: string; error?: string }> {
   stopQueuePoll();
   // Nov 6 (regions): the queue is per server; `anyRegion` (the player agreed to search all of them) is offered after the server's fallback time
   let anyRegion = !!(where && where.anyRegion);
   const region = (where && where.region) || currentRegion();
-  const body = { mode, commander: pick.commander, ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }), ...(region ? { region } : {}) };
+  const body = { mode, commander: pick.commander, ...(pick.commanderTier != null ? { commanderTier: pick.commanderTier } : {}), ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }), ...(region ? { region } : {}) };
   const bodyNow = () => (anyRegion ? { ...body, anyRegion: true } : body);
   let anyTimer: ReturnType<typeof setTimeout> | null = null;
   let lastQ: any = null; // the newest queue answer: the offer counts who is waiting elsewhere NOW, not at the first poll
@@ -670,9 +689,9 @@ async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string
 }
 
 /** create → the code screen ("Waiting for your friend…", polling `room` every 2 s). */
-export async function makeCode(pick: { commander: string; deckId?: string; cards?: string[] }, practice = false): Promise<{ ok: boolean; code?: string; error?: string }> {
+export async function makeCode(pick: { commander: string; deckId?: string; cards?: string[]; commanderTier?: number }, practice = false): Promise<{ ok: boolean; code?: string; error?: string }> {
   let r: any;
-  try { r = await transport().call('create', { commander: pick.commander, ...(practice ? { practice: true } : {}), ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }) }); }
+  try { r = await transport().call('create', { commander: pick.commander, ...(pick.commanderTier != null ? { commanderTier: pick.commanderTier } : {}), ...(practice ? { practice: true } : {}), ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }) }); }
   catch (e) { return { ok: false, error: friendlyError(e) }; }
   if (!r || !r.ok || !r.code) return { ok: false, error: friendlyError(r?.error || 'Could not make a code') };
   showCode(r.code);
@@ -766,11 +785,11 @@ function joinRefused(err: El, error: string | undefined, code: string) {
 }
 
 /** join → straight into the match. */
-export async function joinCode(code: string, pick: { commander: string; deckId?: string; cards?: string[] }): Promise<{ ok: boolean; matchId?: string; error?: string }> {
+export async function joinCode(code: string, pick: { commander: string; deckId?: string; cards?: string[]; commanderTier?: number }): Promise<{ ok: boolean; matchId?: string; error?: string }> {
   code = cleanCode(code);
   if (!codeOk(code)) return { ok: false, error: 'A code is six letters (there is no I or O).' };
   let r: any;
-  try { r = await transport().call('join', { code, commander: pick.commander, ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }) }); }
+  try { r = await transport().call('join', { code, commander: pick.commander, ...(pick.commanderTier != null ? { commanderTier: pick.commanderTier } : {}), ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }) }); }
   catch (e) { return { ok: false, error: friendlyError(e) }; }
   if (!r || !r.ok || !r.matchId) return { ok: false, error: friendlyError(r?.error || 'Could not join') };
   const ok = await openMatch(r.matchId, r.view);
@@ -809,7 +828,7 @@ export function releaseNetGame(ng: { stop(): void }) { ng.stop(); if (current ==
 // ------------------------------------------------------------------ test hooks (window.oreheart.pvp, test pages only)
 export function pvpHooks() {
   const safe = (f: () => any) => { try { const r: any = f(); return r && typeof r.then === 'function' ? r.catch((e: any) => ({ ok: false, error: String(e?.message || e) })) : r; } catch (e: any) { return { ok: false, error: String(e?.message || e) }; } };
-  const pick = (commander?: string, deckId?: string) => { const c = commander && (COMMANDERS as any)[commander] ? commander : 'grubnak'; return { commander: c, deckId: deckId && STARTER_DECK_LIST.some((d) => d.id === deckId) ? deckId : warbandOf((COMMANDERS as any)[c].faction) }; };
+  const pick = (commander?: string, deckId?: string) => { const c = commander && (COMMANDERS as any)[commander] ? commander : 'grubnak'; return { commander: c, deckId: deckId && STARTER_DECK_LIST.some((d) => d.id === deckId) ? deckId : warbandOf((COMMANDERS as any)[c].faction), commanderTier: chosenCommanderTier(c) }; };
   const none = () => Promise.resolve({ ok: false, error: 'No match' });
   return {
     create: (commander?: string, deckId?: string, practice?: boolean) => safe(() => makeCode(pick(commander, deckId), practice === true)),

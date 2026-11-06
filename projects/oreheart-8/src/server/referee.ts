@@ -8,7 +8,7 @@ import { presentFor, realAction } from '../engine/view';
 
 export type Seat = 'a' | 'b';
 export interface PlayerInfo { userId: string; username: string; avatar: string | null }
-export interface DeckChoice { commander: string; cards: string[] | null; deckId: string | null; tiers?: number[] | null /* Nov 5: each slot's copy tier, parallel to cards */ }
+export interface DeckChoice { commander: string; cards: string[] | null; deckId: string | null; tiers?: number[] | null /* Nov 5: each slot's copy tier, parallel to cards */; commanderTier?: number | null /* Nov 6: the Commander copy (tier) the player asked to fight as; the store checks he owns one */ }
 export interface Rules { phaseSeconds: number; bankSeconds: number; respondSeconds: number; timeoutsToForfeit: number; mulliganSeconds?: number; respondMinSeconds?: number; attackMode?: 'armed' | 'window' }
 export const DEFAULT_RULES: Rules = { phaseSeconds: 120, bankSeconds: 60, respondSeconds: 12, timeoutsToForfeit: 3, respondMinSeconds: 2 };
 export interface Clock {

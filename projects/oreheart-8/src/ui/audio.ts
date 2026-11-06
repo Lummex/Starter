@@ -2,7 +2,7 @@
 // Oct 31 (Ken: "upgrade the sound"): effects play Brush's files in /audio/sfx/ (studio/sound-spec.json); the old synthesized
 // sound plays until a file has loaded (or if it fails to decode). Voices (voiceLine) stay synthesized.
 // Oct 31 (Ken: "realistic punches"): every bonk / clink / Commander hit also plays a punch layer (punch-*.ogg, PUNCH_FOR).
-const LS = (k: string, d: number) => { const v = parseInt(localStorage.getItem(k) || '', 10); return isNaN(v) ? d : Math.max(0, Math.min(100, v)); };
+const LS = (k: string, d: number) => { const v = parseInt((typeof localStorage !== 'undefined' ? localStorage.getItem(k) : '') || '', 10); return isNaN(v) ? d : Math.max(0, Math.min(100, v)); };
 
 /** One sound event: its files in /audio/sfx/ (random pick when several), base volume, random pitch range (+/- semitones). */
 type SfxDef = { files: string[]; vol: number; st: number };
@@ -33,7 +33,7 @@ export const SHOT_SOUNDS: Record<string, { fire: string; hit?: string }> = {
 /** Which punch layer goes under which hit sound: bonk = unarmoured hit, clink = armoured hit, stronghold = a Commander hit. */
 export const PUNCH_FOR: Record<string, string> = { bonk: 'punch', clink: 'punch-armour', stronghold: 'punch-heavy' };
 /** All 13 spells have their own file, started together with the spell FX. */
-export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-rush', 'battle-cry', 'healing-light', 'shield-bubble', 'second-wind', 'prospectors-prayer', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex'];
+export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-rush', 'battle-cry', 'healing-light', 'shield-bubble', 'second-wind', 'prospectors-prayer', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex', 'chain-lightning', 'sooey-hog-call', 'stand-fast-lads' /* Nov 6: Brush's sounds for the three new spells */];
 for (const id of SPELL_SOUNDS) SFX['spell:' + id] = D('spell-' + id, 1, 0);
 const OLD_SPELL: Record<string, string> = { fireball: 'fireball', 'meteor-strike': 'meteor', 'healing-light': 'heal', 'second-wind': 'heal', 'shield-bubble': 'bubble' };
 const MAX_VOICES = 3;

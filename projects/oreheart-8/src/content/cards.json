@@ -313,7 +313,10 @@
    "x": -1.9,
    "y": -8.7
   },
-  "costOverride": null
+  "costOverride": null,
+  "tags": [
+   "automaton"
+  ]
  },
  {
   "id": "gnome-illusionist",
@@ -416,7 +419,10 @@
    "y": 2.1
   },
   "flavor": "Four arms, four pickaxes, zero breaks.",
-  "costOverride": null
+  "costOverride": null,
+  "tags": [
+   "automaton"
+  ]
  },
  {
   "id": "dwarf-miner",
@@ -1334,7 +1340,10 @@
    "y": -2.8
   },
   "wall": true,
-  "costOverride": null
+  "costOverride": null,
+  "tags": [
+   "automaton"
+  ]
  },
  {
   "id": "runic-siphoner",
@@ -1526,5 +1535,785 @@
    "y": -8.2
   },
   "costOverride": null
+ },
+ {
+  "id": "mama-grubsnout",
+  "name": "Mama Grubsnout, Brood Mother",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 7,
+  "attack": 3,
+  "health": 6,
+  "move": 5,
+  "abilities": [
+   "brood"
+  ],
+  "unique": true,
+  "text": "Brood (2 crystals, Deploy phase, any number of times): put a Piglet on an empty space next to her. Max 4 Piglets. Your Piglets get +1 Health.",
+  "shortText": "Brood (2 crystals, Deploy phase, any number of times): put a Piglet on an empty space next to her. Max 4 Piglets. Your Piglets get +1 Health.",
+  "longText": "Fighter creature. Cost 7, Attack 3, Health 6, Movement 5. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Brood: in your Deploy phase pay 2 crystals to put a Piglet token (1 Attack, 1 Health, 3 feet) on an empty space next to her, as many times as you can pay, up to 4 Piglets on your side. Piglets are tokens: they appear in play, never in a deck, and vanish when defeated. While she is on the field your Piglets have +1 Health. Example: Turn 3: she comes out, you pay 2 twice, and two 1/2 Piglets squeal beside her.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "pox-doctor-ratsbane",
+  "name": "Pox Doctor Ratsbane",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 5,
+  "move": 4,
+  "abilities": [
+   "ranged",
+   "poxDoctor"
+  ],
+  "unique": true,
+  "text": "Ranged 4. Her hits Poison 3. Poisoned enemies have -1 Attack. Your Venom Shivs and Poison deal double damage.",
+  "shortText": "Ranged 4. Her hits Poison 3. Poisoned enemies have -1 Attack. Your Venom Shivs and Poison deal double damage.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 5, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 4: she shoots the first unit up to 4 spaces away in a straight line. A hit that lands poisons the target for 3 turns (1 damage at the start of each of its turns, no healing; stacks like Venom Shiv, up to 3 a turn). While she is on the field every poisoned enemy has -1 Attack, and every poison tick against the enemy deals double. Example: A Venom Shiv on a Shieldbeard ticks for 2 a turn instead of 1, and the Shieldbeard swings with 0 Attack.",
+  "costOverride": null,
+  "placeholder": true,
+  "range": 4,
+  "poisonHit": 3
+ },
+ {
+  "id": "sooey-hog-call",
+  "name": "Sooey! Hog Call",
+  "type": "spell",
+  "faction": "goblins",
+  "rarity": "Collector",
+  "spellKind": "regular",
+  "cost": 5,
+  "effect": "hogCall",
+  "params": {
+   "token": "piglet"
+  },
+  "text": "Spell. Put a Piglet on every empty space around one mine you own (up to 8). Ignores the Piglet limit this turn. They can't act this turn.",
+  "shortText": "Spell. Put a Piglet on every empty space around one mine you own (up to 8). Ignores the Piglet limit this turn. They can't act this turn.",
+  "longText": "Regular spell, cast in your Deploy phase. Pick a mine your side owns right now: a Piglet token appears on every empty space around it, up to 8, even past the 4-Piglet limit. The new Piglets can't move or attack this turn. Example: Your Miners hold the middle mine with 6 free spaces around it: six Piglets pour out and the mine is yours for good.",
+  "placeholder": true
+ },
+ {
+  "id": "snot-sergeant-gurk",
+  "name": "Snot Sergeant Gurk",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Ultra Rare",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 2,
+  "health": 4,
+  "move": 4,
+  "abilities": [
+   "drillSergeant"
+  ],
+  "unique": false,
+  "text": "Piglets within 2 spaces get +1 Attack and can act the turn they appear.",
+  "shortText": "Piglets within 2 spaces get +1 Attack and can act the turn they appear.",
+  "longText": "Fighter creature. Cost 4, Attack 2, Health 4, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Every Piglet (tokens and the Runt Piglet) within 2 spaces of him has +1 Attack, and a Piglet that appears within 2 spaces of him may move and attack that same turn (Sooey! Hog Call Piglets still wait a turn). Example: Mama Grubsnout broods a Piglet next to Gurk: it is a 2/2 and charges straight away.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "fizzwick-fuse-lighter",
+  "name": "Fizzwick the Fuse-Lighter",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Ultra Rare",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 2,
+  "health": 3,
+  "move": 4,
+  "abilities": [
+   "fuseLighter"
+  ],
+  "unique": false,
+  "text": "Your Ka-booms deal +1 damage. When a friendly Goblin or Piglet is defeated next to him, it Ka-booms for 1.",
+  "shortText": "Your Ka-booms deal +1 damage. When a friendly Goblin or Piglet is defeated next to him, it Ka-booms for 1.",
+  "longText": "Fighter creature. Cost 4, Attack 2, Health 3, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Every Ka-boom on your side (SewerSlide Bomber, Bang-Snap Imp, Rocket Rider blasts) deals 1 more damage to everything it hits. When a Goblin or Piglet of yours without a Ka-boom of its own is defeated next to Fizzwick, it explodes anyway: 1 damage to every unit around it, friend or foe. Example: A Piglet dies beside Fizzwick: the two enemies next to it each take 1.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "junk-catapult-crew",
+  "name": "Junk Catapult Crew",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 1,
+  "health": 4,
+  "move": 3,
+  "abilities": [
+   "ranged",
+   "fling"
+  ],
+  "unique": false,
+  "text": "Ranged 4. Fling (1 crystal, once per turn): throw an adjacent Piglet up to 5 spaces onto an empty space; it can attack this turn.",
+  "shortText": "Ranged 4. Fling (1 crystal, once per turn): throw an adjacent Piglet up to 5 spaces onto an empty space; it can attack this turn.",
+  "longText": "Fighter creature. Cost 3, Attack 1, Health 4, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 4. Fling: once per turn pay 1 crystal to throw a Piglet (token or Runt Piglet) standing next to the crew onto any empty space within 5 spaces of the Piglet. The flung Piglet may still attack this turn, even if it just appeared. Example: Fling a fresh Piglet to the square beside the enemy Commander and bite for 1 (2 with Gurk nearby).",
+  "costOverride": null,
+  "placeholder": true,
+  "range": 4
+ },
+ {
+  "id": "grease-gremlin",
+  "name": "Grease Gremlin",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 2,
+  "health": 3,
+  "move": 3,
+  "abilities": [
+   "greaser"
+  ],
+  "unique": false,
+  "text": "Adjacent Goblins have Sneaky (no strike back).",
+  "shortText": "Adjacent Goblins have Sneaky (no strike back).",
+  "longText": "Fighter creature. Cost 3, Attack 2, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Every Goblin of yours standing next to the Gremlin is Sneaky: enemies it attacks in melee cannot strike back. Example: A Snotskull Grunt beside the Gremlin hits a Shieldbeard and walks away unhurt.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "bogwater-brewer",
+  "name": "Bogwater Brewer",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 1,
+  "health": 3,
+  "move": 3,
+  "abilities": [
+   "brewPoison"
+  ],
+  "unique": false,
+  "text": "Pay 1: an adjacent Goblin's hits Poison 2 this turn.",
+  "shortText": "Pay 1: an adjacent Goblin's hits Poison 2 this turn.",
+  "longText": "Fighter creature. Cost 3, Attack 1, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Pay 1 crystal (once per turn): pick a Goblin of yours standing next to the Brewer. Until the end of the turn every attack it lands poisons the target for 2 turns. Example: Ladle soup onto a Shiv Rat, then stab a Miner: the Miner is poisoned for 2 turns.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "runt-piglet",
+  "name": "Runt Piglet",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 1,
+  "attack": 1,
+  "health": 1,
+  "move": 3,
+  "abilities": [],
+  "unique": false,
+  "text": "Counts as a Piglet. Tiny, loud, expendable.",
+  "shortText": "Counts as a Piglet. Tiny, loud, expendable.",
+  "longText": "Fighter creature. Cost 1, Attack 1, Health 1, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Piglet card you can put in a deck: everything that helps Piglets (Sergeant Gurk, the Junk Catapult, Mama Grubsnout's +1 Health) helps it too. Example: Next to Sergeant Gurk it is a 2/1 that attacks the turn it is played.",
+  "costOverride": null,
+  "placeholder": true,
+  "tags": [
+   "piglet"
+  ]
+ },
+ {
+  "id": "bang-snap-imp",
+  "name": "Bang-Snap Imp",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 1,
+  "health": 1,
+  "move": 3,
+  "abilities": [
+   "kaboom1"
+  ],
+  "unique": false,
+  "text": "Ka-boom: 1 damage to every adjacent unit, friend or foe, when defeated.",
+  "shortText": "Ka-boom: 1 damage to every adjacent unit, friend or foe, when defeated.",
+  "longText": "Fighter creature. Cost 2, Attack 1, Health 1, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). When it is defeated it explodes: 1 damage to every unit around it, friend or foe (2 with Fizzwick the Fuse-Lighter on your side). Example: Run it into a crowd of Miners and let them kill it.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "sludge-lobber",
+  "name": "Sludge Lobber",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 1,
+  "health": 2,
+  "move": 3,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged 3. Its hits Poison 1.",
+  "shortText": "Ranged 3. Its hits Poison 1.",
+  "longText": "Fighter creature. Cost 2, Attack 1, Health 2, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 3: it shoots the first unit up to 3 spaces away in a straight line. A hit that lands poisons the target for 1 turn. Example: Two Lobbers plinking the same Shieldbeard stack the poison to 2 a turn.",
+  "costOverride": null,
+  "placeholder": true,
+  "range": 3,
+  "poisonHit": 1
+ },
+ {
+  "id": "wispmother-tallulah",
+  "name": "Wispmother Tallulah",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 3,
+  "health": 5,
+  "move": 4,
+  "abilities": [
+   "spark"
+  ],
+  "unique": true,
+  "text": "Spark (1 crystal, Deploy phase, any number of times): put a Spark Wisp next to her. Max 3 Wisps. Your Wisps' spell discount is 2 instead of 1.",
+  "shortText": "Spark (1 crystal, Deploy phase, any number of times): put a Spark Wisp next to her. Max 3 Wisps. Your Wisps' spell discount is 2 instead of 1.",
+  "longText": "Fighter creature. Cost 5, Attack 3, Health 5, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Spark: in your Deploy phase pay 1 crystal to put a Spark Wisp token (1 Attack, 1 Health, 3 feet) on an empty space next to her, up to 3 Wisps on your side. When a Wisp of yours leaves the board, your next spell this turn costs 1 less (2 less while she is on the field; never below 1). Example: Pop three Wisps with the Soul Stone Siphoner and Starfall Cataclysm costs 1.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "jinxmaster-wobblewick",
+  "name": "Grand Jinxmaster Wobblewick",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 5,
+  "move": 4,
+  "abilities": [
+   "ranged",
+   "jinxmaster"
+  ],
+  "unique": true,
+  "text": "Ranged 4. Every enemy your spells damage becomes Jinxed. At the end of your turn, each Jinxed enemy within 4 spaces takes 1 damage.",
+  "shortText": "Ranged 4. Every enemy your spells damage becomes Jinxed. At the end of your turn, each Jinxed enemy within 4 spaces takes 1 damage.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 5, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 4. While he is on the field, every enemy creature one of your spells damages becomes Jinxed: -1 Attack and +1 damage from spells until the start of its owner's next turn. At the end of each of your turns every Jinxed enemy within 4 spaces of him takes 1 damage. Example: Searing Arcane Orb hits a wall for 3, Jinxes it, and it takes 1 more at the end of the turn.",
+  "costOverride": null,
+  "placeholder": true,
+  "range": 4
+ },
+ {
+  "id": "chain-lightning",
+  "name": "Chain Lightning Lollapalooza",
+  "type": "spell",
+  "faction": "gnomes",
+  "rarity": "Ultra Rare",
+  "spellKind": "regular",
+  "cost": 4,
+  "effect": "chainLightning",
+  "params": {
+   "amount": 3,
+   "jump": 2
+  },
+  "text": "Spell. 3 damage to an enemy. If it was Jinxed, the lightning jumps: 2 damage to every enemy next to it.",
+  "shortText": "Spell. 3 damage to an enemy. If it was Jinxed, the lightning jumps: 2 damage to every enemy next to it.",
+  "longText": "Regular spell, cast in your Deploy phase. One enemy creature takes 3 damage (4 if it is Jinxed). If the target was Jinxed the bolt jumps on: every enemy next to it takes 2 damage (3 if Jinxed too). Example: A Hexbolt Tinker Jinxes a Miner in a crowd; the Lollapalooza hits it for 4 and the three neighbours for 2 each.",
+  "placeholder": true
+ },
+ {
+  "id": "hexfuse-battery-golem",
+  "name": "Hexfuse Battery Golem",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Ultra Rare",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 3,
+  "health": 5,
+  "move": 4,
+  "abilities": [
+   "armored",
+   "batteryCharge"
+  ],
+  "unique": false,
+  "text": "Automaton. Armored. Each spell you cast this turn gives it +1 Attack this turn (max +3).",
+  "shortText": "Automaton. Armored. Each spell you cast this turn gives it +1 Attack this turn (max +3).",
+  "longText": "Fighter creature. Cost 5, Attack 3, Health 5, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). An Automaton. Armored: rolls one extra block die (3 at most). Every spell you cast this turn charges it: +1 Attack until the end of the turn, up to +3. Example: Cast two cheap spells, then swing with 5 Attack.",
+  "costOverride": null,
+  "placeholder": true,
+  "tags": [
+   "automaton"
+  ]
+ },
+ {
+  "id": "rune-scribe-nimbletoe",
+  "name": "Rune-Scribe Nimbletoe",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Ultra Rare",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 2,
+  "health": 3,
+  "move": 4,
+  "abilities": [
+   "ranged",
+   "runeSpark"
+  ],
+  "unique": false,
+  "text": "Ranged 5. Whenever you cast a spell, she fires a free spark: 1 damage to one Jinxed enemy in range.",
+  "shortText": "Ranged 5. Whenever you cast a spell, she fires a free spark: 1 damage to one Jinxed enemy in range.",
+  "longText": "Fighter creature. Cost 4, Attack 2, Health 3, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 5. Each time you cast a spell she fires a free spark at one Jinxed enemy she could shoot (a straight line, up to 5 spaces, nothing in between): 1 damage, no dice. Example: Jinx a wounded Pickman with the Tinker, cast any spell, and the spark finishes it.",
+  "costOverride": null,
+  "placeholder": true,
+  "range": 5
+ },
+ {
+  "id": "lens-grinder-lorelei",
+  "name": "Lens Grinder Lorelei",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 1,
+  "health": 4,
+  "move": 3,
+  "abilities": [
+   "lensGrinder"
+  ],
+  "unique": false,
+  "text": "Your Ranged allies within 2 spaces shoot 2 spaces further.",
+  "shortText": "Your Ranged allies within 2 spaces shoot 2 spaces further.",
+  "longText": "Fighter creature. Cost 3, Attack 1, Health 4, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Every Ranged creature of yours within 2 spaces of her shoots 2 spaces further than its printed range (a Thunderwing Gyronaut 2 becomes 4). Example: A Stormcaller Savant beside her reaches the enemy Commander from across the mines.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "hexbolt-tinker",
+  "name": "Hexbolt Tinker",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 1,
+  "health": 3,
+  "move": 3,
+  "abilities": [
+   "ranged",
+   "jinxHit"
+  ],
+  "unique": false,
+  "text": "Ranged 4. Its hits Jinx the target.",
+  "shortText": "Ranged 4. Its hits Jinx the target.",
+  "longText": "Fighter creature. Cost 3, Attack 1, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 4. A hit that lands Jinxes the target: -1 Attack and +1 damage from spells until the start of its owner's next turn. Example: Tinker first, then Chain Lightning Lollapalooza jumps through the whole crowd.",
+  "costOverride": null,
+  "placeholder": true,
+  "range": 4
+ },
+ {
+  "id": "spark-caddy",
+  "name": "Spark Caddy",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Uncommon",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 2,
+  "health": 3,
+  "move": 3,
+  "abilities": [
+   "sparkCaddy"
+  ],
+  "unique": false,
+  "text": "Adjacent Wisps have Ranged 2.",
+  "shortText": "Adjacent Wisps have Ranged 2.",
+  "longText": "Fighter creature. Cost 3, Attack 2, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Every Wisp (token or Stray Spark Wisp) of yours standing next to the Caddy may shoot instead of biting: Ranged 2, no strike back. Example: Three Wisps around the Caddy zap a Miner from two spaces away without getting bitten.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "stray-spark-wisp",
+  "name": "Stray Spark Wisp",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 1,
+  "attack": 1,
+  "health": 1,
+  "move": 3,
+  "abilities": [],
+  "unique": false,
+  "text": "Counts as a Spark Wisp: when it leaves the board, your next spell this turn costs 1 less (min 1).",
+  "shortText": "Counts as a Spark Wisp: when it leaves the board, your next spell this turn costs 1 less (min 1).",
+  "longText": "Fighter creature. Cost 1, Attack 1, Health 1, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Wisp card you can put in a deck. When it is defeated or sacrificed, your next spell this turn costs 1 less (2 less with Wispmother Tallulah; never below 1). Example: Sacrifice it to the Soul Stone Siphoner: +1 Bank, and Searing Arcane Orb costs 2.",
+  "costOverride": null,
+  "placeholder": true,
+  "tags": [
+   "wisp"
+  ]
+ },
+ {
+  "id": "hex-cadet",
+  "name": "Hex Cadet",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 2,
+  "health": 2,
+  "move": 3,
+  "abilities": [
+   "hexCadet"
+  ],
+  "unique": false,
+  "text": "+1 Attack against Jinxed enemies.",
+  "shortText": "+1 Attack against Jinxed enemies.",
+  "longText": "Fighter creature. Cost 2, Attack 2, Health 2, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). It swings with +1 Attack when the enemy it attacks is Jinxed. Example: Against a Tinker-Jinxed Miner it hits with 3.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "ratchet-runt",
+  "name": "Ratchet Runt",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 1,
+  "health": 2,
+  "move": 3,
+  "abilities": [
+   "ratchet"
+  ],
+  "unique": false,
+  "text": "+1 Attack while next to an Automaton.",
+  "shortText": "+1 Attack while next to an Automaton.",
+  "longText": "Fighter creature. Cost 2, Attack 1, Health 2, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). +1 Attack while it stands next to one of your Automatons (Silver Scarab, Gearward Sentinel, Overclocked Aethervein, Hexfuse Battery Golem). Example: Riding beside the Scarab it bites for 2.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "engineer-cogsworth",
+  "name": "Engineer Cogsworth Hammerhand",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 5,
+  "attack": 2,
+  "health": 6,
+  "move": 4,
+  "abilities": [
+   "build"
+  ],
+  "unique": true,
+  "text": "Build (2 crystals, Deploy phase, once per turn): put a Clockwork Mule next to him. Max 3 Mules. Mules next to him mine +1.",
+  "shortText": "Build (2 crystals, Deploy phase, once per turn): put a Clockwork Mule next to him. Max 3 Mules. Mules next to him mine +1.",
+  "longText": "Fighter creature. Cost 5, Attack 2, Health 6, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Build: once per turn in your Deploy phase pay 2 crystals to put a Clockwork Mule token next to him, up to 3 Mules on your side. A Mule is a Miner with 0 Attack and 2 Health: it mines 2 (3 while next to Cogsworth), never attacks, can't be upgraded and vanishes when defeated. Example: Three turns later three Mules chew on the mines and you never spent a Miner card.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "forgemaster-hildegrim",
+  "name": "Forgemaster Hildegrim Ashbeard",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Collector",
+  "role": "Fighter",
+  "cost": 7,
+  "attack": 3,
+  "health": 6,
+  "move": 5,
+  "abilities": [
+   "forgemaster"
+  ],
+  "unique": true,
+  "text": "Whenever you upgrade a Dwarf, every other Dwarf next to it gets +1 Health for good too (counts toward the 3-upgrade cap). Dwarves with a Smith upgrade have Armored.",
+  "shortText": "Whenever you upgrade a Dwarf, every other Dwarf next to it gets +1 Health for good too (counts toward the 3-upgrade cap). Dwarves with a Smith upgrade have Armored.",
+  "longText": "Fighter creature. Cost 7, Attack 3, Health 6, Movement 5. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). While he is on the field every Miner upgrade you play on a Dwarf also gives each Dwarf next to it +1 Health for good (it counts as one of that Dwarf's 3 upgrades), and every Dwarf of yours that has taken a Smith upgrade is Armored (one extra block die, 3 at most). Example: Play an Anvilsworn Miner onto a Shieldbeard in a wall: the Shieldbeard is a 2/7 Armored and its two neighbours gain a Health each.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "stand-fast-lads",
+  "name": "Stand Fast, Lads!",
+  "type": "spell",
+  "faction": "dwarves",
+  "rarity": "Collector",
+  "spellKind": "instant",
+  "cost": 6,
+  "effect": "standFast",
+  "params": {},
+  "text": "Instant. Until your next turn, your Dwarves can't be moved or knocked back, take at most 1 damage from any attack or spell, and strike back with +1 Attack.",
+  "shortText": "Instant. Until your next turn, your Dwarves can't be moved or knocked back, take at most 1 damage from any attack or spell, and strike back with +1 Attack.",
+  "longText": "Instant: play it in your turn or when you respond. Until the start of your next turn every Dwarf of yours is planted: nothing can knock, bowl, shove or lift it, no attack or spell deals it more than 1 damage, and it strikes back with +1 Attack. Example: The enemy charges your wall: every attack does 1 and every strike-back hits harder.",
+  "placeholder": true
+ },
+ {
+  "id": "shieldwall-sergeant-brasha",
+  "name": "Shieldwall Sergeant Brasha",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Ultra Rare",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 2,
+  "health": 4,
+  "move": 4,
+  "abilities": [
+   "shieldwall"
+  ],
+  "unique": false,
+  "text": "Walls within 2 spaces get +1 Attack and walk 3.",
+  "shortText": "Walls within 2 spaces get +1 Attack and walk 3.",
+  "longText": "Fighter creature. Cost 4, Attack 2, Health 4, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Every Wall of yours (Riot Shield Bearer, Ironwall Shieldbeard, Ironjaw Big Back, Gearward Sentinel, Shield Cadet) within 2 spaces of her at the start of your turn walks 3 that turn, and Walls within 2 spaces of her swing with +1 Attack. Example: Four 1/6 walls become 2/6 walls that march three squares.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "master-smith-durga",
+  "name": "Master Smith Durga Ironthumb",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Ultra Rare",
+  "role": "Smith",
+  "cost": 4,
+  "attack": 1,
+  "health": 4,
+  "move": 1,
+  "abilities": [
+   "smith",
+   "masterSmith"
+  ],
+  "unique": false,
+  "text": "Smith Miner (mines 2). Your Smith upgrades give +2 Attack instead of +1. Pay 2, once per turn: upgrade an adjacent Dwarf (+1 Attack, +1 Health) without a card.",
+  "shortText": "Smith Miner (mines 2). Your Smith upgrades give +2 Attack instead of +1. Pay 2, once per turn: upgrade an adjacent Dwarf (+1 Attack, +1 Health) without a card.",
+  "longText": "Smith Miner creature. Cost 4, Attack 1, Health 4, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Smith Miner: mines 2, and can be played onto a creature as an upgrade. While she is on the field every Smith card you play as an upgrade gives +2 Attack and +1 Health. Forge Touch: once per turn pay 2 crystals to give a Dwarf next to her +1 Attack and +1 Health for good (it counts toward its 3 upgrades). Example: Durga and an Anvilsworn Miner turn a Hammerhand Apprentice into a 5/3 in one turn.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "grumble-drummer",
+  "name": "Grumble Drummer",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 3,
+  "attack": 1,
+  "health": 4,
+  "move": 3,
+  "abilities": [
+   "drummer"
+  ],
+  "unique": false,
+  "text": "Dwarves next to him walk 1 further (walls too).",
+  "shortText": "Dwarves next to him walk 1 further (walls too).",
+  "longText": "Fighter creature. Cost 3, Attack 1, Health 4, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Every Dwarf fighter of yours standing next to him at the start of your turn gets 1 extra move point that turn (Miners keep their 1). Example: The walls beside him shuffle 3 squares instead of 2.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "mule-wrangler-nessa",
+  "name": "Mule Wrangler Nessa",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Rare",
+  "role": "Fighter",
+  "cost": 4,
+  "attack": 2,
+  "health": 4,
+  "move": 4,
+  "abilities": [
+   "wrangler"
+  ],
+  "unique": false,
+  "text": "Clockwork Mules within 2 spaces mine +1 and can't be knocked back.",
+  "shortText": "Clockwork Mules within 2 spaces mine +1 and can't be knocked back.",
+  "longText": "Fighter creature. Cost 4, Attack 2, Health 4, Movement 4. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Every Clockwork Mule of yours within 2 spaces of her mines 3 instead of 2 (not 4 with Cogsworth too) and nothing can knock it back, bowl it or shove it. Example: A Door Splitter crashes into the mule line and nothing moves.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "stonebreaker-miner",
+  "name": "Stonebreaker Miner",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Gatherer",
+  "cost": 1,
+  "attack": 1,
+  "health": 1,
+  "move": 1,
+  "abilities": [
+   "gather",
+   "tunnel"
+  ],
+  "unique": false,
+  "text": "Mines 2. Can Tunnel. +1 Health upgrade. Can't attack the turn it's played.",
+  "shortText": "Mines 2. Can Tunnel. +1 Health upgrade. Can't attack the turn it's played.",
+  "longText": "Miner creature. Cost 1, Attack 1, Health 1, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). The dwarves' plain Miner. Mines 2 crystals from a mine it stands next to; can Tunnel straight onto a space beside a mine your side owns; played onto one of your creatures instead it gives +1 Health. Can't attack the turn it is played. Example: Turn 1: tunnel it beside your mine and dig.",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "shield-cadet",
+  "name": "Shield Cadet",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 1,
+  "health": 3,
+  "move": 3,
+  "abilities": [],
+  "unique": false,
+  "text": "Counts as a Wall. Little shield, big dreams.",
+  "shortText": "Counts as a Wall. Little shield, big dreams.",
+  "longText": "Fighter creature. Cost 2, Attack 1, Health 3, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A Wall for Sergeant Brasha, Stand Fast, Lads! and the Grumble Drummer, at a third of the price. Example: Beside Brasha it is a 2/3 that walks 3.",
+  "costOverride": null,
+  "placeholder": true,
+  "tags": [
+   "wall"
+  ]
+ },
+ {
+  "id": "pebble-tosser",
+  "name": "Pebble Tosser",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 1,
+  "health": 2,
+  "move": 3,
+  "abilities": [
+   "ranged"
+  ],
+  "unique": false,
+  "text": "Ranged 3.",
+  "shortText": "Ranged 3.",
+  "longText": "Fighter creature. Cost 2, Attack 1, Health 2, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). Ranged 3: it shoots the first unit up to 3 spaces away in a straight line. No strike back. Example: Stand it behind the wall and plink.",
+  "costOverride": null,
+  "placeholder": true,
+  "range": 3
+ },
+ {
+  "id": "hammerhand-apprentice",
+  "name": "Hammerhand Apprentice",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 2,
+  "attack": 2,
+  "health": 2,
+  "move": 3,
+  "abilities": [
+   "eager"
+  ],
+  "unique": false,
+  "text": "The first time it's upgraded, it gets +1 Attack extra.",
+  "shortText": "The first time it's upgraded, it gets +1 Attack extra.",
+  "longText": "Fighter creature. Cost 2, Attack 2, Health 2, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). The first Miner upgrade played on it gives +1 Attack on top of the usual bonus. Example: An Anvilsworn Miner on a fresh Apprentice makes it a 4/3 (5/3 with Durga).",
+  "costOverride": null,
+  "placeholder": true
+ },
+ {
+  "id": "piglet",
+  "name": "Piglet",
+  "type": "creature",
+  "faction": "goblins",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 1,
+  "attack": 1,
+  "health": 1,
+  "move": 3,
+  "abilities": [],
+  "unique": false,
+  "text": "Token. A vicious little tusked piglet. Counts as a Goblin and a Piglet. Vanishes when defeated.",
+  "shortText": "Token. A vicious little tusked piglet. Counts as a Goblin and a Piglet. Vanishes when defeated.",
+  "longText": "Fighter creature. Cost 1, Attack 1, Health 1, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A token: it appears in play (Mama Grubsnout, Sooey! Hog Call), never in a deck or a pack, can't be upgraded, and vanishes when defeated. It counts as a Goblin for Rally, the Junk Shaman and the Grease Gremlin. It can't act the turn it appears unless Sergeant Gurk is near. Example: Four Piglets around Sergeant Gurk are four 2/1 biters.",
+  "costOverride": null,
+  "placeholder": true,
+  "tags": [
+   "piglet"
+  ],
+  "token": true,
+  "tokenCost": 2,
+  "tokenMax": 4
+ },
+ {
+  "id": "spark-wisp",
+  "name": "Spark Wisp",
+  "type": "creature",
+  "faction": "gnomes",
+  "rarity": "Common",
+  "role": "Fighter",
+  "cost": 1,
+  "attack": 1,
+  "health": 1,
+  "move": 3,
+  "abilities": [],
+  "unique": false,
+  "text": "Token. When it leaves the board, your next spell this turn costs 1 less (min 1). Vanishes when defeated.",
+  "shortText": "Token. When it leaves the board, your next spell this turn costs 1 less (min 1). Vanishes when defeated.",
+  "longText": "Fighter creature. Cost 1, Attack 1, Health 1, Movement 3. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A token: it appears in play (Wispmother Tallulah), never in a deck or a pack, can't be upgraded, and vanishes when defeated. When it is defeated or sacrificed, your next spell this turn costs 1 less (2 less with Tallulah; never below 1). It can't act the turn it appears. Example: Feed it to the Soul Stone Siphoner before a big spell.",
+  "costOverride": null,
+  "placeholder": true,
+  "tags": [
+   "wisp"
+  ],
+  "token": true,
+  "tokenCost": 1,
+  "tokenMax": 3
+ },
+ {
+  "id": "clockwork-mule",
+  "name": "Clockwork Mule",
+  "type": "creature",
+  "faction": "dwarves",
+  "rarity": "Common",
+  "role": "Gatherer",
+  "cost": 1,
+  "attack": 0,
+  "health": 2,
+  "move": 1,
+  "abilities": [
+   "noAttack"
+  ],
+  "unique": false,
+  "text": "Token. A Miner that mines 2 (3 next to Cogsworth or Nessa). Can't attack. Vanishes when defeated.",
+  "shortText": "Token. A Miner that mines 2 (3 next to Cogsworth or Nessa). Can't attack. Vanishes when defeated.",
+  "longText": "Miner creature. Cost 1, Attack 0, Health 2, Movement 1. Summon it in your Deploy phase onto an empty back-row space (the row in front once the back row is full). A token: it appears in play (Engineer Cogsworth), never in a deck or a pack, can't be upgraded, and vanishes when defeated. It is a Miner: it mines 2 crystals (3 while next to Cogsworth or within 2 of Mule Wrangler Nessa, not both), counts for mine colour, walks 1 and never attacks. Example: Two Mules on the middle mine bring in 4 a turn.",
+  "costOverride": null,
+  "placeholder": true,
+  "tags": [
+   "mule"
+  ],
+  "token": true,
+  "tokenCost": 2,
+  "tokenMax": 3
  }
 ]

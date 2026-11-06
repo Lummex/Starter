@@ -1,5 +1,6 @@
 import { arenaOpts } from './arena-fx';
 import { mineEmblemUrl, ohCardEl, ohBackEl, commanderCard, TIER_NAMES } from './cardfmt';
+import { chosenCommanderTier, setChosenCommanderTier, setCommanderTiersOwned } from '../net/cmd-tier';
 import { recapLines, type RecapTurn } from './recap';
 import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
@@ -8,6 +9,7 @@ import type { NetGame } from '../net/pvp';
 import ownerLayoutJson0 from '../content/owner-layout.json';
 import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost, hasMovesLeft, incomePreview, readyMinersAt, junkBonus, maxMove, isActed, mineTargets, funds, respondNeeds, sitesControlled, isMiner, other, ABILITY_COST, bankNeeded, movedThisPhase, shamanLiftTargets, shamanLandingSquares, shamanLiftAction, MULLIGAN_REDRAWS } from '../engine';
 import { SPELL_VISUALS } from '../content/spell-visuals';
+import { SPELL_FX_SPEC } from './spell-fx'; // Nov 6: Chain Lightning's jump timing
 import { Tutorial, tutorialGame, tutorialOrders } from './tutorial';
 import { STANCES } from '../ai/stances';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters, maxDecks } from './decks';
@@ -83,9 +85,9 @@ const RARITY_KEY: Record<string, string> = { Common: 'common', Uncommon: 'uncomm
 export const rarityKey = (c: any) => RARITY_KEY[c.rarity] || 'common';
 /** Picture path of a card (Goblin creatures have a generated painting). */
 /** Owner-supplied paintings (round 12a) override the generated art. */
-export const OWNER_ART: Record<string, string> = { 'goblin-scrounger': '/art/owner/goblin/goblin-miner-card-art.png', 'goblin-pebbler': '/art/owner/goblin/boneknocker-card-art.png', 'shiv-rat': '/art/owner/goblin/shiv-rat-card-art.png', 'goblin-smith-miner': '/art/owner/goblin/scrapsmith-miner-card-art.png', 'goblin-sneak': '/art/owner/goblin/goblin-sneak-card-art.webp', 'goblin-bomber': '/art/owner/goblin/goblin-bomber-card-art.webp', 'goblin-scrapper': '/art/owner/goblin/goblin-scrapper-card-art.webp', 'grubnaks-big-boss-troll': '/art/owner/goblin/grubnaks-big-boss-troll-card-art.webp', 'junk-shaman': '/art/owner/goblin/junk-shaman-card-art.webp', 'wolf-rider': '/art/owner/goblin/wolf-rider-card-art.webp', 'rotgut-grenadier': '/art/owner/goblin/rotgut-grenadier-card-art.webp', 'shard-guzzler': '/art/owner/goblin/shard-guzzler-card-art.webp', 'blastrat-sapper': '/art/owner/goblin/blastrat-sapper-card-art.webp', 'hold-it': '/art/owner/goblin/hold-it-card-art.webp', 'tunnel-rush': '/art/owner/goblin/tunnel-rush-card-art.webp', 'goblin-grunt': '/art/owner/goblin/goblin-grunt-card-art.webp', 'skullbasher-rusher': '/art/owner/goblin/skullbasher-rusher-card-art.webp', 'goblin-slinger': '/art/owner/goblin/goblin-slinger-card-art.webp', 'gnome-tinker': '/art/owner/gnome/gnome-tinker-card-art.webp', 'gearward-sentinel': '/art/owner/gnome/gearward-sentinel-card-art.webp', 'gnome-prospector': '/art/owner/gnome/gnome-prospector-card-art.webp', 'glyphshield-warden': '/art/owner/gnome/glyphshield-warden-card-art.webp', 'clockwork-beetle': '/art/owner/gnome/clockwork-beetle-card-art.webp', 'gnome-illusionist': '/art/owner/gnome/gnome-illusionist-card-art.webp', 'the-great-steam-golem': '/art/owner/gnome/the-great-steam-golem-card-art.webp', 'spark-gnome': '/art/owner/gnome/spark-gnome-card-art.webp', 'gnome-cogger': '/art/owner/gnome/gnome-cogger-card-art.webp', 'fireball': '/art/owner/gnome/fireball-card-art.webp', 'meteor-strike': '/art/owner/gnome/meteor-strike-card-art.webp', 'spell-snap': '/art/owner/gnome/spell-snap-card-art.webp', 'gnome-smith-miner': '/art/owner/gnome/gnome-smith-miner-card-art.webp', 'axe-thrower': '/art/owner/dwarf/axe-thrower-card-art.webp', 'barrelback-courier': '/art/owner/dwarf/barrelback-courier-card-art.webp', 'brewmaster': '/art/owner/dwarf/brewmaster-card-art.webp', 'crystal-cluster': '/art/owner/neutral/crystal-cluster-card-art.webp', 'crystal-drunk-delver': '/art/owner/dwarf/crystal-drunk-delver-card-art.webp', 'deepforge-crossbowman': '/art/owner/dwarf/deepforge-crossbowman-card-art.webp', 'dwarf-miner': '/art/owner/dwarf/dwarf-miner-card-art.webp', 'dwarf-pickman': '/art/owner/dwarf/dwarf-pickman-card-art.webp', 'dwarf-stoneback': '/art/owner/dwarf/dwarf-stoneback-card-art.webp', 'fizzle': '/art/owner/neutral/fizzle-card-art.webp', 'glowing-geode': '/art/owner/neutral/glowing-geode-card-art.webp', 'gnome-widget': '/art/owner/gnome/gnome-widget-card-art.webp', 'grimhold-ravager': '/art/owner/dwarf/grimhold-ravager-card-art.webp', 'gyrocopter-ace': '/art/owner/gnome/gyrocopter-ace-card-art.webp', 'healing-light': '/art/owner/neutral/healing-light-card-art.webp', 'heart-of-the-fallen': '/art/owner/neutral/heart-of-the-fallen-card-art.webp', 'hexwright-apprentice': '/art/owner/gnome/hexwright-apprentice-card-art.webp', 'ironhammer-berserker': '/art/owner/dwarf/ironhammer-berserker-card-art.webp', 'motherlode': '/art/owner/neutral/motherlode-card-art.webp', 'oathbound-pikeman': '/art/owner/dwarf/oathbound-pikeman-card-art.webp', 'overclocked-conduit': '/art/owner/gnome/overclocked-conduit-card-art.webp', 'phase-stalker': '/art/owner/gnome/phase-stalker-card-art.webp', 'prospectors-prayer': '/art/owner/neutral/prospectors-prayer-card-art.webp', 'queen-brunhilda-stonebeard': '/art/owner/dwarf/queen-brunhilda-stonebeard-card-art.webp', 'ram-rider': '/art/owner/dwarf/ram-rider-card-art.webp', 'rune-splitter': '/art/owner/dwarf/rune-splitter-card-art.webp', 'runic-siphoner': '/art/owner/gnome/runic-siphoner-card-art.webp', 'second-wind': '/art/owner/dwarf/second-wind-card-art.webp', 'shield-bubble': '/art/owner/dwarf/shield-bubble-card-art.webp', 'shieldbeard': '/art/owner/dwarf/shieldbeard-card-art.webp', 'soul-shard': '/art/owner/neutral/soul-shard-card-art.webp', 'venom-shiv': '/art/owner/goblin/venom-shiv-card-art.webp', 'battle-cry': '/art/owner/dwarf/battle-cry-card-art.webp', 'dwarf-smith-miner': '/art/owner/dwarf/dwarf-smith-miner-card-art.webp', 'mirror-hex': '/art/owner/neutral/mirror-hex-card-art.webp' };
+export const OWNER_ART: Record<string, string> = { /* Nov 6: Brush's art for the 33 new cards and 3 tokens */ 'mama-grubsnout': '/art/owner/goblin/mama-grubsnout-card-art.webp', 'pox-doctor-ratsbane': '/art/owner/goblin/pox-doctor-ratsbane-card-art.webp', 'sooey-hog-call': '/art/owner/goblin/sooey-hog-call-card-art.webp', 'snot-sergeant-gurk': '/art/owner/goblin/snot-sergeant-gurk-card-art.webp', 'fizzwick-fuse-lighter': '/art/owner/goblin/fizzwick-fuse-lighter-card-art.webp', 'junk-catapult-crew': '/art/owner/goblin/junk-catapult-crew-card-art.webp', 'grease-gremlin': '/art/owner/goblin/grease-gremlin-card-art.webp', 'bogwater-brewer': '/art/owner/goblin/bogwater-brewer-card-art.webp', 'runt-piglet': '/art/owner/goblin/runt-piglet-card-art.webp', 'bang-snap-imp': '/art/owner/goblin/bang-snap-imp-card-art.webp', 'sludge-lobber': '/art/owner/goblin/sludge-lobber-card-art.webp', 'wispmother-tallulah': '/art/owner/gnome/wispmother-tallulah-card-art.webp', 'jinxmaster-wobblewick': '/art/owner/gnome/jinxmaster-wobblewick-card-art.webp', 'chain-lightning': '/art/owner/gnome/chain-lightning-card-art.webp', 'hexfuse-battery-golem': '/art/owner/gnome/hexfuse-battery-golem-card-art.webp', 'rune-scribe-nimbletoe': '/art/owner/gnome/rune-scribe-nimbletoe-card-art.webp', 'lens-grinder-lorelei': '/art/owner/gnome/lens-grinder-lorelei-card-art.webp', 'hexbolt-tinker': '/art/owner/gnome/hexbolt-tinker-card-art.webp', 'spark-caddy': '/art/owner/gnome/spark-caddy-card-art.webp', 'stray-spark-wisp': '/art/owner/gnome/stray-spark-wisp-card-art.webp', 'hex-cadet': '/art/owner/gnome/hex-cadet-card-art.webp', 'ratchet-runt': '/art/owner/gnome/ratchet-runt-card-art.webp', 'engineer-cogsworth': '/art/owner/dwarf/engineer-cogsworth-card-art.webp', 'forgemaster-hildegrim': '/art/owner/dwarf/forgemaster-hildegrim-card-art.webp', 'stand-fast-lads': '/art/owner/dwarf/stand-fast-lads-card-art.webp', 'shieldwall-sergeant-brasha': '/art/owner/dwarf/shieldwall-sergeant-brasha-card-art.webp', 'master-smith-durga': '/art/owner/dwarf/master-smith-durga-card-art.webp', 'grumble-drummer': '/art/owner/dwarf/grumble-drummer-card-art.webp', 'mule-wrangler-nessa': '/art/owner/dwarf/mule-wrangler-nessa-card-art.webp', 'stonebreaker-miner': '/art/owner/dwarf/stonebreaker-miner-card-art.webp', 'shield-cadet': '/art/owner/dwarf/shield-cadet-card-art.webp', 'pebble-tosser': '/art/owner/dwarf/pebble-tosser-card-art.webp', 'hammerhand-apprentice': '/art/owner/dwarf/hammerhand-apprentice-card-art.webp', 'piglet': '/art/owner/goblin/piglet-card-art.webp', 'spark-wisp': '/art/owner/gnome/spark-wisp-card-art.webp', 'clockwork-mule': '/art/owner/dwarf/clockwork-mule-card-art.webp', 'goblin-scrounger': '/art/owner/goblin/goblin-miner-card-art.png', 'goblin-pebbler': '/art/owner/goblin/boneknocker-card-art.png', 'shiv-rat': '/art/owner/goblin/shiv-rat-card-art.png', 'goblin-smith-miner': '/art/owner/goblin/scrapsmith-miner-card-art.png', 'goblin-sneak': '/art/owner/goblin/goblin-sneak-card-art.webp', 'goblin-bomber': '/art/owner/goblin/goblin-bomber-card-art.webp', 'goblin-scrapper': '/art/owner/goblin/goblin-scrapper-card-art.webp', 'grubnaks-big-boss-troll': '/art/owner/goblin/grubnaks-big-boss-troll-card-art.webp', 'junk-shaman': '/art/owner/goblin/junk-shaman-card-art.webp', 'wolf-rider': '/art/owner/goblin/wolf-rider-card-art.webp', 'rotgut-grenadier': '/art/owner/goblin/rotgut-grenadier-card-art.webp', 'shard-guzzler': '/art/owner/goblin/shard-guzzler-card-art.webp', 'blastrat-sapper': '/art/owner/goblin/blastrat-sapper-card-art.webp', 'hold-it': '/art/owner/goblin/hold-it-card-art.webp', 'tunnel-rush': '/art/owner/goblin/tunnel-rush-card-art.webp', 'goblin-grunt': '/art/owner/goblin/goblin-grunt-card-art.webp', 'skullbasher-rusher': '/art/owner/goblin/skullbasher-rusher-card-art.webp', 'goblin-slinger': '/art/owner/goblin/goblin-slinger-card-art.webp', 'gnome-tinker': '/art/owner/gnome/gnome-tinker-card-art.webp', 'gearward-sentinel': '/art/owner/gnome/gearward-sentinel-card-art.webp', 'gnome-prospector': '/art/owner/gnome/gnome-prospector-card-art.webp', 'glyphshield-warden': '/art/owner/gnome/glyphshield-warden-card-art.webp', 'clockwork-beetle': '/art/owner/gnome/clockwork-beetle-card-art.webp', 'gnome-illusionist': '/art/owner/gnome/gnome-illusionist-card-art.webp', 'the-great-steam-golem': '/art/owner/gnome/the-great-steam-golem-card-art.webp', 'spark-gnome': '/art/owner/gnome/spark-gnome-card-art.webp', 'gnome-cogger': '/art/owner/gnome/gnome-cogger-card-art.webp', 'fireball': '/art/owner/gnome/fireball-card-art.webp', 'meteor-strike': '/art/owner/gnome/meteor-strike-card-art.webp', 'spell-snap': '/art/owner/gnome/spell-snap-card-art.webp', 'gnome-smith-miner': '/art/owner/gnome/gnome-smith-miner-card-art.webp', 'axe-thrower': '/art/owner/dwarf/axe-thrower-card-art.webp', 'barrelback-courier': '/art/owner/dwarf/barrelback-courier-card-art.webp', 'brewmaster': '/art/owner/dwarf/brewmaster-card-art.webp', 'crystal-cluster': '/art/owner/neutral/crystal-cluster-card-art.webp', 'crystal-drunk-delver': '/art/owner/dwarf/crystal-drunk-delver-card-art.webp', 'deepforge-crossbowman': '/art/owner/dwarf/deepforge-crossbowman-card-art.webp', 'dwarf-miner': '/art/owner/dwarf/dwarf-miner-card-art.webp', 'dwarf-pickman': '/art/owner/dwarf/dwarf-pickman-card-art.webp', 'dwarf-stoneback': '/art/owner/dwarf/dwarf-stoneback-card-art.webp', 'fizzle': '/art/owner/neutral/fizzle-card-art.webp', 'glowing-geode': '/art/owner/neutral/glowing-geode-card-art.webp', 'gnome-widget': '/art/owner/gnome/gnome-widget-card-art.webp', 'grimhold-ravager': '/art/owner/dwarf/grimhold-ravager-card-art.webp', 'gyrocopter-ace': '/art/owner/gnome/gyrocopter-ace-card-art.webp', 'healing-light': '/art/owner/neutral/healing-light-card-art.webp', 'heart-of-the-fallen': '/art/owner/neutral/heart-of-the-fallen-card-art.webp', 'hexwright-apprentice': '/art/owner/gnome/hexwright-apprentice-card-art.webp', 'ironhammer-berserker': '/art/owner/dwarf/ironhammer-berserker-card-art.webp', 'motherlode': '/art/owner/neutral/motherlode-card-art.webp', 'oathbound-pikeman': '/art/owner/dwarf/oathbound-pikeman-card-art.webp', 'overclocked-conduit': '/art/owner/gnome/overclocked-conduit-card-art.webp', 'phase-stalker': '/art/owner/gnome/phase-stalker-card-art.webp', 'prospectors-prayer': '/art/owner/neutral/prospectors-prayer-card-art.webp', 'queen-brunhilda-stonebeard': '/art/owner/dwarf/queen-brunhilda-stonebeard-card-art.webp', 'ram-rider': '/art/owner/dwarf/ram-rider-card-art.webp', 'rune-splitter': '/art/owner/dwarf/rune-splitter-card-art.webp', 'runic-siphoner': '/art/owner/gnome/runic-siphoner-card-art.webp', 'second-wind': '/art/owner/dwarf/second-wind-card-art.webp', 'shield-bubble': '/art/owner/dwarf/shield-bubble-card-art.webp', 'shieldbeard': '/art/owner/dwarf/shieldbeard-card-art.webp', 'soul-shard': '/art/owner/neutral/soul-shard-card-art.webp', 'venom-shiv': '/art/owner/goblin/venom-shiv-card-art.webp', 'battle-cry': '/art/owner/dwarf/battle-cry-card-art.webp', 'dwarf-smith-miner': '/art/owner/dwarf/dwarf-smith-miner-card-art.webp', 'mirror-hex': '/art/owner/neutral/mirror-hex-card-art.webp' };
 export const commanderPortrait = (id: string) => (id === 'grubnak' ? '/art/owner/goblin/grubnak-on-throne-art.png' : id === 'sproingle' ? '/art/owner/gnome/sproingle-portrait.webp' : id === 'borgo' ? '/art/owner/dwarf/borgo-portrait.webp' : `/art/commanders/${id}.webp`);
-export const pictureOf = (c: any): string | null => (c && OWNER_ART[c.id]) ? OWNER_ART[c.id] : (c && ((c.type === 'creature' && c.faction === 'goblins') || (c.type === 'spell' && !c.disabled)) ? `/art/cards/${c.id}.webp` : null);
+export const pictureOf = (c: any): string | null => (c && OWNER_ART[c.id]) ? OWNER_ART[c.id] : (c && ((c.type === 'creature' && c.faction === 'goblins') || (c.type === 'spell' && !c.disabled) || c.placeholder /* Nov 5: the new cards' placeholder pictures until Brush's art lands */) ? `/art/cards/${c.id}.webp` : null);
 export const FRAME: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
 export const frameKey = (c: any) => (c.type === 'spell' ? `spell-${FRAME[c.faction] || 'shared'}` : FRAME[c.faction] || 'neutral');
 export function typeOf(c: any): { icon: string; name: string } {
@@ -136,7 +138,15 @@ export const ABILITY_UI: Record<string, { icon: string; name: string; text: stri
   sacrifice: { icon: '🩸', name: 'Sacrifice', text: 'Sacrifice an ally to gain 1 Bank crystal.', burst: 'SACRIFICE!' },
   brew: { icon: '🍺', name: 'Brew', text: 'Once per turn, even on the enemy turn: heal an adjacent wounded dwarf (it survives lethal damage with 1 Health). It becomes Drunk for 2 rounds.', burst: 'BREW!' },
   blink: { icon: '✨', name: 'Blink', text: 'Once, swap places with any of your creatures.', burst: 'BLINK!' },
+  // Nov 5: the new cards
+  brood: { icon: '🐷', name: 'Brood', text: 'Deploy phase, 2 crystals: a Piglet appears on an empty space next to her (max 4 Piglets).', burst: 'OINK!' },
+  spark: { icon: '✨', name: 'Spark', text: 'Deploy phase, 1 crystal: a Spark Wisp appears on an empty space next to her (max 3 Wisps).', burst: 'SPARK!' },
+  build: { icon: '🔧', name: 'Build', text: 'Deploy phase, 2 crystals, once per turn: a Clockwork Mule appears on an empty space next to him (max 3 Mules).', burst: 'CLANK!' },
+  fling: { icon: '🎯', name: 'Fling', text: 'Pay 1, once per turn: throw a Piglet standing next to the crew onto an empty space up to 5 away; it can attack this turn.', burst: 'WHEEE!' },
+  brewPoison: { icon: '🥣', name: 'Bog Brew', text: 'Pay 1: a Goblin next to the Brewer poisons what it hits this turn (Poison 2).', burst: 'SLURP!' },
+  forgeTouch: { icon: '🔨', name: 'Forge Touch', text: 'Pay 2, once per turn: a Dwarf next to her gets +1 Attack and +1 Health for good (counts toward its 3 upgrades).', burst: 'CLANG!' },
 };
+const DEPLOY_OK = ['brew', 'ward', 'brood', 'spark', 'build', 'forgeTouch']; // Nov 5: abilities that work in the Deploy phase too
 /** Owner-facing names of the activated abilities (the data-ability attribute); the engine keeps its own names. */
 export const PUB_ABILITY: Record<string, string> = { slide: 'run', bowl: 'strike', shaman: 'pickUp', rocket: 'rocketRide', ramMove: 'gallop' };
 export const INTERNAL_ABILITY: Record<string, string> = Object.fromEntries(Object.entries(PUB_ABILITY).map(([a, b]) => [b, a]));
@@ -771,9 +781,28 @@ export class App {
           h('span', { class: 'bl' }, c.blurb || ''),
           h('span', { class: 'cmd-foot' }, looks, h('span', { class: 'cmd-lk' }, h('small', {}, 'Upgrade look'), h('b', { class: 'cmd-lkn' }, 'Original'), h('small', { class: 'cmd-decks-n' }, ''))))));
     }
-    // signed in: the Commander's upgrade look (the best 'commander-<id>' copy) lights the looks row and the tag
+    // signed in: the Commander's upgrade looks. Nov 6 (Ken): the player picks WHICH copy fights: the tiers he owns a copy of (by_tier) are
+    // clickable, the pick lights the tag and is kept on this device (cmd-tier.ts); the server checks it against his real copies at match start.
     if (net.active) void import('../net/economy').then((m) => m.api.myUpgradeInfo()).then((u) => {
-      for (const b of cmdBtns) { const best = Math.max(1, Math.min(5, Number(u?.cards?.['commander-' + b.dataset.id]?.best) || 1)); const tg = b.querySelector('.cmd-tier') as El | null; if (tg) { tg.dataset.tier = String(best); tg.textContent = `${TIER_NAMES[best]} ${'\u2605'.repeat(best)}`; } (b.querySelector('.cmd-lkn') as El | null)!.textContent = TIER_NAMES[best]; b.querySelectorAll('.cmd-look').forEach((l) => l.classList.toggle('on', Number((l as El).dataset.t) <= best)); }
+      for (const b of cmdBtns) {
+        const id = String(b.dataset.id), info: any = u?.cards?.['commander-' + id];
+        const best = Math.max(1, Math.min(5, Number(info?.best) || 1));
+        const byTier: number[] = Array.isArray(info?.by_tier) ? info.by_tier.map((n: any) => Number(n) || 0) : [];
+        const owned = (t: number) => (byTier.length ? byTier[t - 1] > 0 : t <= best);
+        setCommanderTiersOwned(id, [1, 2, 3, 4, 5].filter(owned));
+        const show = () => {
+          const t = chosenCommanderTier(id);
+          const tg = b.querySelector('.cmd-tier') as El | null; if (tg) { tg.dataset.tier = String(t); tg.textContent = `${TIER_NAMES[t]} ${'\u2605'.repeat(t)}`; }
+          (b.querySelector('.cmd-lkn') as El | null)!.textContent = TIER_NAMES[t];
+          b.querySelectorAll('.cmd-look').forEach((l) => { const lt = Number((l as El).dataset.t); l.classList.toggle('on', lt <= best); l.classList.toggle('own', owned(lt)); l.classList.toggle('picked', lt === t); });
+        };
+        b.querySelectorAll('.cmd-look').forEach((l) => {
+          const lt = Number((l as El).dataset.t); if (!owned(lt)) return;
+          (l as El).title = `Fight as your ${TIER_NAMES[lt]} ${String((COMMANDERS as any)[id]?.name || '').split(/,\s*/)[0]}`; (l as El).setAttribute('data-testid', `cmd-look-${id}-${lt}`);
+          l.addEventListener('click', (e) => { e.stopPropagation(); setChosenCommanderTier(id, lt); show(); if (cmd !== id) { cmd = id; onCmd(); pick(); } });
+        });
+        show();
+      }
     }).catch(() => {});
     for (const [id, label] of [['standard', 'Standard'], ['cardplay', 'Card Play'], ['compvscomp', 'Card Comp vs Card Comp']]) modeBtns.push(btn(label, 'diff mode-btn', () => { mode = id; this.game.setMode(id); try { localStorage.setItem('oreheart.mode', id); } catch { /* storage unavailable */ } sel(); }, { 'data-id': id }));
     for (const d of ['easy', 'normal', 'hard']) diffBtns.push(btn(d[0].toUpperCase() + d.slice(1), 'diff', () => { diff = d; sel(); }, { 'data-id': d }));
@@ -943,7 +972,7 @@ export class App {
       h('h1', { class: 'section cinzel' }, 'Rules'),
       sec('Goal', 'Bring the enemy Commander from 20 Health to 0 and they flee the battlefield. Commanders never die, they retreat! A Commander never heals by itself, so damage to them lasts.'),
       sec('The Board', 'Your crystal (Flow on the gem, Bank below it) is at the top-left, the enemy crystal at the top, the phase tracker at the top-right, your hand along the bottom and your deck at the bottom-right. A hidden grid 13 spaces wide and 7 deep. Your Stronghold sits in the bottom-left corner (row 7, column 2) and the enemy Stronghold in the top-right corner (row 1, column 12); the mines mirror from corner to corner. Summon creatures on your back row (the row next to your Stronghold). Only when your back row is full can you summon on the row in front of it. Three crystal mines sit in the middle rows, in a different place every match (mirrored between the two halves).', board),
-      sec('Decks and auto-skip', 'The Decks screen on the main menu is a testing deck builder: every card is unlocked and you can save up to 5 decks of 50 to 100 cards (Rare, Ultra Rare and Collector cards max 3 copies, at most 20 Crystal cards). Pick a saved deck or the starter deck before a match. Your Deploy phase ends by itself when no card in your hand can be both paid for and placed, and your Action phase ends by itself when no creature can move, attack or mine.', crystals),
+      sec('Decks and auto-skip', 'The Decks screen on the main menu is a testing deck builder: every card is unlocked and you can save up to 5 decks of 50 to 100 cards (Rare, Ultra Rare and Legendary cards max 3 copies, at most 20 Crystal cards). Pick a saved deck or the starter deck before a match. Your Deploy phase ends by itself when no card in your hand can be both paid for and placed, and your Action phase ends by itself when no creature can move, attack or mine.', crystals),
       sec('Crystals', 'There is only one kind of crystal: soul crystals. You have two counters. Flow is what you mined: on your turn drag a creature standing next to a mine onto the mine (only the 8 spaces touching a mine can mine it). Mining is the creature\'s action for the turn: a Miner mines 2 crystals, a Fighter 1. At the start of your next turn your Flow is SET to what you mined (it is not added) and never holds more than 16. Bank holds crystals from Crystal cards: it never resets and has no limit. Flow is spent first, then Bank. The side with more creatures that mined a mine owns it; a tie is neutral. Mining at an enemy-owned mine pays only half, rounded down (Miner 1, Fighter 0). Tapping a pulsing mine (it shows ⛏️ and a number) makes every ready Miner next to it mine at once; Fighters never join in, so drag them onto the mine yourself. Press and hold (or hover) a mine to see its info. You start with 0 crystals. If you own no mine while the enemy owns one you get 2 bonus crystals. The plus-N-next-turn counter shows your coming Flow, and holding a mine shows who owns it and what it pays.', crystals),
       sec('Mulligan and Camera', 'Before the match you see your opening hand. Keep Hand plays it as it is; Redraw Hand shuffles every card back into your deck and draws a completely new hand of the same size. You get one redraw per match, so look before you choose. The computer gets the same choice. On the battlefield, pinch or use the mouse wheel to zoom, drag empty ground (or use two fingers) to pan, and choose Recenter in the Menu (right side) to reset. The Menu also holds Last turn, Mute, the Card pop-ups switch and Surrender. The Card pop-ups switch turns the big card reveals on or off; spell and ability animations always play. Tap a played card to pin it, tap a creature to read its card, and tap the card text for the full explanation. The Respond window opens only when you can actually play something.'),
       sec('Your Turn', 'Deploy: drag cards onto the board to summon creatures or cast spells, and play Crystal cards (any number, also at Instant speed while you respond). Every card you play is shown big in the middle of the screen for a moment first (change the speed in Settings; tap to skip). Miner upgrades: a basic Miner card played onto one of your own creatures gives it a permanent +1 Health; a Scrapsmith, Arcsmith or Anvilsworn Smith Miner gives +1 Attack and +1 Health (3 upgrade cards per creature at most). Played onto an empty back-row space they are summoned as Miners. Miners can move or mine, but not attack, the turn they are summoned. Action: each creature either moves OR attacks OR mines, never more than one (Charge creatures can do both). Drag a creature onto one of your own creatures to swap places. Press Done to end a phase; phases with nothing left to do are skipped.'),
@@ -1202,7 +1231,14 @@ export class App {
   withTierN(c: any, t: number): any { return c && t > 1 ? { ...c, tier: t } : c; }
   unitByUid(uid: string): any { const st = this.game && this.game.state; return st && st.board ? st.board.creatures.find((x: any) => x.uid === uid) || null : null; }
   /** Nov 5: a Commander's tier in a match comes under its pack id ('commander-grubnak') */
-  commanderTier(owner: 'player' | 'opponent'): number { const st = this.game.state; const id = st && st.players && st.players[owner] ? st.players[owner].commanderId : ''; return id ? this.tierOf('commander-' + id, owner) : 1; }
+  commanderTier(owner: 'player' | 'opponent'): number {
+    const st = this.game.state; const id = st && st.players && st.players[owner] ? st.players[owner].commanderId : '';
+    if (!id) return 1;
+    if (this.netGame) return this.tierOf('commander-' + id, owner); // the server's word: the copy each player chose (checked against his collection)
+    return owner === 'player' && net.active ? chosenCommanderTier(id) : 1; // Nov 6: against the computer, the copy picked on Choose Your Commander
+  }
+  /** Nov 6 (Ken): each Commander stands as the tier model and aura of the copy in play, on BOTH screens (the board asks for both seats). */
+  syncCommanderTiers() { const v: any = this.view; if (!v || typeof v.setCommanderTier !== 'function') return; for (const s of ['player', 'opponent'] as const) { try { v.setCommanderTier(s, this.commanderTier(s)); } catch { /* no board */ } } }
   /** Ken (Nov 5): "It should be impressive when someone drops a mythic out." The board darkens, the card slams in with lightning, KA-BOOM, its sound and
    *  the player's name, all under 1.5 s and never in the way of the next play (an overlay with pointer-events none; the engine already moved on).
    *  Smaller for lower tiers. In test mode without real FX only the marker element appears. */
@@ -1282,6 +1318,7 @@ export class App {
     this.pickOpponentName(o.seed); /* and a new opponent name */
     this.showMatch();
     this.update(this.game.state, []);
+    this.syncCommanderTiers();
     return state;
   }
 
@@ -1305,6 +1342,7 @@ export class App {
     this.arenaFaction = ''; this.pickMatchArena();
     this.showMatch();
     this.update(ng.state, [{ type: 'newMatch' }]);
+    this.syncCommanderTiers();
   }
   /** Back to the computer-match Game (the friend match keeps running on the server; "Back to your match" re-opens it). */
   leaveNet() {
@@ -1380,6 +1418,7 @@ export class App {
     this.pickOpponentName();
     this.showMatch();
     this.update(this.game.state, []);
+    this.syncCommanderTiers();
     return state;
   }
 
@@ -1529,6 +1568,7 @@ export class App {
     try { this.view = createBoardView(r.board, this.low, this.arenaFaction || this.pickMatchArena()); } catch { this.view = null; } /* Oct 31: the picked faction's arena */
     if (!this.view) this.view = createFlatView(r.board);
     (this.view as any).setTierLookup?.((id: string, owner: 'player' | 'opponent', inst?: any) => (id.startsWith('cmd:') ? this.commanderTier(owner) : this.instTier(inst || { cardId: id }, owner))); // Nov 5: a Mythic's unit (or Commander) keeps a glow; per copy
+    this.syncCommanderTiers();
     this.view.onViewChange = () => this.layoutSoon();
     for (let row = 1; row <= BH; row++) for (let col = 1; col <= BW; col++) {
       const c = h('div', { class: 'cell', 'data-row': row, 'data-col': col });
@@ -2986,7 +3026,7 @@ export class App {
   }
   /** Oct 31 (Ken: "make it like an event ... completely serious, but absolutely ridiculous"): Brush's painted spell FX play in the 3D
    *  board scene (spell-fx.ts), from the caster's Stronghold (the Commander casts) to the target. Timing only: the spell has already resolved. */
-  spellFx(e: any, o: { delay?: number; to?: any; kind?: 'cast' | 'counter' | 'replay'; countered?: string | null; at?: { row: number; col: number } | null; atCommander?: boolean } = {}) {
+  spellFx(e: any, o: { delay?: number; to?: any; kind?: 'cast' | 'counter' | 'replay'; countered?: string | null; at?: { row: number; col: number } | null; atCommander?: boolean; from?: { row: number; col: number }; noWord?: boolean; quiet?: boolean } = {}) {
     const v = this.view;
     if (!v || !v.playSpell || !SPELL_VISUALS[e.cardId]) return;
     const side = (e.player === 'opponent' ? 'opponent' : 'player') as 'player' | 'opponent';
@@ -2994,9 +3034,10 @@ export class App {
     const cmdT = !o.at && e.target && e.target.commander ? SH[e.target.commander as 'player' | 'opponent'] : null;
     const tc = o.at || (e.target && e.target.row ? e.target : cmdT);
     const st = this.game.state;
-    const units = e.cardId === 'battle-cry' ? (st?.board?.creatures || []).filter((c: any) => c.owner === side).map((c: any) => ({ uid: c.uid, row: c.row, col: c.col })) : undefined;
-    v.playSpell({ spell: e.cardId, caster: side, from: { row: sh.row, col: sh.col }, target: tc ? { row: tc.row, col: tc.col } : null, to: o.to ? { row: o.to.row, col: o.to.col } : null,
-      fromH: 1.8, targetH: cmdT || o.atCommander ? 1.5 : 0.7, delay: o.delay || 0, kind: o.kind || 'cast', countered: o.countered ?? null, units });
+    const units = e.cardId === 'battle-cry' || e.cardId === 'stand-fast-lads' ? (st?.board?.creatures || []).filter((c: any) => c.owner === side && (e.cardId === 'battle-cry' || CARDS[c.cardId]?.faction === 'dwarves')).map((c: any) => ({ uid: c.uid, row: c.row, col: c.col })) : undefined;
+    const from = o.from || sh; // Nov 6: a Chain Lightning jump starts at the last target
+    v.playSpell({ spell: e.cardId, caster: side, from: { row: from.row, col: from.col }, target: tc ? { row: tc.row, col: tc.col } : null, to: o.to ? { row: o.to.row, col: o.to.col } : null,
+      fromH: o.from ? 0.9 : 1.8, targetH: cmdT || o.atCommander ? 1.5 : 0.7, delay: o.delay || 0, kind: o.kind || 'cast', countered: o.countered ?? null, units, noWord: !!o.noWord, quiet: !!o.quiet });
   }
   /** A countered card shatters (Oct 31: into Snuff Out's painted shards, in the 3D scene) at the countered card's square. */
   shatter(player: string, at?: { row: number; col: number } | null, countered: string | null = null) {
@@ -3357,6 +3398,7 @@ export class App {
     if (c.shield > 0 || c.bubble) list.push({ k: 'shield', n: c.shield > 0 ? c.shield : 0, x: c.shield > 0 ? 0 : bs, label: c.shield > 0 ? `Shield ${c.shield}` : bs > 1 ? `Shield bubble x${bs}: blocks the next ${bs} hits` : 'Shield bubble' });
     if (bc > 0) list.push({ k: 'attackup', n: 0, x: bc, label: `+${bc} Attack this turn` });
     if ((c.lockedUntil || 0) > t) list.push({ k: 'sleep', n: c.lockedUntil - t, label: `Can't attack for ${c.lockedUntil - t} more turn${c.lockedUntil - t > 1 ? 's' : ''}` }); // Oct 31: a shielded Bearer can still walk and mine
+    if (c.jinxed) list.push({ k: 'jinx', n: 0, label: 'Jinxed: -1 Attack, +1 damage from spells, until its next turn' }); // Nov 5
     let box = el.querySelector('.st-icons') as El | null;
     const key = list.map((x) => x.k + x.n + 'x' + (x.x || 0)).join(',');
     if (!list.length) { box?.remove(); return; }
@@ -3369,7 +3411,7 @@ export class App {
   }
   renderAbilityButtons(st: any) {
     const live = st.phase !== 'over' && st.phase !== 'mulligan';
-    const legal: any[] = [...(live ? brewActions(st, 'player') : []), ...(live && st.priority === 'player' ? this.game.legalActions().filter((a: any) => a.type === 'ability' && (a.ability === 'brew' || (st.activePlayer === 'player' && st.phase === 'action'))) : [])];
+    const legal: any[] = [...(live ? brewActions(st, 'player') : []), ...(live && st.priority === 'player' ? this.game.legalActions().filter((a: any) => a.type === 'ability' && (a.ability === 'brew' || (st.activePlayer === 'player' && (st.phase === 'action' || DEPLOY_OK.includes(a.ability))))) : [])]; // Nov 5: spawn buttons light up in the Deploy phase
     for (const c of st.board.creatures) {
       const el = this.tokens.get(c.uid);
       if (!el) continue;
@@ -3494,7 +3536,7 @@ export class App {
   hideAbilityTip() { document.getElementById('ab-tip')?.remove(); }
   useAbility(cr: any, k: string) {
     const ui = ABILITY_UI[k];
-    if (this.game.state.priority !== 'player' || (this.game.state.phase !== 'action' && k !== 'brew')) { this.flash('Abilities are used in your Action phase'); return; }
+    if (this.game.state.priority !== 'player' || (this.game.state.phase !== 'action' && !DEPLOY_OK.includes(k))) { this.flash('Abilities are used in your Action phase'); return; }
     const opts = this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === cr.uid && a.ability === k);
     if (!opts.length) { this.flash(`${ui.name}: not available (needs crystals, or already used this turn)`); return; }
     this.pick = null; this.clearGlow();
@@ -3505,7 +3547,7 @@ export class App {
     this.pick = { cells, done: (cell) => {
       this.pick = null; this.clearGlow();
       const here = opts.filter((a: any) => { const q = cellOf(a); return q && q.row === cell.row && q.col === cell.col; });
-      const a = k === 'shaman' ? this.bestShaman(here, cr) : here[0];
+      const a = k === 'shaman' ? this.bestShaman(here, cr) : k === 'fling' ? here.slice().sort((x: any, y: any) => Math.max(Math.abs(x.from.row - cell.row), Math.abs(x.from.col - cell.col)) - Math.max(Math.abs(y.from.row - cell.row), Math.abs(y.from.col - cell.col)))[0] : here[0]; // Nov 5: Fling throws the Piglet nearest the chosen square
       if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); }
     } };
     this.setGlow(cells, 'glow-swap');
@@ -4083,6 +4125,17 @@ export class App {
       else if (e.type === 'spell') {
         const mv = e.cardId === 'tunnel-rush' ? events.slice(events.indexOf(e) + 1).find((x: any) => x.type === 'move' && x.teleport) : null;
         this.emote(e.player, 'cast'); this.spellFx(e, { delay: replayDelay, to: mv ? mv.to : null, kind: replayDelay ? 'replay' : 'cast' });
+        if (e.cardId === 'chain-lightning' && e.target && e.target.row) { // Nov 6: a Jinxed target passes the bolt on: the same bolt jumps to each neighbour it hurt, 160 ms apart
+          const rest = events.slice(events.indexOf(e) + 1), ji = rest.findIndex((x: any) => x.type === 'chainJump');
+          if (ji >= 0) {
+            const spec = (SPELL_FX_SPEC as any).spells['chain-lightning'], hop = spec?.jump_ms || 160, impact = (spec?.beats?.[0]?.ms || 350) + (spec?.beats?.[1]?.travel_ms || 300);
+            const seen = new Set<string>(); let n = 0;
+            for (const x of rest.slice(ji + 1)) {
+              if (x.type === 'spell' || x.type === 'chainJump') break;
+              if (x.type === 'damage' && x.uid && x.row && !seen.has(x.uid) && !(x.row === e.target.row && x.col === e.target.col)) { seen.add(x.uid); n++; this.spellFx({ cardId: 'chain-lightning', player: e.player, target: { row: x.row, col: x.col } }, { delay: replayDelay + impact + hop * n, from: { row: e.target.row, col: e.target.col }, noWord: true, quiet: true, kind: 'replay' }); }
+            }
+          }
+        }
         const id = String(e.cardId);
         audio.spell(id); // Oct 31: each spell's own file (spell-<id>.ogg), starting with its FX
       }
@@ -5094,6 +5147,7 @@ export class App {
       case 'bowl': return { row: cr.row + a.dr, col: cr.col + a.dc };
       case 'plow': return { row: cr.row + a.dr * a.dist, col: cr.col + a.dc * a.dist };
       case 'shaman': return a.from;
+      case 'brood': case 'spark': case 'build': case 'fling': return a.target; // Nov 5: pick the square
       default: return null;
     }
   }
@@ -5109,10 +5163,10 @@ export class App {
   /** Tap menu for abilities that are not aimed by dragging (Shockwave, Ward, Sacrifice). */
   abilityMenu(cr: any) {
     document.querySelector('.ability-menu')?.remove();
-    if (this.game.state.phase !== 'action' || this.game.state.priority !== 'player') return;
-    const opts = this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === cr.uid && ['shockwave', 'ward', 'sacrifice'].includes(a.ability));
+    if ((this.game.state.phase !== 'action' && this.game.state.phase !== 'deploy') || this.game.state.priority !== 'player') return;
+    const opts = this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === cr.uid && ['shockwave', 'ward', 'sacrifice', 'brewPoison', 'forgeTouch'].includes(a.ability)); // Nov 5
     if (!opts.length) return;
-    const NAME: Record<string, string> = { shockwave: 'Shockwave (1)', ward: 'Ward an ally (2)', sacrifice: 'Sacrifice an ally (+1 Bank)' };
+    const NAME: Record<string, string> = { shockwave: 'Shockwave (1)', ward: 'Ward an ally (2)', sacrifice: 'Sacrifice an ally (+1 Bank)', brewPoison: 'Bog Brew (1)', forgeTouch: 'Forge Touch (2)' };
     const menu = h('div', { class: 'ability-menu', role: 'menu', 'aria-label': 'Abilities' });
     for (const a of opts.slice(0, 8)) {
       const t = a.target ? this.game.state.board.creatures.find((o: any) => o.row === a.target.row && o.col === a.target.col) : null;

@@ -20,8 +20,16 @@ insert into public.roles (user_id, role, granted_by) select id, 'admin', id from
 \set P3 '''c0000000-0000-4000-8000-000000000003'''
 
 -- ========== 1. The cards copy and the rarity tiers ==========
-select pg_temp.ok('cards: 66 cards copied from cards.json + the 3 pack Commanders (Nov 5)',
-  (select count(*) from public.cards) = 69);
+select pg_temp.ok('cards: 99 cards copied from cards.json (66 + the 33 new ones, Nov 6; tokens left out) + the 3 pack Commanders (Nov 5)',
+  (select count(*) from public.cards) = 102);
+select pg_temp.ok('new cards (Nov 6): the 33 new cards are in the catalog and in packs at their rarity; the 3 tokens are not; Stonebreaker Miner is a cheap Miner',
+  (select count(*) from public.cards where id in ('mama-grubsnout', 'wispmother-tallulah', 'forgemaster-hildegrim', 'stand-fast-lads', 'runt-piglet', 'stonebreaker-miner', 'junk-catapult-crew', 'chain-lightning')) = 8
+  and (select bool_and(in_packs and not disabled) from public.cards where id in ('mama-grubsnout', 'runt-piglet', 'stonebreaker-miner', 'chain-lightning'))
+  and (select rarity from public.cards where id = 'mama-grubsnout') = 'Collector' and (select rarity from public.cards where id = 'junk-catapult-crew') = 'Rare'
+  and (select rarity from public.cards where id = 'chain-lightning') = 'Ultra Rare' and (select rarity from public.cards where id = 'hexbolt-tinker') = 'Uncommon'
+  and not exists (select 1 from public.cards where id in ('piglet', 'spark-wisp', 'clockwork-mule'))
+  and 'stonebreaker-miner' = any (private.setting_text_list('pack_miner_ids'))
+  and 'mama-grubsnout' = any (private.setting_text_list('card_ids')) and not ('piglet' = any (private.setting_text_list('card_ids'))));
 select pg_temp.ok('cards: every deck card id is also in settings card_ids (Commanders are not deck cards)',
   not exists (select 1 from public.cards c where c.type <> 'commander' and not (c.id = any (private.setting_text_list('card_ids')))));
 select pg_temp.ok('cards: disabled cards are never in packs; every other card (crystals too, Nov 5) is',
@@ -29,7 +37,7 @@ select pg_temp.ok('cards: disabled cards are never in packs; every other card (c
 select pg_temp.ok('rarities: the 5 tiers in order',
   (select array_agg(name order by sort) from public.rarities) = array['Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector']);
 select pg_temp.ok('player can read cards and rarities',
-  pg_temp.count_as(:P1, 'aal1', 'select * from public.cards') = 69 and pg_temp.count_as(:P1, 'aal1', 'select * from public.rarities') = 5);
+  pg_temp.count_as(:P1, 'aal1', 'select * from public.cards') = 102 and pg_temp.count_as(:P1, 'aal1', 'select * from public.rarities') = 5);
 
 -- ========== 2. Pack odds ==========
 do $$ declare err text;
@@ -276,6 +284,22 @@ select pg_temp.refused('setting outside its range is refused (quest_streak_days 
   $q$ select public.admin_set_setting('quest_streak_days', '0', 'test') $q$, 'must be 1 to 365');
 select pg_temp.refused('the old word-list rules still apply', :A1, 'aal2', $q$ select public.admin_set_setting('blocked_words', '["x1"]', 'test') $q$, 'not allowed');
 select pg_temp.refused('commander_names is not editable in the back counter', :A1, 'aal2', $q$ select public.admin_set_setting('commander_names', '{}', 'test') $q$, 'can''t be changed');
+-- Nov 6: the four keys that used to fall into the word-list branch have their own shapes (set back to their defaults here)
+select pg_temp.works('admin can set pack_bundles (Nov 6)', :A1, 'aal2', $q$ select public.admin_set_setting('pack_bundles', '[{"size": 1, "bonus": 0}, {"size": 6, "bonus": 0}, {"size": 24, "bonus": 3}, {"size": 99, "bonus": 16}]', 'test: bundles') $q$);
+select pg_temp.refused('pack_bundles must keep the single pack', :A1, 'aal2', $q$ select public.admin_set_setting('pack_bundles', '[{"size": 6, "bonus": 1}]', 'test') $q$, 'size 1');
+select pg_temp.refused('pack_bundles takes whole numbers', :A1, 'aal2', $q$ select public.admin_set_setting('pack_bundles', '[{"size": 1, "bonus": "x"}]', 'test') $q$, 'whole numbers');
+select pg_temp.works('admin can set shop_badges (Nov 6)', :A1, 'aal2', $q$ select public.admin_set_setting('shop_badges', '{"best_value": 99, "most_popular": null}', 'test: badges') $q$);
+select pg_temp.refused('shop_badges takes bundle sizes only', :A1, 'aal2', $q$ select public.admin_set_setting('shop_badges', '{"best_value": 7}', 'test') $q$, 'bundle size');
+select pg_temp.refused('shop_badges knows two badges only', :A1, 'aal2', $q$ select public.admin_set_setting('shop_badges', '{"cheapest": 1}', 'test') $q$, 'unknown badge');
+select pg_temp.works('admin can set pack_bundle_promises (Nov 6)', :A1, 'aal2', $q$ select public.admin_set_setting('pack_bundle_promises', '{"24": {"upgraded_min_tier": 3}, "99": {"upgraded_min_tier": 4, "legendary_unowned": true, "card_back": "chest"}}', 'test: promises') $q$);
+select pg_temp.refused('pack_bundle_promises refuses an unknown promise', :A1, 'aal2', $q$ select public.admin_set_setting('pack_bundle_promises', '{"24": {"free_coins": 5}}', 'test') $q$, 'promises are');
+select pg_temp.refused('pack_bundle_promises wants a bundle size', :A1, 'aal2', $q$ select public.admin_set_setting('pack_bundle_promises', '{"abc": {"upgraded_min_tier": 3}}', 'test') $q$, 'bundle size');
+select pg_temp.works('admin can set ranked_ladder (Nov 6)', :A1, 'aal2', $q$ select public.admin_set_setting('ranked_ladder', '[{"name": "Stone", "min": 0}, {"name": "Copper", "min": 700}, {"name": "Iron", "min": 800}, {"name": "Silver", "min": 900}, {"name": "Sapphire", "min": 1000}, {"name": "Emerald", "min": 1100}, {"name": "Ruby", "min": 1200}, {"name": "Amethyst", "min": 1300}, {"name": "Diamond", "min": 1400}, {"name": "Oreheart", "min": 1500}]', 'test: ladder') $q$);
+select pg_temp.refused('ranked_ladder must start at 0', :A1, 'aal2', $q$ select public.admin_set_setting('ranked_ladder', '[{"name": "Stone", "min": 100}]', 'test') $q$, 'start at 0');
+select pg_temp.refused('ranked_ladder names are unique', :A1, 'aal2', $q$ select public.admin_set_setting('ranked_ladder', '[{"name": "Stone", "min": 0}, {"name": "Stone", "min": 5}]', 'test') $q$, 'share a name');
+select pg_temp.ok('... the four are stored in shape and order',
+  private.setting('shop_badges') = '{"best_value": 99, "most_popular": null}'::jsonb and (private.setting('ranked_ladder') -> 2 ->> 'name') = 'Iron'
+  and (private.setting('pack_bundles') -> 3 ->> 'size')::int = 99 and (private.setting('pack_bundle_promises') -> '99' ->> 'card_back') = 'chest');
 select pg_temp.ok('admin_get_settings lists the new keys',
   (pg_temp.json_as(:A1, 'aal2', 'select public.admin_get_settings()') ? 'pvp_phase_seconds'));
 select pg_temp.refused('a player cannot set pvp_win_coins', :P1, 'aal2', $q$ select public.admin_set_setting('pvp_win_coins', '9999', 'me') $q$, 'not admin');
@@ -393,6 +417,10 @@ update public.settings set value = '{"2": 8000, "3": 1500, "4": 400, "5": 100}' 
 select pg_temp.ok('pvp_tiers_of: the referee sees the best tier of each card a player owns (Side A: the five Mythic Commons)',
   (select count(*) from jsonb_each(public.pvp_tiers_of(:P1, null)) e where (e.value #>> '{}')::int = 5) >= 1
   and public.pvp_tiers_of(:P1, array['no-such-card']) = '{}'::jsonb);
+-- Nov 6 (Ken: fight as the Commander copy you pick): the referee asks whether a player owns a copy at a tier
+select private.card_grant(:P1, 'commander-grubnak', 1, 'admin_grant', 'test-hascopy', null);
+select pg_temp.ok('pvp_has_copy (Nov 6): the referee sees whether a player owns a copy of a card at a tier (Side A: an Original Grubnak, no Mythic one)',
+  public.pvp_has_copy(:P1, 'commander-grubnak', 1) and not public.pvp_has_copy(:P1, 'commander-grubnak', 5) and not public.pvp_has_copy(:P1, 'no-such-card', 1));
 -- combining: Side B gets six Shiv Rats
 select private.card_grant(:P2, 'shiv-rat', 6, 'admin_grant', 'test-upg', null);
 create temp table rats as select id, row_number() over (order by created_at, id) as n from public.card_instances where owner_id = :P2 and card_id = 'shiv-rat' and status = 'owned' and origin_ref = 'test-upg';

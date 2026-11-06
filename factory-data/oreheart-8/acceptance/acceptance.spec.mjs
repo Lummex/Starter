@@ -107,7 +107,8 @@ const NEW_BY_FACTION = {
 };
 const CRYSTALS = new Set(['soul-shard', 'crystal-cluster', 'glowing-geode', 'heart-of-the-fallen', 'motherlode']);
 const SPELLS = new Set(['prospectors-prayer', 'tunnel-rush', 'fireball', 'battle-cry', 'meteor-strike', 'healing-light',
-  'shield-bubble', 'second-wind', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex', 'venom-shiv']);
+  'shield-bubble', 'second-wind', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex', 'venom-shiv',
+  'sooey-hog-call', 'chain-lightning', 'stand-fast-lads' /* Nov 6: the three new spells */]);
 const CREATURES = ['goblin-scrounger', 'goblin-scrapper', 'goblin-slinger', 'goblin-bomber', 'goblin-sneak', 'wolf-rider',
   'grubnaks-big-boss-troll', 'gnome-prospector', 'gnome-tinker', 'spark-gnome', 'clockwork-beetle', 'gnome-illusionist',
   'gyrocopter-ace', 'the-great-steam-golem', 'dwarf-miner', 'shieldbeard', 'axe-thrower', 'ironhammer-berserker',
@@ -2428,7 +2429,7 @@ test('AC60: Deck Builder shows card faces with full text and filters them', asyn
   await expect(all.getByRole('button', { name: 'Venom Shiv', exact: true })).toBeVisible();
   await expect(all.getByRole('button', { name: 'Shiv Rat', exact: true })).toHaveCount(0);
   await chooseFilter(page, 'Type', 'All');
-  await chooseFilter(page, 'Rarity', 'Collector');
+  await chooseFilter(page, 'Rarity', 'Legendary');
   await expect(all.getByRole('button', { name: 'Gronkowski Troll Tyrant', exact: true })).toBeVisible();
   await expect(all.getByRole('button', { name: 'Snotskull Grunt', exact: true })).toHaveCount(0);
   await chooseFilter(page, 'Rarity', 'All');
@@ -2893,7 +2894,7 @@ test('AC79: main menu shows the logo as the h1, the tagline and the five plaques
 });
 
 // owner (Oct 25): Gnomes and Dwarves with an approved Model Editor sheet now have finished 3D models
-const GD_MODELS = ["axe-thrower", "barrelback-courier", "brewmaster", "clockwork-beetle", "crystal-drunk-delver", "deepforge-crossbowman", "dwarf-miner", "dwarf-smith-miner", "dwarf-pickman", "dwarf-stoneback", "gearward-sentinel", "glyphshield-warden", "gnome-cogger", "gnome-illusionist", "gnome-prospector", "gnome-smith-miner", "gnome-tinker", "gnome-widget", "grimhold-ravager", "gyrocopter-ace", "hexwright-apprentice", "ironhammer-berserker", "oathbound-pikeman", "overclocked-conduit", "phase-stalker", "queen-brunhilda-stonebeard", "ram-rider", "rune-splitter", "runic-siphoner", "shieldbeard", "spark-gnome", "the-great-steam-golem"];
+const GD_MODELS = ["axe-thrower", "barrelback-courier", "brewmaster", "clockwork-beetle", "crystal-drunk-delver", "deepforge-crossbowman", "dwarf-miner", "dwarf-smith-miner", "dwarf-pickman", "dwarf-stoneback", "gearward-sentinel", "glyphshield-warden", "gnome-cogger", "gnome-illusionist", "gnome-prospector", "gnome-smith-miner", "gnome-tinker", "gnome-widget", "grimhold-ravager", "gyrocopter-ace", "hexwright-apprentice", "ironhammer-berserker", "oathbound-pikeman", "overclocked-conduit", "phase-stalker", "queen-brunhilda-stonebeard", "ram-rider", "rune-splitter", "runic-siphoner", "shieldbeard", "spark-gnome", "the-great-steam-golem", "wispmother-tallulah", "jinxmaster-wobblewick", "hexfuse-battery-golem", "rune-scribe-nimbletoe", "lens-grinder-lorelei", "hexbolt-tinker", "spark-caddy", "stray-spark-wisp", "hex-cadet", "ratchet-runt", "engineer-cogsworth", "forgemaster-hildegrim", "shieldwall-sergeant-brasha", "master-smith-durga", "grumble-drummer", "mule-wrangler-nessa", "stonebreaker-miner", "shield-cadet", "pebble-tosser", "hammerhand-apprentice", "spark-wisp", "clockwork-mule"] /* Nov 6: + the new cards (Clay, Meshy run 11) */;
 test('AC80: every Goblin creature has a finished figure; Gnomes and Dwarves are finished when they have a model, else placeholders', async ({ page }) => {
   await openTest(page);
   const all = await page.evaluate(async () => await window.oreheart.listCards());
@@ -3048,12 +3049,12 @@ test('AC89: Low graphics turns off bloom, shadows and particles and uses fewer d
 
 // owner (Oct 25): stay under Vercel's free 100 MB upload limit (budget 95 MB); shrink only where it doesn't show, never re-mesh models
 // Owner change (Ken, Oct 29: "set it for 250 megabytes then"; Vercel Pro, 1 GB upload cap): the budget is now 250 MB
-test('AC90: the built dist folder stays under 250 MB', async () => {
+test('AC90: the built dist folder stays under 300 MB', async () => {
   const { fs, path, dir } = await appDir();
   const dist = path.join(dir, 'dist');
   expect(fs.existsSync(path.join(dist, 'index.html')), 'dist/index.html').toBe(true);
   const bytes = walk(fs, path, dist).reduce((n, f) => n + fs.statSync(f).size, 0);
-  expect(bytes).toBeLessThan(250 * 1000 * 1000);
+  expect(bytes).toBeLessThan(300 * 1000 * 1000);
 });
 
 test.describe('phone-size match screenshot', () => {
@@ -3081,7 +3082,7 @@ const fxLog = (page) => page.evaluate(async () => await window.oreheart.getFxLog
 const clearFx = (page) => page.evaluate(async () => await window.oreheart.clearFxLog());
 const idx = (log, pred, from = 0) => log.findIndex((e, i) => i >= from && pred(e));
 const FRAME = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
-const RARITY_WORD = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', 'ultra-rare': 'Ultra Rare', collector: 'Collector' };
+const RARITY_WORD = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', 'ultra-rare': 'Ultra Rare', collector: 'Legendary' }; // Nov 5: shown as Legendary
 const rgb = (c) => (c.match(/[\d.]+/g) || []).map(Number);
 const quiet = (extra) => ({ ai: false, playerCommander: 'grubnak', opponentCommander: 'borgo', setup: { opponentHand: [], ...extra } });
 
@@ -12234,7 +12235,7 @@ for (const id of SFX_SPELLS) SFX_SPEC['spell:' + id] = [['spell-' + id], 1, 0];
 const sfxState = async (page) => (await page.evaluate(async () => await window.oreheart.getAudioState())).sfx;
 async function sfxReady(page) {
   await page.mouse.click(5, 5); // first gesture unlocks audio; the files load after it
-  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 55 sound files decoded (Oct 31: 3 summon variants; Nov 1: rocket launch and crash)', timeout: 20000 }).toBe(55);
+  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 58 sound files decoded (Oct 31: 3 summon variants; Nov 1: rocket launch and crash)', timeout: 20000 }).toBe(58); // Nov 6: + the three new spells' sounds
 }
 const playKey = (page, key) => page.evaluate((k) => {
   if (k.startsWith('spell:')) window.oreheart.playSpellSound(k.slice(6));
@@ -12686,7 +12687,7 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
       ] }));
       await done(page);
       const man = await voicesReady(page, request);
-      await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 55 sound files decoded (with the 12 projectile sounds, 3 summon variants, the 2 rocket sounds)', timeout: 20000 }).toBe(55);
+      await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 58 sound files decoded (with the 12 projectile sounds, 3 summon variants, the 2 rocket sounds)', timeout: 20000 }).toBe(58); // Nov 6: + the three new spells' sounds
       await expect.poll(async () => (await sfxState(page)).punchLoaded, { message: 'all 6 punch files decoded', timeout: 20000 }).toBe(6);
       await unitLoaded(page, 'goblin-sneak', man); await unitLoaded(page, 'dwarf-pickman', man);
       // --- the hurt rule, through the voice hook (owner check change, Ken Nov 1: the 1-in-20 roll replaced the 35 % rule; test pages roll every time, AC550 checks the roll)
@@ -14023,8 +14024,8 @@ test('AC527: secret scan passes on the repo and both dist folders', async () => 
 test('AC528 + AC529: dist sizes; the game calls no admin_ function except am_i_admin; admin has no game art', async () => {
   const { fs, path, dir, admin } = await adminDir();
   const size = (d) => walk(fs, path, d).reduce((s, f) => s + fs.statSync(f).size, 0);
-  // Owner (Oct 31): the game size limit is 250 MB (same as AC90), not 95 MB; the admin site stays under 2 MB
-  expect(size(path.join(dir, 'dist'))).toBeLessThan(250 * 1000 * 1000);
+  // Owner (Oct 31): the game size limit is 300 MB (Ken, Nov 6: was 250; same as AC90), not 95 MB; the admin site stays under 2 MB
+  expect(size(path.join(dir, 'dist'))).toBeLessThan(300 * 1000 * 1000);
   const adminFiles = walk(fs, path, path.join(admin, 'dist'));
   expect(adminFiles.length).toBeGreaterThan(0);
   expect(size(path.join(admin, 'dist'))).toBeLessThan(2 * 1024 * 1024);
