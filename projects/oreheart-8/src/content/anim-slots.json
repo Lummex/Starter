@@ -892,6 +892,1606 @@
     }
    },
    "candidates": {}
+  },
+  "mama-grubsnout": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-01",
+     "animation": "biped-idle-01",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-01",
+     "animation": "biped-idleBreak-01",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-01",
+     "animation": "biped-walk-01",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-03",
+     "animation": "biped-run-03",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-01",
+     "animation": "biped-attack-01",
+     "auto": true
+    },
+    "ability": {
+     "shared": true,
+     "clip": "biped-special-brew-toss",
+     "animation": "biped-special-brew-toss",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "pox-doctor-ratsbane": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-02",
+     "animation": "biped-idle-02",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-02",
+     "animation": "biped-idleBreak-02",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-03",
+     "animation": "biped-walk-03",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-03",
+     "animation": "biped-run-03",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-rifle-01",
+     "animation": "biped-ranged-rifle-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-01",
+     "animation": "biped-bonk-01",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "snot-sergeant-gurk": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-01",
+     "animation": "biped-idle-01",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-02",
+     "animation": "biped-idleBreak-02",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-01",
+     "animation": "biped-walk-01",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-01",
+     "animation": "biped-run-01",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-02",
+     "animation": "biped-attack-02",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-04",
+     "animation": "biped-bonk-04",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-04",
+     "animation": "biped-death-04",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "fizzwick-fuse-lighter": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-04",
+     "animation": "biped-idle-04",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-04",
+     "animation": "biped-idleBreak-04",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-02",
+     "animation": "biped-walk-02",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-02",
+     "animation": "biped-run-02",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-03",
+     "animation": "biped-attack-03",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "junk-catapult-crew": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-03",
+     "animation": "biped-idle-03",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-01",
+     "animation": "biped-idleBreak-01",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-02",
+     "animation": "biped-walk-02",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-02",
+     "animation": "biped-run-02",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-cannon-01",
+     "animation": "biped-ranged-cannon-01",
+     "auto": true
+    },
+    "ability": {
+     "shared": true,
+     "clip": "biped-throw-01",
+     "animation": "biped-throw-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-01",
+     "animation": "biped-bonk-01",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-04",
+     "animation": "biped-death-04",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "grease-gremlin": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-02",
+     "animation": "biped-idle-02",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-04",
+     "animation": "biped-idleBreak-04",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-02",
+     "animation": "biped-walk-02",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-02",
+     "animation": "biped-run-02",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-04",
+     "animation": "biped-attack-04",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-04",
+     "animation": "biped-bonk-04",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "bogwater-brewer": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-03",
+     "animation": "biped-idle-03",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-01",
+     "animation": "biped-idleBreak-01",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-02",
+     "animation": "biped-walk-02",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-04",
+     "animation": "biped-run-04",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-02",
+     "animation": "biped-attack-02",
+     "auto": true
+    },
+    "ability": {
+     "shared": true,
+     "clip": "biped-special-brew-toss",
+     "animation": "biped-special-brew-toss",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "bang-snap-imp": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-04",
+     "animation": "biped-idle-04",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-04",
+     "animation": "biped-idleBreak-04",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-02",
+     "animation": "biped-walk-02",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-02",
+     "animation": "biped-run-02",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-03",
+     "animation": "biped-attack-03",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-01",
+     "animation": "biped-bonk-01",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "sludge-lobber": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-02",
+     "animation": "biped-idle-02",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-02",
+     "animation": "biped-idleBreak-02",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-03",
+     "animation": "biped-walk-03",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-01",
+     "animation": "biped-run-01",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-sling-01",
+     "animation": "biped-ranged-sling-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-04",
+     "animation": "biped-death-04",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "wispmother-tallulah": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-01",
+     "animation": "biped-idle-01",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-01",
+     "animation": "biped-idleBreak-01",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-01",
+     "animation": "biped-walk-01",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-03",
+     "animation": "biped-run-03",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-01",
+     "animation": "biped-attack-01",
+     "auto": true
+    },
+    "ability": {
+     "shared": true,
+     "clip": "biped-ranged-cast-hand-01",
+     "animation": "biped-ranged-cast-hand-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "jinxmaster-wobblewick": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-04",
+     "animation": "biped-idle-04",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-02",
+     "animation": "biped-idleBreak-02",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-02",
+     "animation": "biped-walk-02",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-02",
+     "animation": "biped-run-02",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-cast-01",
+     "animation": "biped-ranged-cast-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-01",
+     "animation": "biped-bonk-01",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "hexfuse-battery-golem": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-01",
+     "animation": "biped-idle-01",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-01",
+     "animation": "biped-idleBreak-01",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-01",
+     "animation": "biped-walk-01",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-03",
+     "animation": "biped-run-03",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-01",
+     "animation": "biped-attack-01",
+     "auto": true
+    },
+    "special": {
+     "shared": true,
+     "clip": "biped-special-colossus-slam",
+     "animation": "biped-special-colossus-slam",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-04",
+     "animation": "biped-bonk-04",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "rune-scribe-nimbletoe": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-10",
+     "animation": "biped-idle-10",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-04",
+     "animation": "biped-idleBreak-04",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-03",
+     "animation": "biped-walk-03",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-01",
+     "animation": "biped-run-01",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-cast-hand-01",
+     "animation": "biped-ranged-cast-hand-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-01",
+     "animation": "biped-bonk-01",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "lens-grinder-lorelei": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-01",
+     "animation": "biped-idle-01",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-02",
+     "animation": "biped-idleBreak-02",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-01",
+     "animation": "biped-walk-01",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-03",
+     "animation": "biped-run-03",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-03",
+     "animation": "biped-attack-03",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-04",
+     "animation": "biped-death-04",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "hexbolt-tinker": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-04",
+     "animation": "biped-idle-04",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-02",
+     "animation": "biped-idleBreak-02",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-03",
+     "animation": "biped-walk-03",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-01",
+     "animation": "biped-run-01",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-bow-01",
+     "animation": "biped-ranged-bow-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-01",
+     "animation": "biped-bonk-01",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "spark-caddy": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-03",
+     "animation": "biped-idle-03",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-01",
+     "animation": "biped-idleBreak-01",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-02",
+     "animation": "biped-walk-02",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-01",
+     "animation": "biped-run-01",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-04",
+     "animation": "biped-attack-04",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-04",
+     "animation": "biped-death-04",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "hex-cadet": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-10",
+     "animation": "biped-idle-10",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-04",
+     "animation": "biped-idleBreak-04",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-01",
+     "animation": "biped-walk-01",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-01",
+     "animation": "biped-run-01",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-01",
+     "animation": "biped-attack-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-04",
+     "animation": "biped-bonk-04",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "ratchet-runt": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-04",
+     "animation": "biped-idle-04",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-04",
+     "animation": "biped-idleBreak-04",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-03",
+     "animation": "biped-walk-03",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-02",
+     "animation": "biped-run-02",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-03",
+     "animation": "biped-attack-03",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-01",
+     "animation": "biped-bonk-01",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "engineer-cogsworth": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-04",
+     "animation": "biped-idle-04",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-02",
+     "animation": "biped-idleBreak-02",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-04",
+     "animation": "biped-walk-04",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-03",
+     "animation": "biped-run-03",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-03",
+     "animation": "biped-attack-03",
+     "auto": true
+    },
+    "ability": {
+     "shared": true,
+     "clip": "biped-attack-03",
+     "animation": "biped-attack-03",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "forgemaster-hildegrim": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-01",
+     "animation": "biped-idle-01",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-01",
+     "animation": "biped-idleBreak-01",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-04",
+     "animation": "biped-walk-04",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-03",
+     "animation": "biped-run-03",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-01",
+     "animation": "biped-attack-01",
+     "auto": true
+    },
+    "special": {
+     "shared": true,
+     "clip": "biped-special-enforcer-stomp",
+     "animation": "biped-special-enforcer-stomp",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-04",
+     "animation": "biped-bonk-04",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "shieldwall-sergeant-brasha": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-01",
+     "animation": "biped-idle-01",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-02",
+     "animation": "biped-idleBreak-02",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-04",
+     "animation": "biped-walk-04",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-01",
+     "animation": "biped-run-01",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-02",
+     "animation": "biped-attack-02",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "master-smith-durga": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-01",
+     "animation": "biped-idle-01",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-01",
+     "animation": "biped-idleBreak-01",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-04",
+     "animation": "biped-walk-04",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-03",
+     "animation": "biped-run-03",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-03",
+     "animation": "biped-attack-03",
+     "auto": true
+    },
+    "ability": {
+     "shared": true,
+     "clip": "biped-attack-01",
+     "animation": "biped-attack-01",
+     "auto": true
+    },
+    "mine": {
+     "shared": true,
+     "clip": "biped-mine-pickaxe-01",
+     "animation": "biped-mine-pickaxe-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "grumble-drummer": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-03",
+     "animation": "biped-idle-03",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-01",
+     "animation": "biped-idleBreak-01",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-04",
+     "animation": "biped-walk-04",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-03",
+     "animation": "biped-run-03",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-02",
+     "animation": "biped-attack-02",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-04",
+     "animation": "biped-bonk-04",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "mule-wrangler-nessa": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-10",
+     "animation": "biped-idle-10",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-04",
+     "animation": "biped-idleBreak-04",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-03",
+     "animation": "biped-walk-03",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-01",
+     "animation": "biped-run-01",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-02",
+     "animation": "biped-attack-02",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-01",
+     "animation": "biped-bonk-01",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-04",
+     "animation": "biped-death-04",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "stonebreaker-miner": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-01",
+     "animation": "biped-idle-01",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-01",
+     "animation": "biped-idleBreak-01",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-04",
+     "animation": "biped-walk-04",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-03",
+     "animation": "biped-run-03",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-01",
+     "animation": "biped-attack-01",
+     "auto": true
+    },
+    "mine": {
+     "shared": true,
+     "clip": "biped-mine-pickaxe-01",
+     "animation": "biped-mine-pickaxe-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-03",
+     "animation": "biped-death-03",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "shield-cadet": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-04",
+     "animation": "biped-idle-04",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-02",
+     "animation": "biped-idleBreak-02",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-01",
+     "animation": "biped-walk-01",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-02",
+     "animation": "biped-run-02",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-03",
+     "animation": "biped-attack-03",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-01",
+     "animation": "biped-bonk-01",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "pebble-tosser": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-02",
+     "animation": "biped-idle-02",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-02",
+     "animation": "biped-idleBreak-02",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-03",
+     "animation": "biped-walk-03",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-01",
+     "animation": "biped-run-01",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-ranged-sling-01",
+     "animation": "biped-ranged-sling-01",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-02",
+     "animation": "biped-bonk-02",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-04",
+     "animation": "biped-death-04",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "hammerhand-apprentice": {
+   "slots": {
+    "idle": {
+     "shared": true,
+     "clip": "biped-idle-10",
+     "animation": "biped-idle-10",
+     "auto": true
+    },
+    "idleBreak": {
+     "shared": true,
+     "clip": "biped-idleBreak-03",
+     "animation": "biped-idleBreak-03",
+     "auto": true
+    },
+    "walk": {
+     "shared": true,
+     "clip": "biped-walk-04",
+     "animation": "biped-walk-04",
+     "auto": true
+    },
+    "run": {
+     "shared": true,
+     "clip": "biped-run-01",
+     "animation": "biped-run-01",
+     "auto": true
+    },
+    "attack": {
+     "shared": true,
+     "clip": "biped-attack-04",
+     "animation": "biped-attack-04",
+     "auto": true
+    },
+    "hit": {
+     "shared": true,
+     "clip": "biped-bonk-01",
+     "animation": "biped-bonk-01",
+     "auto": true
+    },
+    "defeat": {
+     "shared": true,
+     "clip": "biped-death-02",
+     "animation": "biped-death-02",
+     "auto": true
+    },
+    "knockback": {
+     "pack": "random",
+     "auto": true
+    },
+    "bowled": {
+     "pack": "random",
+     "auto": true
+    }
+   },
+   "candidates": {}
   }
  },
  "stats": {
@@ -904,5 +2504,6 @@
   "cardsWithPicks": 0,
   "auto": 9
  },
- "note_pack_random": "Oct 30 (Spring): {\"pack\":\"random\"} = this role draws a random clip of its kind from the shared biped pack (studio/pack-v2-slot-defaults.json); keep these when the file is regenerated"
+ "note_pack_random": "Oct 30 (Spring): {\"pack\":\"random\"} = this role draws a random clip of its kind from the shared biped pack (studio/pack-v2-slot-defaults.json); keep these when the file is regenerated",
+ "nov6": "Spring, Nov 6: slot picks for the 29 new biped cards (studio/spring-nov1/deliver/anim-slots-nov6.json), ids mapped to the game card ids"
 }
