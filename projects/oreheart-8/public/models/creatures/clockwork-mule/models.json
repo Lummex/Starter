@@ -1,0 +1,69 @@
+{
+ "generated": "2026-11-06",
+ "from": "Clay's unrigged slim model (factory-design/models-slim/new-cards-nov5/token-clockwork-mule/char.glb) + Spring's own rig and clips (studio/spring-nov1/quad/rig.py); uncompressed",
+ "rigged": true,
+ "parts": [],
+ "bodyType": "quadruped",
+ "notes": "Own skeleton (not the biped pack): no retarget. 14 bones, all pointing up. Clips made for this body only.",
+ "fileSizes": {
+  "char.glb": 1661968
+ },
+ "clips": {
+  "idle": "mule-idle-01",
+  "idleBreak": "mule-idlebreak-01",
+  "walk": "mule-walk-01",
+  "run": "mule-run-01",
+  "attack": "mule-attack-01",
+  "mine": "mule-mine-01",
+  "hit": "mule-bonk-01",
+  "defeat": "mule-death-01",
+  "react_lifted": "mule-lifted-01"
+ },
+ "gait": {
+  "walk": 1.115,
+  "run": 2.519
+ },
+ "events": {
+  "mule-attack-01": [
+   {
+    "name": "hit",
+    "frame": 12,
+    "time": 0.4
+   }
+  ],
+  "mule-mine-01": [
+   {
+    "name": "impact",
+    "frame": 15,
+    "time": 0.5
+   }
+  ],
+  "mule-bonk-01": [
+   {
+    "name": "impact",
+    "frame": 2,
+    "time": 0.07
+   }
+  ],
+  "mule-death-01": [
+   {
+    "name": "ground",
+    "frame": 18,
+    "time": 0.6
+   },
+   {
+    "name": "poof",
+    "frame": 33,
+    "time": 1.1
+   }
+  ]
+ },
+ "actions": {
+  "idle": 0,
+  "walk": 0,
+  "attack": 0,
+  "hit": 0,
+  "defeat": 0,
+  "mine": 0
+ }
+}

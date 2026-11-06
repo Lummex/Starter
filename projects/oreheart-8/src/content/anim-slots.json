@@ -2492,6 +2492,277 @@
     }
    },
    "candidates": {}
+  },
+  "piglet": {
+   "slots": {
+    "idle": {
+     "clip": "piglet-idle-01",
+     "animation": "piglet-idle-01",
+     "shared": false,
+     "auto": true
+    },
+    "idleBreak": {
+     "clip": "piglet-idlebreak-01",
+     "animation": "piglet-idlebreak-01",
+     "shared": false,
+     "auto": true
+    },
+    "walk": {
+     "clip": "piglet-walk-01",
+     "animation": "piglet-walk-01",
+     "shared": false,
+     "auto": true
+    },
+    "run": {
+     "clip": "piglet-run-01",
+     "animation": "piglet-run-01",
+     "shared": false,
+     "auto": true
+    },
+    "attack": {
+     "clip": "piglet-attack-01",
+     "animation": "piglet-attack-01",
+     "shared": false,
+     "auto": true
+    },
+    "hit": {
+     "clip": "piglet-bonk-01",
+     "animation": "piglet-bonk-01",
+     "shared": false,
+     "auto": true
+    },
+    "defeat": {
+     "clip": "piglet-death-01",
+     "animation": "piglet-death-01",
+     "shared": false,
+     "auto": true
+    },
+    "lifted": {
+     "clip": "piglet-lifted-01",
+     "animation": "piglet-lifted-01",
+     "shared": false,
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "runt-piglet": {
+   "slots": {
+    "idle": {
+     "clip": "piglet-idle-01",
+     "animation": "piglet-idle-01",
+     "shared": false,
+     "auto": true
+    },
+    "idleBreak": {
+     "clip": "piglet-idlebreak-01",
+     "animation": "piglet-idlebreak-01",
+     "shared": false,
+     "auto": true
+    },
+    "walk": {
+     "clip": "piglet-walk-01",
+     "animation": "piglet-walk-01",
+     "shared": false,
+     "auto": true
+    },
+    "run": {
+     "clip": "piglet-run-01",
+     "animation": "piglet-run-01",
+     "shared": false,
+     "auto": true
+    },
+    "attack": {
+     "clip": "piglet-attack-01",
+     "animation": "piglet-attack-01",
+     "shared": false,
+     "auto": true
+    },
+    "hit": {
+     "clip": "piglet-bonk-01",
+     "animation": "piglet-bonk-01",
+     "shared": false,
+     "auto": true
+    },
+    "defeat": {
+     "clip": "piglet-death-01",
+     "animation": "piglet-death-01",
+     "shared": false,
+     "auto": true
+    },
+    "lifted": {
+     "clip": "piglet-lifted-01",
+     "animation": "piglet-lifted-01",
+     "shared": false,
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "clockwork-mule": {
+   "slots": {
+    "idle": {
+     "clip": "mule-idle-01",
+     "animation": "mule-idle-01",
+     "shared": false,
+     "auto": true
+    },
+    "idleBreak": {
+     "clip": "mule-idlebreak-01",
+     "animation": "mule-idlebreak-01",
+     "shared": false,
+     "auto": true
+    },
+    "walk": {
+     "clip": "mule-walk-01",
+     "animation": "mule-walk-01",
+     "shared": false,
+     "auto": true
+    },
+    "run": {
+     "clip": "mule-run-01",
+     "animation": "mule-run-01",
+     "shared": false,
+     "auto": true
+    },
+    "attack": {
+     "clip": "mule-attack-01",
+     "animation": "mule-attack-01",
+     "shared": false,
+     "auto": true
+    },
+    "mine": {
+     "clip": "mule-mine-01",
+     "animation": "mule-mine-01",
+     "shared": false,
+     "auto": true
+    },
+    "hit": {
+     "clip": "mule-bonk-01",
+     "animation": "mule-bonk-01",
+     "shared": false,
+     "auto": true
+    },
+    "defeat": {
+     "clip": "mule-death-01",
+     "animation": "mule-death-01",
+     "shared": false,
+     "auto": true
+    },
+    "lifted": {
+     "clip": "mule-lifted-01",
+     "animation": "mule-lifted-01",
+     "shared": false,
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "stray-spark-wisp": {
+   "slots": {
+    "idle": {
+     "clip": "wisp-idle-01",
+     "animation": "wisp-idle-01",
+     "shared": false,
+     "auto": true
+    },
+    "idleBreak": {
+     "clip": "wisp-idlebreak-01",
+     "animation": "wisp-idlebreak-01",
+     "shared": false,
+     "auto": true
+    },
+    "walk": {
+     "clip": "wisp-walk-01",
+     "animation": "wisp-walk-01",
+     "shared": false,
+     "auto": true
+    },
+    "run": {
+     "clip": "wisp-run-01",
+     "animation": "wisp-run-01",
+     "shared": false,
+     "auto": true
+    },
+    "attack": {
+     "clip": "wisp-attack-01",
+     "animation": "wisp-attack-01",
+     "shared": false,
+     "auto": true
+    },
+    "hit": {
+     "clip": "wisp-bonk-01",
+     "animation": "wisp-bonk-01",
+     "shared": false,
+     "auto": true
+    },
+    "defeat": {
+     "clip": "wisp-death-01",
+     "animation": "wisp-death-01",
+     "shared": false,
+     "auto": true
+    },
+    "lifted": {
+     "clip": "wisp-lifted-01",
+     "animation": "wisp-lifted-01",
+     "shared": false,
+     "auto": true
+    }
+   },
+   "candidates": {}
+  },
+  "spark-wisp": {
+   "slots": {
+    "idle": {
+     "clip": "wisp-idle-01",
+     "animation": "wisp-idle-01",
+     "shared": false,
+     "auto": true
+    },
+    "idleBreak": {
+     "clip": "wisp-idlebreak-01",
+     "animation": "wisp-idlebreak-01",
+     "shared": false,
+     "auto": true
+    },
+    "walk": {
+     "clip": "wisp-walk-01",
+     "animation": "wisp-walk-01",
+     "shared": false,
+     "auto": true
+    },
+    "run": {
+     "clip": "wisp-run-01",
+     "animation": "wisp-run-01",
+     "shared": false,
+     "auto": true
+    },
+    "attack": {
+     "clip": "wisp-attack-01",
+     "animation": "wisp-attack-01",
+     "shared": false,
+     "auto": true
+    },
+    "hit": {
+     "clip": "wisp-bonk-01",
+     "animation": "wisp-bonk-01",
+     "shared": false,
+     "auto": true
+    },
+    "defeat": {
+     "clip": "wisp-death-01",
+     "animation": "wisp-death-01",
+     "shared": false,
+     "auto": true
+    },
+    "lifted": {
+     "clip": "wisp-lifted-01",
+     "animation": "wisp-lifted-01",
+     "shared": false,
+     "auto": true
+    }
+   },
+   "candidates": {}
   }
  },
  "stats": {

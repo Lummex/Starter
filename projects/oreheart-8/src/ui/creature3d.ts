@@ -175,6 +175,12 @@ const PARTS: Record<string, PartCfg[]> = {
   'shield-cadet': [],
   'pebble-tosser': [],
   'hammerhand-apprentice': [],
+  // Nov 6: Spring's own rigs and clips (quadruped piglets and mule, floating wisps)
+  'piglet': [],
+  'runt-piglet': [],
+  'clockwork-mule': [],
+  'stray-spark-wisp': [],
+  'spark-wisp': [],
 };
 export const hasCreature3dSlug = (id: string) => id in PARTS;
 
