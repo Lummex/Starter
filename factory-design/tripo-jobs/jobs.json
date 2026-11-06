@@ -1,0 +1,54 @@
+{
+ "jobs": [
+  {
+   "id": "goblin-grunt",
+   "char": [
+    "goblin-grunt--char-front.jpg",
+    "goblin-grunt--char-side.jpg",
+    "goblin-grunt--char-back.jpg"
+   ],
+   "height": 1,
+   "notes": "Tripo bake-off vs Meshy: goblin biped"
+  },
+  {
+   "id": "lens-grinder-lorelei",
+   "char": [
+    "nov5-lens-grinder-lorelei--char-front.jpg",
+    "nov5-lens-grinder-lorelei--char-side.jpg",
+    "nov5-lens-grinder-lorelei--char-back.jpg"
+   ],
+   "height": 1,
+   "notes": "Tripo bake-off vs Meshy: gnome biped (silver metal test)"
+  },
+  {
+   "id": "clockwork-beetle",
+   "char": [
+    "clockwork-beetle--char-front.jpg",
+    "clockwork-beetle--char-side.jpg",
+    "clockwork-beetle--char-back.jpg"
+   ],
+   "height": 1,
+   "notes": "Tripo bake-off vs Meshy: multi-leg, the hard case"
+  },
+  {
+   "id": "token-piglet",
+   "char": [
+    "nov5-token-piglet--char-front.jpg",
+    "nov5-token-piglet--char-side.jpg",
+    "nov5-token-piglet--char-back.jpg"
+   ],
+   "height": 1,
+   "notes": "Tripo bake-off vs Meshy: quadruped"
+  },
+  {
+   "id": "forgemaster-hildegrim-ashbeard",
+   "char": [
+    "nov5-forgemaster-hildegrim-ashbeard--char-front.jpg",
+    "nov5-forgemaster-hildegrim-ashbeard--char-side.jpg",
+    "nov5-forgemaster-hildegrim-ashbeard--char-back.jpg"
+   ],
+   "height": 1,
+   "notes": "Tripo bake-off vs Meshy: dwarf biped"
+  }
+ ]
+}

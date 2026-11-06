@@ -1,0 +1,66 @@
+name: Tripo — 3D models from approved sheets
+
+# Started by hand (Actions → this workflow → Run workflow). Makes each model ONCE; finished models are skipped and never overwritten.
+# Needs the repository secret TRIPO_API_KEY (Ken adds it himself; nobody pastes it anywhere else).
+# Results go to factory-design/tripo/<id>/ (models.json says "source": "tripo"), apart from the Meshy models in factory-design/models/.
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Only these ids (comma separated). Leave empty for every job in the chosen jobs file'
+        required: false
+        default: ''
+      jobs:
+        description: 'Which jobs file: tripo = factory-design/tripo-jobs/jobs.json (the bake-off units), meshy = every Meshy job'
+        required: false
+        default: 'tripo'
+        type: choice
+        options: [tripo, meshy]
+      dry_run:
+        description: 'Only show the balance and the estimated cost; start nothing'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tripo-models
+  cancel-in-progress: false
+
+jobs:
+  models:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the key is there
+        env:
+          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
+        run: |
+          if [ -z "$TRIPO_API_KEY" ]; then
+            echo "::error title=TRIPO_API_KEY is missing::Add the secret TRIPO_API_KEY (repo Settings > Secrets and variables > Actions > New repository secret; the key comes from https://developers.tripo3d.ai/en/keys), then run this again. Nothing was sent and nothing was spent."
+            exit 1
+          fi
+      - name: Make the models
+        env:
+          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
+          ONLY: ${{ github.event.inputs.only }}
+          JOBS: ${{ github.event.inputs.jobs }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: node factory/scripts/tripo-models.mjs
+      - name: Save the models to GitHub
+        if: always()
+        run: |
+          git config user.name "factory-bot"
+          git config user.email "factory-bot@users.noreply.github.com"
+          git add factory-design/tripo factory-design/tripo-jobs/state.json factory-design/tripo-jobs/last-run.json || true
+          if git diff --cached --quiet; then echo "nothing to save"; exit 0; fi
+          git commit -q -m "Tripo: 3D models from approved Model Editor sheets"
+          for i in 1 2 3 4 5; do git pull -q --rebase origin main && git push -q origin HEAD:main && exit 0; sleep 15; done
+          exit 1
