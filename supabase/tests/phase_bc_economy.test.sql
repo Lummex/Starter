@@ -363,9 +363,10 @@ select pg_temp.ok('every security definer function pins search_path',
               where n.nspname in ('public', 'private') and p.prosecdef
                 and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')));
 
-select pg_temp.ok('packs v2: the Miner pool is the five cheap Miners (all for the standard pack; a faction pack gets its own plus neutral)',
-  private.pack_pool_miners(null) = array['dwarf-smith-miner', 'gnome-prospector', 'gnome-smith-miner', 'goblin-scrounger', 'goblin-smith-miner']
-  and private.pack_pool_miners('goblins') = array['goblin-scrounger', 'goblin-smith-miner'] and 'pack_miners' = any (private.editable_settings()));
+select pg_temp.ok('packs v2: the Miner pool is the six cheap Miners (the five + Stonebreaker Miner, Nov 6; all for the standard pack; a faction pack gets its own plus neutral)',
+  private.pack_pool_miners(null) = array['dwarf-smith-miner', 'gnome-prospector', 'gnome-smith-miner', 'goblin-scrounger', 'goblin-smith-miner', 'stonebreaker-miner']
+  and private.pack_pool_miners('goblins') = array['goblin-scrounger', 'goblin-smith-miner'] and private.pack_pool_miners('dwarves') = array['dwarf-smith-miner', 'stonebreaker-miner']
+  and 'pack_miners' = any (private.editable_settings()));
 select pg_temp.ok('packs v2: crystals are in the pool at their rarity', (select bool_and(in_packs) from public.cards where type = 'crystal' and not disabled)
   and 'motherlode' = any (private.pack_pool(null, 'Collector')) and 'soul-shard' = any (private.pack_pool('goblins', 'Common')));
 update public.settings set value = '5'::jsonb where key = 'pack_miners';
