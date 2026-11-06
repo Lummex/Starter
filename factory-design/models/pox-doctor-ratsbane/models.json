@@ -4,19 +4,22 @@
  "tasks": {
   "character": "01a1b007-1c94-76e9-a165-43c3f8e787ed",
   "rig": "01a1b00a-ac03-739e-a9a9-ba61f68d861a",
-  "lance": "01a1b02a-8d84-763f-8075-bcd2fa558c36"
+  "lance": "01a1b02a-8d84-763f-8075-bcd2fa558c36",
+  "backpack-tanks": "01a1b041-8a54-77ce-a6ec-080b1e959c91"
  },
  "actions": {},
  "rigged": true,
  "parts": [
   "rig",
-  "lance"
+  "lance",
+  "backpack-tanks"
  ],
  "notes": "",
  "fileSizes": {
   "char.glb": 14659764,
   "rig.glb": 13166800,
-  "lance.glb": 9565180
+  "lance.glb": 9565180,
+  "backpack-tanks.glb": 12941440
  },
- "partsAdded": "2026-11-06T09:24:34.664Z"
+ "partsAdded": "2026-11-06T09:49:52.363Z"
 }

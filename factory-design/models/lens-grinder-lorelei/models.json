@@ -4,19 +4,22 @@
  "tasks": {
   "character": "01a1b003-c4e2-724e-900e-2ef53987cd10",
   "rig": "01a1b006-4631-768d-9e64-7ed10a64112c",
-  "lens": "01a1b028-3510-75e3-b4e2-ea4f30bde3d1"
+  "lens": "01a1b028-3510-75e3-b4e2-ea4f30bde3d1",
+  "backpack-scope": "01a1b041-8a5a-73de-a438-41a061cf4584"
  },
  "actions": {},
  "rigged": true,
  "parts": [
   "rig",
-  "lens"
+  "lens",
+  "backpack-scope"
  ],
  "notes": "",
  "fileSizes": {
   "char.glb": 14237556,
   "rig.glb": 12844172,
-  "lens.glb": 11215612
+  "lens.glb": 11215612,
+  "backpack-scope.glb": 12900236
  },
- "partsAdded": "2026-11-06T09:22:11.184Z"
+ "partsAdded": "2026-11-06T09:50:02.609Z"
 }

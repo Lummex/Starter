@@ -387,7 +387,8 @@
  "lens-grinder-lorelei": {
   "character": "01a1b003-c4e2-724e-900e-2ef53987cd10",
   "rig": "01a1b006-4631-768d-9e64-7ed10a64112c",
-  "lens": "01a1b028-3510-75e3-b4e2-ea4f30bde3d1"
+  "lens": "01a1b028-3510-75e3-b4e2-ea4f30bde3d1",
+  "backpack-scope": "01a1b041-8a5a-73de-a438-41a061cf4584"
  },
  "mama-grubsnout-brood-mother": {
   "character": "01a1b003-c581-7332-9ee0-c7f6c3d12f22",
@@ -413,7 +414,8 @@
  "pox-doctor-ratsbane": {
   "character": "01a1b007-1c94-76e9-a165-43c3f8e787ed",
   "rig": "01a1b00a-ac03-739e-a9a9-ba61f68d861a",
-  "lance": "01a1b02a-8d84-763f-8075-bcd2fa558c36"
+  "lance": "01a1b02a-8d84-763f-8075-bcd2fa558c36",
+  "backpack-tanks": "01a1b041-8a54-77ce-a6ec-080b1e959c91"
  },
  "ratchet-runt": {
   "character": "01a1b007-f552-77b7-8460-85bb3f7afe81",
