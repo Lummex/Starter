@@ -351,13 +351,15 @@ function syncInert(root: Element) {
 }
 let inertWatch: MutationObserver | null = null;
 /** Puts up one of the economy screens over whatever is showing (the menu stays underneath and comes back on Back). */
+/** Nov 6: true when the economy screens wear the D shell (signed in, or a test page pretending to be) */
+export const dashSkinned = () => (net.active && !stubMode()) || (isTestPage() && STUB.pretend);
 export function econShow(name: string, ...kids: (El | null)[]): El {
   closeEcon();
   const root = document.getElementById('app') || document.body;
   const main = h('main', { class: 'screen net-screen econ-screen', 'data-screen': 'econ-' + name, 'aria-label': name, tabindex: '-1' }, ...kids);
   root.append(main);
   // Nov 6 (design D): signed in, the D shell goes around the screen (the pack opening keeps its own stage)
-  if (net.active && !stubMode() || (isTestPage() && STUB.pretend)) { const titles: Record<string, string> = { shop: 'Shop', collection: 'Collection', quests: 'Daily Quests', pack: 'Pack opening' }; const infos: Record<string, string> = { shop: 'Every pack: 11 cards, at least 2 Rares \u00b7 a Legendary within every 40 packs' }; if (name !== 'pack') void import('./dashboard').then((m) => m.dashSkin(main, titles[name] || name, () => { backToMenu(); }, { info: infos[name] })).catch(() => {}); }
+  if (net.active && !stubMode() || (isTestPage() && STUB.pretend)) { const titles: Record<string, string> = { shop: 'Shop', collection: 'Collection', quests: 'Daily Quests', pack: 'Pack opening' }; const infos: Record<string, string> = { shop: 'Every pack: 11 cards, at least 2 Rares \u00b7 a Legendary within every 40 packs', collection: "Every card in Oreheart. Combine spare copies to upgrade a card's look.", quests: 'Three quests a day, one free reroll, a free pack every 7 days of finished quests' }; if (name !== 'pack') void import('./dashboard').then((m) => m.dashSkin(main, titles[name] || name, () => { backToMenu(); }, { info: infos[name] })).catch(() => {}); }
   syncInert(root);
   if (!inertWatch) { inertWatch = new MutationObserver(() => syncInert(root)); inertWatch.observe(root, { childList: true }); } // catches every way a screen closes
   main.focus({ preventScroll: true });
