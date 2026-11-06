@@ -218,7 +218,7 @@
 .dash.lobby .pvp-cmd img{width:100%;aspect-ratio:3/4;object-fit:cover;object-position:center 18%;border-radius:7px}
 .dash.lobby .pvp-cmd[aria-checked="true"]{border-color:#7cc8ff;box-shadow:0 0 14px rgba(124,200,255,.4);color:#fff}
 .dash.lobby .pvp-deck-label{display:flex;flex-direction:column;gap:.3em;font-size:.9em;color:var(--dim)}
-.dash.lobby .pvp-deck{height:2.8em;font:inherit;color:var(--ink);background:linear-gradient(#1b1f2b,#0a0b10);border:1px solid #6a7383;border-radius:8px;padding:0 .8em;text-align:left;cursor:pointer;width:100%}
+.dash.lobby .pvp-deck{height:2.8em;font:inherit;color:var(--ink);background:url(/art/ui/match/scroll-right.webp) right 14px center/18px no-repeat,url(/art/ui/match/frame-chip.webp) center/100% 100% no-repeat;border:0;border-radius:0;padding:0 2.6em 0 1.4em;/* Nov 6: Brush's painted chip frame stays (AC672) */text-align:left;cursor:pointer;width:100%}
 @media (max-width:900px){.dash.lobby .main{top:8.2em;grid-template-columns:30% 1fr 30%}.dash.lobby .col.left,.dash.lobby .col.right{display:flex}.dash.lobby .hdr{top:4.8em;height:2.6em;left:.7em;right:.7em}.dash.lobby .hdr .ttl{font-size:1.5em}.dash.lobby .hdr .info{display:none}.dash.lobby .test-server-bar{top:4.3em;font-size:.7em}.dash.lobby .stage .stage-h{font-size:1.8em}.dash.lobby .stage .play{height:3.4em;font-size:1.1em}.dash.lobby .lbl,.dash.lobby .auto{font-size:.85em}.dash.lobby .srv h4{font-size:1em}.dash.lobby .pvp-cmd{font-size:.65em}}
 
 /* Match End (set 1) */
@@ -596,3 +596,21 @@ html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .ds-acts{display:flex!im
 
 /* Nov 6: a long deck name must not widen its row (AC205): the name clips, every row keeps the same width */
 html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dstack{min-width:0!important}html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dstack .ds-name{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+
+/* Nov 6 (regions): the server picker rows and the "Search all regions" offer */
+.dash.lobby .srv-list{display:flex;flex-direction:column;gap:.45em}
+.dash.lobby button.srv{width:100%;text-align:left;cursor:pointer;color:inherit;font:inherit;border:0}
+.dash.lobby button.srv:focus-visible{outline:2px solid #bfe3ff;outline-offset:2px}
+.dash.lobby .srv h4 small.ping{margin-left:auto;color:#bfe3ff;font-variant-numeric:tabular-nums}
+.dash.lobby .srv .cnt{margin:0;font-size:.85em}
+.dash.lobby .panel .more[aria-label]{min-width:2em}
+.dash.lobby .stage .pvp-any{display:flex;flex-direction:column;align-items:center;gap:.4em;margin-top:.4em}
+.dash.lobby .stage .pvp-any .auto{margin:0}
+.dash.lobby .stage .pvp-any-btn{height:2.6em;padding:0 1.2em}
+.dash .top button.server{cursor:pointer;color:inherit;font:inherit;border:0}
+@media (max-width:900px){.dash.lobby .srv .cnt{font-size:.75em}.dash.lobby .srv h4 small.ping{font-size:.7em}}
+/* Nov 6 (AC205): a deck row on Choose Your Commander is one line: the deck stretches, Remove / Copy sit at its right, a long name clips */
+html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dslot{flex-direction:row!important;align-items:center!important;width:100%!important;min-width:0!important}html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dslot .dstack{flex:1 1 0!important;min-width:0!important;width:auto!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dslot .dstack{aspect-ratio:auto!important;height:auto!important;max-height:none!important;min-height:2.8em!important;padding:.3em .7em!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dslot{position:relative!important}html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dslot .dstack{min-height:3em!important;padding-right:7.6em!important}html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dslot .ds-acts{position:absolute!important;right:.5em!important;top:50%!important;transform:translateY(-50%)!important;margin:0!important}
+@media (max-width:900px){html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dslot .dstack{padding-right:.5em!important}}
