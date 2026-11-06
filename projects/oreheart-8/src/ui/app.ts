@@ -633,9 +633,11 @@ export class App {
 
   showSettings() {
     this.clear();
-    this.root.append(h('main', { class: 'screen center', 'data-screen': 'settings' },
+    const settingsMain = h('main', { class: 'screen center', 'data-screen': 'settings' },
       h('h1', { class: 'section cinzel' }, 'Settings'),
-      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.askBankButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.screenButton(), this.flowGroup(), this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), ...this.fxPanels(), this.offlinePanel(), btn('Back', 'menu-back', () => this.showMenu()))));
+      h('div', { class: 'stack' }, this.gfxButton(), this.remindButton(), this.askBankButton(), this.revealButton(), this.popupsSwitch(), this.displayModeGroup(), this.screenButton(), this.flowGroup(), this.slider('Sound effects volume', 'sfx-vol', audio.sfx, (v) => audio.setSfx(v)), this.slider('Voices', 'voice-vol', audio.voice, (v) => audio.setVoice(v)), this.slider('Music volume', 'music-vol', audio.music, (v) => audio.setMusic(v)), btn('Restore starter decks', '', (e) => { setHiddenStarters([]); (e.currentTarget as HTMLElement).textContent = 'Starter decks restored'; }), ...this.fxPanels(), this.offlinePanel(), btn('Back', 'menu-back', () => this.showMenu())));
+    this.root.append(settingsMain);
+    if (net.active) void import('../net/dashboard').then((m) => m.dashSkin(settingsMain, 'Settings', () => this.showMenu())).catch(() => {}); // Nov 6 (design D)
   }
 
   /** Offline app (Nov 2): one line in Settings saying whether the installed game plays with no internet, a button to fetch everything, and Restart when a new version waits. */
@@ -885,6 +887,7 @@ export class App {
     mainRef.el = mainEl as El;
     this.selState = () => ({ mode: picked ? 'focused' : 'row', commanderId: cmd, model: null }); // Ken, Oct 31: no 3D pop-up on this screen
     this.root.append(mainEl);
+    if (net.active) void import('../net/dashboard').then((m) => m.dashSkin(mainEl, 'Choose Your Commander', () => this.showMenu())).catch(() => {}); // Nov 6 (design D)
     setHall();
   }
 

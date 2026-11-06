@@ -490,7 +490,9 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     ownerBox('deck', 'dActions', actions, 'db-actionbox'),
     freeBox(67, 89.2, 19, 8, h('p', { class: 'db-msgs' }, status, limitMsg, alertEl), 'db-msgbox'),
     ownerBox('deck', 'dBack', btn('Back', 'db-back', () => app.showMenu()), 'db-backbox'));
-  app.root.append(h('main', { class: 'screen db-screen', 'data-screen': 'deck-builder' }, stage));
+  const mainEl = h('main', { class: 'screen db-screen', 'data-screen': 'deck-builder' }, stage);
+  app.root.append(mainEl);
+  if (net.active) void import('../net/dashboard').then((m) => m.dashSkin(mainEl, 'Deck Builder', () => app.showMenu())).catch(() => {}); // Nov 6 (design D)
   const screen = app.root.querySelector('.db-screen') as HTMLElement;
   const wake = () => cardsEl.removeAttribute('aria-hidden');
   for (const ev of ['pointermove', 'pointerdown', 'keydown', 'change', 'focusin']) screen.addEventListener(ev, wake);

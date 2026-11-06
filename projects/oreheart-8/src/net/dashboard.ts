@@ -185,6 +185,20 @@ function build(root: El, data: Data) {
         h('section', { class: 'panel', 'data-testid': 'dash-events', 'aria-label': 'Upcoming events' }, h('div', { class: 'ptitle h' }, ico(ladderCharm('oreheart')), 'Upcoming events'), ...eventRows(data.news)))));
 }
 
+/** Nov 6 (Ken approved the 11 screens): the D skin on a screen the checks drive. The screen's own DOM stays as it is; the
+ *  shell goes around it: the top bar (filled from the Dashboard's data), '‹ Dashboard' and the title. `back` runs on the
+ *  shell's back button; the screen keeps its own Back too. Nothing happens offline (the older look stays). */
+export function dashSkin(main: HTMLElement, title: string, back: () => void, opts: { info?: string } = {}): void {
+  if (!net.active || main.classList.contains('skin')) return;
+  main.classList.add('dash', 'skin');
+  const top = h('div', { class: 'top', 'aria-hidden': 'true' });
+  const head = h('div', { class: 'hdr' }, h('button', { type: 'button', class: 'btn panel back-btn', 'data-testid': 'skin-back', onclick: back }, '‹ Dashboard'), h('div', { class: 'h ttl' }, title), opts.info ? h('div', { class: 'info' }, opts.info) : null);
+  const body = h('div', { class: 'skin-body' });
+  while (main.firstChild) body.append(main.firstChild);
+  main.append(top, h('div', { class: 'logo', 'aria-hidden': 'true' }), head, body);
+  void loadAll().then((d) => { if (top.isConnected) { const t = topBar(d); t.setAttribute('aria-hidden', 'true'); top.replaceWith(t); } }).catch(() => {});
+}
+
 /** The Rankings screen: the top of the season, your own row, the ladder and the season countdown (Ken, Nov 5). */
 export async function showRankings(a: App): Promise<void> {
   app = a;

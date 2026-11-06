@@ -293,3 +293,22 @@
 .dash.lobby .stage .mode{display:grid;grid-template-columns:1fr 1fr;gap:.6em}
 .dash.lobby .stage .chip{flex:none;min-width:0;white-space:normal;line-height:1.1;font-size:.95em;height:2.9em;text-align:center;padding:0 .4em}
 .dash.lobby .stage .txt{min-width:0;overflow:hidden}
+
+/* the D skin around the screens the checks drive (Shop, Collection, Quests, Deck Builder, Settings) */
+.dash.skin{display:block;overflow:auto;padding:0}
+.dash.skin .hdr{position:absolute;left:1.5em;right:1.5em;top:6.6em;height:3.2em;display:flex;align-items:center;gap:1.2em;z-index:4}
+.dash.skin .hdr .ttl{font-size:2.1em}.dash.skin .hdr .info{font-size:1em;color:var(--soft);margin-left:auto}
+.dash.skin .back-btn{height:2.6em;font-size:.95em;padding:0 1em}
+.dash.skin .skin-body{position:absolute;left:1.5em;right:1.5em;top:10.4em;bottom:1.5em;overflow:auto;border-radius:14px;padding:1.1em 1.25em;background:linear-gradient(180deg,rgba(28,31,44,.88),rgba(10,11,17,.9));box-shadow:0 0 0 1px #0009,inset 0 0 0 1px rgba(255,255,255,.06),0 12px 40px rgba(0,0,0,.55)}
+.dash.skin .skin-body::before{content:"";position:absolute;inset:-2px;border-radius:15px;padding:2px;background:linear-gradient(160deg,#f4f6fa,#8d97a7 30%,#3c4350 55%,#c8cfda 80%,#6a7383);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.dash.skin .skin-body .econ-head{align-items:center}
+.dash.skin .skin-body .econ-head h1,.dash.skin .skin-body h1{font-family:Cinzel,serif;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 2px 0 #000}
+.dash.skin .skin-body .econ-back{font-size:.85em}
+.dash.skin .skin-body .econ-panel,.dash.skin .skin-body .shop-pack,.dash.skin .skin-body .shop-stash,.dash.skin .skin-body .q-streak{background:linear-gradient(180deg,rgba(28,31,44,.88),rgba(10,11,17,.9));border:1px solid #6a7383;border-radius:12px}
+.dash.skin .skin-body .net-race{font-family:Cinzel,serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.dash.skin.db-screen .skin-body{padding:0;background:none;box-shadow:none}
+.dash.skin.db-screen .skin-body::before{display:none}
+.dash.skin.db-screen .skin-body .db-stage{position:relative;height:100%}
+.dash.skin[data-screen="settings"] .skin-body{display:flex;flex-direction:column;align-items:center}
+.dash.skin[data-screen="settings"] .skin-body>h1{display:none}
+@media (max-width:900px){.dash.skin .hdr{top:4.8em;height:2.6em;left:.7em;right:.7em}.dash.skin .hdr .ttl{font-size:1.5em}.dash.skin .hdr .info{display:none}.dash.skin .skin-body{left:.7em;right:.7em;top:8em;bottom:.7em;padding:.6em .7em}}

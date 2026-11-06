@@ -359,6 +359,8 @@ export function econShow(name: string, ...kids: (El | null)[]): El {
   const root = document.getElementById('app') || document.body;
   const main = h('main', { class: 'screen net-screen econ-screen', 'data-screen': 'econ-' + name, 'aria-label': name, tabindex: '-1' }, ...kids);
   root.append(main);
+  // Nov 6 (design D): signed in, the D shell goes around the screen (the pack opening keeps its own stage)
+  if (net.active && !stubMode() || (isTestPage() && STUB.pretend)) { const titles: Record<string, string> = { shop: 'The Pack Shop', collection: 'Collection', quests: 'Daily Quests', pack: 'Pack opening' }; if (name !== 'pack') void import('./dashboard').then((m) => m.dashSkin(main, titles[name] || name, () => { backToMenu(); })).catch(() => {}); }
   syncInert(root);
   if (!inertWatch) { inertWatch = new MutationObserver(() => syncInert(root)); inertWatch.observe(root, { childList: true }); } // catches every way a screen closes
   main.focus({ preventScroll: true });
