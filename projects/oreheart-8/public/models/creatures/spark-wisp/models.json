@@ -6,7 +6,7 @@
  "bodyType": "floater",
  "notes": "Own skeleton (not the biped pack): no retarget. 2 bones, all pointing up. Clips made for this body only.",
  "fileSizes": {
-  "char.glb": 1409640
+  "char.glb": 1092464
  },
  "clips": {
   "idle": "wisp-idle-01",

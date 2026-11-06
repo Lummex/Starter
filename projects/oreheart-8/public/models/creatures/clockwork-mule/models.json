@@ -6,7 +6,7 @@
  "bodyType": "quadruped",
  "notes": "Own skeleton (not the biped pack): no retarget. 14 bones, all pointing up. Clips made for this body only.",
  "fileSizes": {
-  "char.glb": 1661968
+  "char.glb": 1414272
  },
  "clips": {
   "idle": "mule-idle-01",
