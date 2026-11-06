@@ -429,6 +429,7 @@ select public.pvp_queue_join(:PA, 'ranked', '{"userId": "c0000000-0000-4000-8000
 select public.pvp_queue_join(:PB, 'ranked', '{"userId": "c0000000-0000-4000-8000-000000000022"}', '{"commander": "borgo"}', false, 'us-west', false);
 create temp table rp2 as select public.pvp_queue_pair(:PB) as j;
 select pg_temp.ok('regions: a player searching all regions is found by one who stayed in their own', (select (j -> 'other' ->> 'user_id')::uuid = :PA and j ->> 'region' = 'us-central' from rp2), (select coalesce(j::text, 'null') from rp2));
+update public.matches set status = 'finished', ended_at = now() where id = '22222222-0000-4000-8000-000000000004'; -- Side C's old live match: a player in a match never pairs
 -- the same region comes first
 select public.pvp_queue_join(:PA, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000021"}', '{"commander": "grubnak"}', false, 'us-west', true);
 update public.pvp_queue set since = now() - interval '30 seconds' where user_id = :PA;
@@ -450,9 +451,9 @@ update public.matches set status = 'finished', ended_at = now() where id = '2222
 -- admin settings (Side C is the admin from the news checks above)
 select pg_temp.refused('regions: a player cannot change the region list', :PA, 'aal2', $q$ select public.admin_set_setting('regions', '[{"id": "x", "name": "X", "edge": "us-east-1", "enabled": true}]', 'test') $q$, 'not admin');
 select pg_temp.refused('regions: an edge Supabase does not offer is refused', :PC, 'aal2', $q$ select public.admin_set_setting('regions', '[{"id": "mars", "name": "Mars", "edge": "mars-1", "enabled": true}]', 'test') $q$, 'edge');
-select pg_temp.refused('regions: two regions with one id are refused', :PC, 'aal2', $q$ select public.admin_set_setting('regions', '[{"id": "a", "name": "A", "edge": "us-east-1", "enabled": true}, {"id": "a", "name": "B", "edge": "us-west-1", "enabled": true}]', 'test') $q$, 'share');
-select pg_temp.refused('regions: a list with nothing enabled is refused', :PC, 'aal2', $q$ select public.admin_set_setting('regions', '[{"id": "a", "name": "A", "edge": "us-east-1", "enabled": false}]', 'test') $q$, 'enabled');
-select pg_temp.works('regions: the admin opens Europe', :PC, 'aal2', $q$ select public.admin_set_setting('regions', (select jsonb_agg(case when x ->> 'id' = 'eu' then x || '{"enabled": true}'::jsonb else x end) from jsonb_array_elements(private.setting('regions')) x), 'EU players asked') $q$);
+select pg_temp.refused('regions: two regions with one id are refused', :PC, 'aal2', $q$ select public.admin_set_setting('regions', '[{"id": "aa", "name": "A", "edge": "us-east-1", "enabled": true}, {"id": "aa", "name": "B", "edge": "us-west-1", "enabled": true}]', 'test') $q$, 'share');
+select pg_temp.refused('regions: a list with nothing enabled is refused', :PC, 'aal2', $q$ select public.admin_set_setting('regions', '[{"id": "aa", "name": "A", "edge": "us-east-1", "enabled": false}]', 'test') $q$, 'enabled');
+select pg_temp.works('regions: the admin opens Europe', :PC, 'aal2', $q$ select public.admin_set_setting('regions', '[{"id": "us-east", "name": "US East", "edge": "us-east-1", "enabled": true}, {"id": "us-central", "name": "US Central", "edge": "us-east-1", "enabled": true}, {"id": "us-west", "name": "US West", "edge": "us-west-1", "enabled": true}, {"id": "eu", "name": "Europe", "edge": "eu-west-1", "enabled": true}]', 'EU players asked') $q$);
 select pg_temp.ok('regions: ... and Europe can be chosen now', private.region_ok('eu') and pg_temp.json_as(:PA, 'aal1', $q$ select public.set_region('eu') $q$) ->> 'mine' = 'eu');
 select pg_temp.refused('regions: the fallback time must be 10 to 600 s', :PC, 'aal2', $q$ select public.admin_set_setting('region_fallback_seconds', '5', 'test') $q$, '10 to 600');
 select pg_temp.works('regions: the admin sets the fallback to 90 s', :PC, 'aal2', $q$ select public.admin_set_setting('region_fallback_seconds', '90', 'test') $q$);
