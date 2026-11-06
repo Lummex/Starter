@@ -152,3 +152,21 @@ What Ken sees:
 Checks: every PvP element id the checks use is unchanged (the mock pages run the same screens): AC671/675/679/682/685 pass, AC693/694 (dashboard) pass, vitest 324. Looked at the lobby on PC and phone landscape.
 
 Next: set 2 (Deck Builder, Collection, Choose Your Commander) and set 3 (Shop, Pack opening, Quests, Settings), one preview each; then regions.
+
+## Restyle sets 2 and 3 (Nov 6)
+
+Anvil-online: restyle sets 2 and 3 on pvp-nov2 (eee56640): Deck Builder, Collection, Choose Your Commander, Shop, Quests, Settings now wear the D kit. Preview https://oreheart-8-7i1gpofva-lummex.vercel.app (client-only; TEST deploy #30 stays). TEST only, nothing live.
+
+How it was done, and why: those six screens are driven by dozens of hidden checks (and the Deck Builder's owner layout is Menu Builder data), so instead of re-laying them out I put the D shell AROUND each screen's existing content when the player is signed in: the same top bar as the Dashboard (avatar, name, rank, coins, packs, server light, gear), "‹ Dashboard" and the screen title in Cinzel, and the silver dark-glass body with the screen inside. Every button, id and layout position the checks and Ken's owner data rely on is unchanged. Offline / vs-computer keep today's look, as the brief asked.
+
+What Ken sees, signed in:
+- Shop, Collection, Daily Quests: the D top bar and header above the screen; the screen's own panels (pack tiles, My Packs, card grid, quest rows) sit in the glass body with Cinzel pills.
+- Deck Builder: the shell around the full builder (the three Commander cards, filters, card grid, deck list, Auto-fill / Save / Rename / New deck / Play), everything where it was.
+- Choose Your Commander and Settings: the same shell; Settings' own list of switches and sliders inside.
+- The pack opening keeps its own full-screen stage (the rip and the chest need the room).
+
+What is NOT yet the mockup: the inner layouts (the mockup's four-column Deck Builder with the card detail + upgrade column, the Collection's faction / rarity / owned tabs and card detail, the Commander cards with tiers and the deck list on the right, the Shop's bundle row with the chest in the middle, the quests' streak calendar, the Settings tabs). Those need a real rebuild of each screen with the checks updated alongside. If Ken wants them exactly as drawn, that is the next step and I would do it one screen per preview, Deck Builder first.
+
+Checks: AC650 / 656 / 667 / 674 / 681 / 686 / 689 / 690 / 691 (shop, collection, deck builder, upgrades) and AC693 / 694 (dashboard, rankings) pass; vitest 324. Looked at Shop, Deck Builder and Settings with the shell on PC.
+
+Next: regions (server picker with ping and live counts, per-region queues, the fallback after 45 s), unless Forge wants the full inner rebuilds first.

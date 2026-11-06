@@ -360,3 +360,5 @@
 - Nov 6: the Dashboard (src/net/dashboard.ts) replaces the menu when net.active and the page is not ?pvp=mock; the mock pages keep the old menu for their checks. The ladder arithmetic lives in src/content/ladder.ts and private.rank_of.
 
 - Nov 6: restyling a screen the checks drive: keep every data-testid and the clicked classes, wrap in the new shell, never duplicate an id in a side column (strict-mode locator errors). AC679 (an under-600 ms timing check) can flake when vitest runs right before it; rerun alone.
+
+- Nov 6: restyle sets 2+3 done as a D "skin" (dashSkin in src/net/dashboard.ts) around the check-driven screens; inner layouts untouched. Preview oreheart-8-7i1gpofva. Full inner rebuilds would need one screen per preview with the checks updated alongside.
