@@ -377,7 +377,7 @@ update public.settings set value = '{"Common": 10000, "Uncommon": 0, "Rare": 0, 
 update public.settings set value = '{"2": 0, "3": 0, "4": 0, "5": 10000}' where key = 'upgrade_drop_tiers';
 create temp table o5 as select pg_temp.json_as(:P1, 'aal1', $q$ select public.open_pack('standard', 'k5-upgrade-drop-1', false) $q$) as j;
 select pg_temp.ok('upgrades: with the odds forced, every Common in the pack drops as Mythic (tier 5, worth 20: Common steps 1/3/5/10 here) and the rest stay tier 1; history says so',
-  (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' = 'Common' and (c ->> 'tier')::int = 5) >= 5
+  (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' = 'Common' and (c ->> 'tier')::int = 5) >= 4 -- the 4 Common slots; the 3 Miner slots may all deal Uncommon Smith-Miners
   and (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' = 'Common' and (c ->> 'tier')::int <> 5) = 0
   and (select count(*) from o5, jsonb_array_elements(j -> 'cards') c where c ->> 'rarity' <> 'Common' and (c ->> 'tier')::int <> 1) = 0
   and (select count(*) from public.card_instances ci where ci.owner_id = :P1 and ci.origin_ref = (select j ->> 'opening_id' from o5) and ci.tier = 5 and ci.worth = 20)
