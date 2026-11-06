@@ -211,7 +211,7 @@ if (test) {
   }
   // Nov 2 (PvP): window.oreheart.pvp = { create, join, view, act, forfeit, tick, seq } (each one guards itself; added after the wrapper because it is an object)
   const pvpLazy = () => import('./net/pvp').then((m) => m.pvpHooks() as any); // the PvP code stays out of the main bundle; every hook answers a promise
-  hooks.pvp = Object.fromEntries(['create', 'join', 'view', 'act', 'forfeit', 'tick', 'seq', 'matchId', 'code', 'actLog', 'queue', 'leave', 'rank'].map((k) => [k, (...a: any[]) => pvpLazy().then((p) => p[k](...a)).catch(() => null)]));
+  hooks.pvp = Object.fromEntries(['create', 'join', 'view', 'act', 'forfeit', 'tick', 'seq', 'matchId', 'code', 'actLog', 'queue', 'leave', 'rank', 'region'].map((k) => [k, (...a: any[]) => pvpLazy().then((p) => p[k](...a)).catch(() => null)]));
 }
 
 // "Please rotate" overlay: shown whenever the window is portrait and narrower than 900px.

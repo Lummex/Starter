@@ -23,6 +23,7 @@ setDiceMode('live'); // the referee rolls fresh dice, like the real server
 const port = Number(process.argv[2] || process.env.PVP_MOCK_PORT || 4310);
 const store = new MemoryStore(() => { const u = new Uint32Array(1); crypto.getRandomValues(u); return u[0] / 4294967296; });
 store.newId = () => crypto.randomUUID();
+store.fallbackSeconds = 4; // Nov 6 (regions): "Search all regions" is offered after 4 s here (45 s on the real server, an admin setting), so the checks can see it
 const service = new PvpService(store, { engineVersion: ENGINE_VERSION + '-mock', summarize });
 // API checks that play hundreds of moves ask for no minimum Respond window with this header; browsers and the real function never have it
 const noMinService = new PvpService(store, { engineVersion: ENGINE_VERSION + '-mock', summarize, rules: { ...DEFAULT_RULES, respondMinSeconds: 0 } });

@@ -386,6 +386,83 @@ select pg_temp.ok('news: the new post leads the news list and the audit row is t
   and (select count(*) from public.admin_audit where action = 'news_set' and reason = 'test post') = 1);
 select pg_temp.refused('news: players cannot read the table directly', :PA, 'aal1', 'select * from public.news_posts', 'permission denied');
 
+
+-- ========== Regions (Nov 6): US East / Central / West pools, the counts, "Search all regions", the admin settings ==========
+select public.pvp_queue_leave(:PA); select public.pvp_queue_leave(:PB); select public.pvp_queue_leave(:PC);
+select pg_temp.ok('regions: the three US regions are enabled and editable, Europe is off, fallback 45 s, counts on',
+  (select array_agg(r.id order by r.id) from private.regions_enabled() r) = array['us-central', 'us-east', 'us-west']
+  and (select r.edge from private.regions_enabled() r where r.id = 'us-west') = 'us-west-1'
+  and not private.region_ok('eu') and private.region_default() = 'us-east'
+  and (private.setting('region_fallback_seconds'))::int = 45 and (private.setting('region_counts'))::boolean
+  and 'regions' = any (private.editable_settings()) and 'region_fallback_seconds' = any (private.editable_settings()) and 'region_counts' = any (private.editable_settings()));
+select pg_temp.refused('regions: an anonymous caller cannot read regions_info', null, 'aal1', 'select public.regions_info()');
+create temp table ri1 as select pg_temp.json_as(:PA, 'aal1', 'select public.regions_info()') as j;
+select pg_temp.ok('regions: a player sees the enabled regions with counts, no choice yet, the fallback time',
+  (select jsonb_array_length(j -> 'regions') = 3 and j -> 'mine' = 'null'::jsonb and (j ->> 'fallback_seconds')::int = 45 and (j ->> 'counts')::boolean
+          and j -> 'regions' -> 0 ->> 'id' = 'us-east' and (j -> 'regions' -> 0 ? 'online') and (j -> 'regions' -> 0 ? 'playing') and (j -> 'regions' -> 0 ? 'waiting') from ri1), (select j::text from ri1));
+select pg_temp.refused('regions: a closed region cannot be chosen', :PA, 'aal1', $q$ select public.set_region('eu') $q$, 'not open');
+select pg_temp.refused('regions: a made-up region cannot be chosen', :PA, 'aal1', $q$ select public.set_region('moon') $q$, 'not open');
+create temp table ri2 as select pg_temp.json_as(:PA, 'aal1', $q$ select public.set_region('us-west') $q$) as j;
+select pg_temp.ok('regions: choosing US West is remembered on the account and counts the player as online there',
+  (select j ->> 'mine' = 'us-west' and (select x ->> 'online' from jsonb_array_elements(j -> 'regions') x where x ->> 'id' = 'us-west')::int = 1 from ri2)
+  and (select region from public.profiles where id = :PA) = 'us-west', (select j::text from ri2));
+select pg_temp.works('regions: null clears the choice (back to nearest by ping)', :PA, 'aal1', $q$ select public.set_region(null) $q$);
+select pg_temp.ok('regions: ... and the profile forgets it', (select region is null from public.profiles where id = :PA));
+-- the queue is per region
+select public.pvp_queue_join(:PA, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000021"}', '{"commander": "grubnak"}', false, 'us-west', false);
+create temp table rq1 as select public.pvp_queue_join(:PB, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000022"}', '{"commander": "borgo"}', false, 'us-east', false) as j;
+select pg_temp.ok('regions: a join says its region, the others near (0: Side A is in the West) and the others everywhere (1), and the fallback time',
+  (select j ->> 'region' = 'us-east' and (j ->> 'others')::int = 0 and (j ->> 'others_all')::int = 1 and (j ->> 'fallback')::int = 45 and not (j ->> 'any')::boolean from rq1), (select j::text from rq1));
+select pg_temp.ok('regions: queuing sets the home region on the profile', (select region from public.profiles where id = :PB) = 'us-east' and (select region from public.profiles where id = :PA) = 'us-west');
+select pg_temp.ok('regions: East and West never meet by themselves', public.pvp_queue_pair(:PB) is null and public.pvp_queue_pair(:PA) is null and (select count(*) from public.pvp_queue) = 2);
+create temp table ri3 as select pg_temp.json_as(:PC, 'aal1', 'select public.regions_info()') as j;
+select pg_temp.ok('regions: the counts say one waiting in the East and one in the West',
+  (select (select x ->> 'waiting' from jsonb_array_elements(j -> 'regions') x where x ->> 'id' = 'us-east')::int = 1 and (select x ->> 'waiting' from jsonb_array_elements(j -> 'regions') x where x ->> 'id' = 'us-west')::int = 1 from ri3), (select j::text from ri3));
+-- "Search all regions": Side B agrees, and is paired with Side A in the West
+create temp table rq2 as select public.pvp_queue_join(:PB, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000022"}', '{"commander": "borgo"}', false, 'us-east', true) as j;
+select pg_temp.ok('regions: after agreeing to search all regions the others near count everyone (1) and the wait is kept', (select (j ->> 'others')::int = 1 and (j ->> 'any')::boolean and (j ->> 'waited')::int >= 0 from rq2), (select j::text from rq2));
+create temp table rp1 as select public.pvp_queue_pair(:PB) as j;
+select pg_temp.ok('regions: ... and the pairing crosses regions (the match keeps seat a''s region, the West)',
+  (select (j -> 'other' ->> 'user_id')::uuid = :PA and j ->> 'region' = 'us-west' and (j ->> 'cross_region')::boolean from rp1) and (select count(*) from public.pvp_queue) = 0, (select coalesce(j::text, 'null') from rp1));
+-- the other way round: the one who waits in a region can be found by someone searching all regions
+select public.pvp_queue_join(:PA, 'ranked', '{"userId": "c0000000-0000-4000-8000-000000000021"}', '{"commander": "grubnak"}', false, 'us-central', true);
+select public.pvp_queue_join(:PB, 'ranked', '{"userId": "c0000000-0000-4000-8000-000000000022"}', '{"commander": "borgo"}', false, 'us-west', false);
+create temp table rp2 as select public.pvp_queue_pair(:PB) as j;
+select pg_temp.ok('regions: a player searching all regions is found by one who stayed in their own', (select (j -> 'other' ->> 'user_id')::uuid = :PA and j ->> 'region' = 'us-central' from rp2), (select coalesce(j::text, 'null') from rp2));
+-- the same region comes first
+select public.pvp_queue_join(:PA, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000021"}', '{"commander": "grubnak"}', false, 'us-west', true);
+update public.pvp_queue set since = now() - interval '30 seconds' where user_id = :PA;
+select public.pvp_queue_join(:PC, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000023"}', '{"commander": "grubnak"}', false, 'us-east', false);
+select public.pvp_queue_join(:PB, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000022"}', '{"commander": "borgo"}', false, 'us-east', true);
+create temp table rp3 as select public.pvp_queue_pair(:PB) as j;
+select pg_temp.ok('regions: a searcher of all regions still takes the one in their own region first (Side C, East) over the longer wait elsewhere', (select (j -> 'other' ->> 'user_id')::uuid = :PC and not (j ->> 'cross_region')::boolean from rp3), (select coalesce(j::text, 'null') from rp3));
+select public.pvp_queue_leave(:PA);
+-- an unknown region falls back to the default (an older game that sends none)
+create temp table rq3 as select public.pvp_queue_join(:PA, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000021"}', '{"commander": "grubnak"}', false, 'moon', false) as j;
+select pg_temp.ok('regions: a region the list does not have becomes the default (US East)', (select j ->> 'region' = 'us-east' from rq3), (select j::text from rq3));
+select public.pvp_queue_leave(:PA);
+-- playing counts: an active match in the West
+insert into public.matches (id, mode, region, player_a, player_b, state, seq, status, engine_version)
+  values ('22222222-0000-4000-8000-0000000000af', 'unranked', 'us-west', :PA, :PB, '{"turn": 1}', 1, 'active', 'test');
+create temp table ri4 as select pg_temp.json_as(:PC, 'aal1', 'select public.regions_info()') as j;
+select pg_temp.ok('regions: an active match counts two players playing in its region', (select (select x ->> 'playing' from jsonb_array_elements(j -> 'regions') x where x ->> 'id' = 'us-west')::int = 2 from ri4), (select j::text from ri4));
+update public.matches set status = 'finished', ended_at = now() where id = '22222222-0000-4000-8000-0000000000af';
+-- admin settings (Side C is the admin from the news checks above)
+select pg_temp.refused('regions: a player cannot change the region list', :PA, 'aal2', $q$ select public.admin_set_setting('regions', '[{"id": "x", "name": "X", "edge": "us-east-1", "enabled": true}]', 'test') $q$, 'not admin');
+select pg_temp.refused('regions: an edge Supabase does not offer is refused', :PC, 'aal2', $q$ select public.admin_set_setting('regions', '[{"id": "mars", "name": "Mars", "edge": "mars-1", "enabled": true}]', 'test') $q$, 'edge');
+select pg_temp.refused('regions: two regions with one id are refused', :PC, 'aal2', $q$ select public.admin_set_setting('regions', '[{"id": "a", "name": "A", "edge": "us-east-1", "enabled": true}, {"id": "a", "name": "B", "edge": "us-west-1", "enabled": true}]', 'test') $q$, 'share');
+select pg_temp.refused('regions: a list with nothing enabled is refused', :PC, 'aal2', $q$ select public.admin_set_setting('regions', '[{"id": "a", "name": "A", "edge": "us-east-1", "enabled": false}]', 'test') $q$, 'enabled');
+select pg_temp.works('regions: the admin opens Europe', :PC, 'aal2', $q$ select public.admin_set_setting('regions', (select jsonb_agg(case when x ->> 'id' = 'eu' then x || '{"enabled": true}'::jsonb else x end) from jsonb_array_elements(private.setting('regions')) x), 'EU players asked') $q$);
+select pg_temp.ok('regions: ... and Europe can be chosen now', private.region_ok('eu') and pg_temp.json_as(:PA, 'aal1', $q$ select public.set_region('eu') $q$) ->> 'mine' = 'eu');
+select pg_temp.refused('regions: the fallback time must be 10 to 600 s', :PC, 'aal2', $q$ select public.admin_set_setting('region_fallback_seconds', '5', 'test') $q$, '10 to 600');
+select pg_temp.works('regions: the admin sets the fallback to 90 s', :PC, 'aal2', $q$ select public.admin_set_setting('region_fallback_seconds', '90', 'test') $q$);
+select pg_temp.refused('regions: the counts switch takes only true or false', :PC, 'aal2', $q$ select public.admin_set_setting('region_counts', '"yes"', 'test') $q$, 'true or false');
+select pg_temp.works('regions: the admin turns the counts off', :PC, 'aal2', $q$ select public.admin_set_setting('region_counts', 'false', 'test') $q$);
+create temp table ri5 as select pg_temp.json_as(:PA, 'aal1', 'select public.regions_info()') as j;
+select pg_temp.ok('regions: with the counts off the regions come without numbers and the fallback reads 90', (select not (j -> 'regions' -> 0 ? 'online') and not (j ->> 'counts')::boolean and (j ->> 'fallback_seconds')::int = 90 from ri5), (select j::text from ri5));
+select pg_temp.ok('regions: the dashboard counts switch is a true/false setting too (it had no shape check before)', pg_temp.json_as(:PC, 'aal2', $q$ select public.admin_set_setting('dashboard_counts', 'false', 'test') $q$) = 'false'::jsonb);
+select pg_temp.ok('regions: every admin change is in the audit', (select count(*) from public.admin_audit where action = 'set_setting' and (after ->> 'key') in ('regions', 'region_fallback_seconds', 'region_counts')) >= 3);
+
 select n, case when ok then 'PASS' else 'FAIL' end as result, name, case when ok then '' else detail end as detail
 from results order by n;
 

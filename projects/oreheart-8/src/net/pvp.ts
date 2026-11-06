@@ -8,6 +8,7 @@ import './dashboard.css';
 import { applyAction, legalActions as engineLegal, brewActions, hasMovesLeft, COMMANDERS, STARTER_DECK_LIST, warbandOf, deckProblems, CARDS, mulliganActions } from '../engine';
 import { net } from './state';
 import { getPlayerName } from '../ui/players';
+import { currentRegion, edgeOf, regionPanel, regionById } from './regions';
 import type { App } from '../ui/app';
 
 type El = HTMLElement;
@@ -58,8 +59,9 @@ export function supabaseTransport(): Transport {
   const sbc = async () => (await import('./online')).client();
   const call = async (op: string, body: Record<string, unknown> = {}) => {
     const c = await sbc();
-    // Nov 4 (lag): the function runs where asked; next to the database (East US) its 5-7 database hops are local instead of cross-country
-    const { data, error } = await c.functions.invoke('match', { body: { op, ...body }, region: 'us-east-1' as any });
+    // Nov 4 (lag): the function runs where asked (x-region). Nov 6 (regions): at the player's server's edge; the database stays in East US, so a
+    // West player's call still crosses the country once, but the function's own hops are next to the player.
+    const { data, error } = await c.functions.invoke('match', { body: { op, ...body }, region: edgeOf(currentRegion()) as any });
     if (error) {
       // a non-2xx answer: read the server's JSON if it sent one ({ ok:false, error }), else report the transport error
       try { const ctx: any = (error as any).context; if (ctx && typeof ctx.json === 'function') { const j = await ctx.json(); if (j) return j; } } catch { /* fall through */ }
@@ -440,10 +442,9 @@ function screen(name: string, ...kids: (El | null)[]): El {
   const head = h('div', { class: 'hdr' }, back, h('div', { class: 'h ttl' }, TITLES[name] || 'PvP'), h('div', { class: 'info', 'data-testid': 'lobby-info' }, ''));
   app!.root.append(h('main', { class: 'screen net-screen pvp-screen dash lobby', 'data-screen': 'pvp-' + name }, bar, top, h('div', { class: 'logo', 'aria-hidden': 'true' }), head, h('div', { class: 'main' }, left, stage, right)));
   lobbyCols = { left, right };
-  // the left column: the server (one for now; the regions job adds the picker) and the friend-code doors
-  left.append(
-    h('section', { class: 'panel', 'data-testid': 'lobby-server', 'aria-label': 'Server' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/silver/icon-play.webp', alt: '' }), 'Server'),
-      h('div', { class: 'srv well sel' }, h('h4', {}, h('span', { class: 'radio on' }), isMockPvp() ? 'Local practice server' : 'Test server', h('small', {}, 'the only one for now')), h('p', { class: 'auto' }, 'US East, Central and West servers with live player counts come next.'))),
+  // the left column: the server picker (Nov 6: US East / Central / West with ping and live counts; the heartbeat refreshes them) and the friend-code doors
+  const srv = regionPanel({ onChange: () => { const i = document.querySelector('[data-testid="lobby-info"]'); if (i) i.textContent = `Server: ${regionById(currentRegion())?.name || ''}`; } });
+  left.append(srv,
     h('section', { class: 'panel', 'data-testid': 'lobby-friend', 'aria-label': 'Play a friend', style: 'flex:1' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/silver/icon-deck.webp', alt: '' }), 'Play a friend'),
       h('p', { class: 'lbl' }, 'Make a secret code and send it, or type in the one a friend sent you.'),
       h('div', { class: 'frow' }, nbtn('Make a code', () => showMake(), 'sbtn panel pvp-make', { 'data-testid': 'lobby-make' }), nbtn('I have a code', () => showJoin(), 'sbtn panel join pvp-join', { 'data-testid': 'lobby-join' })),
@@ -596,10 +597,11 @@ function showQueue(mode: 'ranked' | 'unranked') {
   const waiting = h('p', { class: 'pvp-waiting', role: 'status', 'data-testid': 'pvp-queue-status' }, '');
   const timer = h('p', { class: 'pvp-wait-timer', 'data-testid': 'pvp-wait-timer', hidden: true }, '');
   const avg = h('p', { class: 'pvp-wait-avg', 'data-testid': 'pvp-wait-avg', 'aria-live': 'polite', hidden: true }, '');
+  const anyBox = h('div', { class: 'pvp-any', 'data-testid': 'pvp-queue-anybox', hidden: true }); // Nov 6 (regions): "Search all regions" lands here
   const info = h('p', { class: 'pvp-queue-info' }, mode === 'ranked'
     ? 'Ranked: you meet players near your rating. Win and it goes up, lose and it goes down; every quarter is a new season.'
     : 'Unranked: the next player who is looking, whatever their rank. Coins and quests count as usual.');
-  const go = nbtn('Find a match', () => { go.disabled = true; err.textContent = ''; void startQueue(mode, p.value(), waiting, err, go, cancel, timer, avg); }, 'primary pvp-go', { 'data-testid': 'pvp-queue-go' });
+  const go = nbtn('Find a match', () => { go.disabled = true; err.textContent = ''; void startQueue(mode, p.value(), waiting, err, go, cancel, timer, avg, anyBox); }, 'primary pvp-go', { 'data-testid': 'pvp-queue-go' });
   const cancel = nbtn('Back', () => { stopQueuePoll(); void transport().call('leave', {}).catch(() => {}); app!.showMenu(); }, 'pvp-cancel', { 'data-testid': 'pvp-queue-cancel' });
   const chips = h('div', { class: 'mode', role: 'group', 'aria-label': 'How to play' },
     h('button', { type: 'button', class: 'chip panel' + (mode === 'ranked' ? ' on' : ''), 'aria-pressed': String(mode === 'ranked'), onclick: () => { if (mode !== 'ranked') showQueue('ranked'); } }, 'Ranked'),
@@ -610,39 +612,56 @@ function showQueue(mode: 'ranked' | 'unranked') {
   cancel.classList.add('sbtn', 'panel');
   screen('queue', h('div', { class: 'h stage-h' }, mode === 'ranked' ? 'Ranked' : 'Unranked'), info,
     lastRank && mode === 'ranked' ? h('p', { class: 'pvp-rank' }, rankText(lastRank)) : null,
-    chips, waiting, h('div', { class: 'pvp-wait-box search' }, timer, avg), err, h('div', { class: 'net-actions' }, go, cancel));
+    chips, waiting, h('div', { class: 'pvp-wait-box search' }, timer, avg, anyBox), err, h('div', { class: 'net-actions' }, go, cancel));
   if (lobbyCols) lobbyCols.right.prepend(h('section', { class: 'panel', 'data-testid': 'lobby-army', 'aria-label': 'Your army' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/silver/icon-deck.webp', alt: '' }), 'Your army', h('button', { type: 'button', class: 'more', onclick: () => { void import('../ui/decks').then((m) => m.showDecks(app!)); } }, 'Deck Builder ›')), p.el));
 }
-async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string; deckId?: string; cards?: string[] }, waiting: El, err: El, go: El, cancel: El, timer?: El, avg?: El): Promise<{ ok: boolean; matchId?: string; error?: string }> {
+async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string; deckId?: string; cards?: string[] }, waiting: El, err: El, go: El, cancel: El, timer?: El, avg?: El, anyBox?: El, where?: { region?: string | null; anyRegion?: boolean }): Promise<{ ok: boolean; matchId?: string; error?: string }> {
   stopQueuePoll();
-  const body = { mode, commander: pick.commander, ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }) };
+  // Nov 6 (regions): the queue is per server; `anyRegion` (the player agreed to search all of them) is offered after the server's fallback time
+  let anyRegion = !!(where && where.anyRegion);
+  const region = (where && where.region) || currentRegion();
+  const body = { mode, commander: pick.commander, ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }), ...(region ? { region } : {}) };
+  const bodyNow = () => (anyRegion ? { ...body, anyRegion: true } : body);
+  let anyTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastQ: any = null; // the newest queue answer: the offer counts who is waiting elsewhere NOW, not at the first poll
+  const offerAll = (x: any) => {
+    x = lastQ || x;
+    if (!anyBox || anyRegion || anyBox.childElementCount) return;
+    const name = regionById(x && x.region ? x.region : region)?.name || 'your server';
+    const b = h('button', { type: 'button', class: 'net-btn sbtn panel pvp-any-btn', 'data-testid': 'pvp-queue-any', onclick: () => { anyRegion = true; anyBox.replaceChildren(h('p', { class: 'auto', 'data-testid': 'pvp-queue-anynote' }, 'Searching every server')); } }, 'Search all regions');
+    anyBox.replaceChildren(h('p', { class: 'auto' }, `Nobody near in ${name} yet${x && x.othersAll > (x.others || 0) ? ` · ${x.othersAll} waiting elsewhere` : ''}`), b);
+    anyBox.hidden = false;
+  };
+  const planOffer = (x: any) => { if (!anyBox || anyRegion || anyTimer) return; const secs = Math.max(1, Number(x && x.fallback) || 45), waited = Math.max(0, Number(x && x.waited) || 0); anyTimer = setTimeout(() => { if (waiting.isConnected && !anyRegion) offerAll(lastQ || x); }, Math.max(0, (secs - waited) * 1000)); };
   let polls = 0;
   const showAvg = (x: any) => { if (avg && x && 'avgWait' in x) { avg.textContent = avgText(x.avgWait, x.pairings); avg.hidden = !avg.textContent; } };
   const dots = () => h('span', { class: 'pvp-dots', 'aria-hidden': 'true' }, h('i', {}, '.'), h('i', {}, '.'), h('i', {}, '.'));
   let r: any;
-  try { r = await transport().call('queue', { ...body, avg: true }); } catch (e) { (go as HTMLButtonElement).disabled = false; err.textContent = friendlyError(e); return { ok: false, error: friendlyError(e) }; }
+  try { r = await transport().call('queue', { ...bodyNow(), avg: true }); } catch (e) { (go as HTMLButtonElement).disabled = false; err.textContent = friendlyError(e); return { ok: false, error: friendlyError(e) }; }
   if (!r || !r.ok) { (go as HTMLButtonElement).disabled = false; err.textContent = friendlyError(r?.error || 'Could not join the queue'); return { ok: false, error: r?.error }; }
   if (r.matchId) { if (await openMatch(r.matchId, r.view)) return { ok: true, matchId: r.matchId }; err.textContent = `A match started, but the screen did not open${lastOpenError ? ': ' + lastOpenError : ''}.`; return { ok: false }; }
   waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent (rating ${r.rating})`, dots());
   (cancel as HTMLButtonElement).textContent = 'Cancel';
   // the clock counts here, from when the server says the wait began; the average comes with the first answer and then every ~16 s (every 8th poll)
   if (timer) { timer.hidden = false; waitTimer(timer, Date.parse(r.since) || Date.now()); }
-  showAvg(r);
+  lastQ = r; showAvg(r); planOffer(r);
+  if (anyRegion && anyBox) { anyBox.replaceChildren(h('p', { class: 'auto', 'data-testid': 'pvp-queue-anynote' }, 'Searching every server')); anyBox.hidden = false; }
   return await new Promise((resolve) => {
     const poll = async () => {
-      if (!waiting.isConnected) { stopQueuePoll(); void transport().call('leave', {}).catch(() => {}); resolve({ ok: false, error: 'left' }); return; }
+      if (!waiting.isConnected) { stopQueuePoll(); if (anyTimer) clearTimeout(anyTimer); void transport().call('leave', {}).catch(() => {}); resolve({ ok: false, error: 'left' }); return; }
       try {
         polls++;
-        const x = await transport().call('queue', polls % 8 === 0 ? { ...body, avg: true } : body);
+        const x = await transport().call('queue', polls % 8 === 0 ? { ...bodyNow(), avg: true } : bodyNow());
         if (!waiting.isConnected) return;
+        if (x && x.ok) lastQ = x;
         showAvg(x);
         if (x && x.ok && x.matchId) {
-          stopQueuePoll();
+          stopQueuePoll(); if (anyTimer) clearTimeout(anyTimer);
           const opened = await openMatch(x.matchId, x.view);
           if (!opened && waiting.isConnected) { waiting.textContent = ''; err.textContent = `A match started, but the screen did not open${lastOpenError ? ': ' + lastOpenError : ''}. Go back to the menu and press "Back to your match".`; }
           resolve({ ok: opened, matchId: x.matchId });
         } else if (x && x.ok && x.waiting) {
-          waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent (rating ${x.rating}${x.others ? `, ${x.others} waiting` : ''})`, dots());
+          waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent (rating ${x.rating}${x.others ? `, ${x.others} waiting` : ''}${anyRegion ? ', every server' : ''})`, dots());
         } else if (x && !x.ok) { err.textContent = friendlyError(x.error); }
       } catch { /* keep polling */ }
     };
@@ -795,7 +814,8 @@ export function pvpHooks() {
   return {
     create: (commander?: string, deckId?: string, practice?: boolean) => safe(() => makeCode(pick(commander, deckId), practice === true)),
     // Nov 5 (modes): the queue through the real screens (the poll runs until a match opens or the screen is left)
-    queue: (mode: 'ranked' | 'unranked', commander?: string, deckId?: string) => safe(() => { showQueue(mode); const w = document.querySelector('[data-testid="pvp-queue-status"]') as El, e = document.querySelector('[data-screen="pvp-queue"] .net-alert') as El, g = document.querySelector('[data-testid="pvp-queue-go"]') as El, c = document.querySelector('[data-testid="pvp-queue-cancel"]') as El, tm = document.querySelector('[data-testid="pvp-wait-timer"]') as El, av = document.querySelector('[data-testid="pvp-wait-avg"]') as El; return startQueue(mode, pick(commander, deckId), w, e, g, c, tm, av); }),
+    queue: (mode: 'ranked' | 'unranked', commander?: string, deckId?: string, region?: string, anyRegion?: boolean) => safe(() => { showQueue(mode); const w = document.querySelector('[data-testid="pvp-queue-status"]') as El, e = document.querySelector('[data-screen="pvp-queue"] .net-alert') as El, g = document.querySelector('[data-testid="pvp-queue-go"]') as El, c = document.querySelector('[data-testid="pvp-queue-cancel"]') as El, tm = document.querySelector('[data-testid="pvp-wait-timer"]') as El, av = document.querySelector('[data-testid="pvp-wait-avg"]') as El, ab = document.querySelector('[data-testid="pvp-queue-anybox"]') as El; return startQueue(mode, pick(commander, deckId), w, e, g, c, tm, av, ab, { region: region || null, anyRegion: anyRegion === true }); }),
+    region: () => currentRegion(), // Nov 6 (regions)
     leave: () => safe(() => { stopQueuePoll(); return transport().call('leave', {}); }),
     rank: () => safe(() => transport().call('rank', {})),
     tiers: () => (current ? clone(current.tiers) : null),

@@ -822,3 +822,58 @@ for (const size of [{ width: 1600, height: 900 }, { width: 1280, height: 720 }, 
     await closeAll(page);
   });
 }
+
+test('AC695: server regions (Ken, Nov 5): the lobby lists US East, Central and West with a ping and live counts (online, playing, waiting) and the nearest is lit; a tap switches the server and the dashboard pill names it; two players on different servers are not paired, "Search all regions" is offered after the fallback time (4 s on the stand-in server) and taking it pairs them', async ({ browser }) => {
+  test.setTimeout(120000);
+  const id = uniq();
+  const a = await openAs(browser, 'alice' + id), b = await openAs(browser, 'bob' + id);
+  await atMenu(a); await atMenu(b);
+  // the picker in the lobby's left column
+  await a.locator('[data-testid="pvp-ranked"]').click();
+  const picker = a.locator('[data-testid="lobby-server"]');
+  await expect(picker).toBeVisible({ timeout: 10000 });
+  for (const r of ['us-east', 'us-central', 'us-west']) {
+    const row = picker.locator(`[data-testid="region-${r}"]`);
+    await expect(row).toBeVisible();
+    await expect(row.locator('[data-testid="region-ping"]')).toHaveText(/^\d+ ms$/, { timeout: 10000 });
+    await expect(row.locator('.cnt')).toHaveText(/^\d+ online · \d+ playing · \d+ waiting$/);
+  }
+  await expect(picker.locator('[data-testid="region-us-east"]')).toHaveAttribute('aria-checked', 'true'); // the nearest by ping
+  await expect(picker.locator('[data-testid="region-note"]')).toContainText(/nearest by ping/);
+  expect(await a.evaluate(() => window.oreheart.pvp.region())).toBe('us-east');
+  // a tap switches the server (remembered on this browser)
+  await picker.locator('[data-testid="region-us-west"]').click();
+  await expect(picker.locator('[data-testid="region-us-west"]')).toHaveAttribute('aria-checked', 'true');
+  await expect(picker.locator('[data-testid="region-note"]')).toContainText(/Your server is US West/);
+  expect(await a.evaluate(() => window.oreheart.pvp.region())).toBe('us-west');
+  expect(await a.evaluate(() => localStorage.getItem('oreheart.region'))).toBe('us-west');
+  // Alice (West) and Bob (East) wait in the same mode and are NOT paired; after the fallback Alice is offered every region
+  const pa = a.evaluate(() => window.oreheart.pvp.queue('unranked', 'grubnak', 'goblin-warband', 'us-west'));
+  await expect(a.locator('[data-testid="pvp-queue-status"]')).toContainText(/Looking for an opponent \(rating 1000/, { timeout: 10000 });
+  const pb = b.evaluate(() => window.oreheart.pvp.queue('unranked', 'borgo', 'dwarf-warband', 'us-east'));
+  await expect(b.locator('[data-testid="pvp-queue-status"]')).toContainText(/Looking for an opponent \(rating 1000/, { timeout: 10000 });
+  await a.waitForTimeout(2500);
+  expect(await a.locator('main.match').count(), 'West and East must not meet by themselves').toBe(0);
+  const offer = a.locator('[data-testid="pvp-queue-any"]');
+  await expect(offer).toBeVisible({ timeout: 10000 }); // ~4 s after the wait began on the stand-in server
+  await expect(a.locator('[data-testid="pvp-queue-anybox"]')).toContainText(/Nobody near in US West yet · 1 waiting elsewhere/);
+  await offer.click();
+  await expect(a.locator('[data-testid="pvp-queue-anynote"]')).toHaveText('Searching every server');
+  const ra = await pa, rb = await pb;
+  expect(ra && ra.ok && ra.matchId, JSON.stringify(ra)).toBeTruthy();
+  expect(rb && rb.ok && rb.matchId, JSON.stringify(rb)).toBeTruthy();
+  expect(ra.matchId).toBe(rb.matchId);
+  await inMatch(a); await inMatch(b);
+  await closeAll(a, b);
+  // the hook can ask for every region from the start, and the dashboard's server pill names the chosen server
+  const c = await openAs(browser, 'carol' + id), d = await openAs(browser, 'dan' + id);
+  await atMenu(c); await atMenu(d);
+  expect(await c.evaluate(() => window.oreheart.pvp.region())).toBe('us-east'); // the Dashboard's server pill (data-testid dash-server, "US East · online") is not on the mock-menu pages these checks use (Nov 6: ?pvp=mock keeps the old menu); it is looked at on the TEST preview
+  const pc = c.evaluate(() => window.oreheart.pvp.queue('ranked', 'grubnak', 'goblin-warband', 'us-central', true));
+  await expect(c.locator('[data-testid="pvp-queue-anynote"]')).toHaveText('Searching every server', { timeout: 10000 });
+  const rd = await d.evaluate(() => window.oreheart.pvp.queue('ranked', 'borgo', 'dwarf-warband', 'us-west'));
+  expect(rd && rd.ok && rd.matchId, JSON.stringify(rd)).toBeTruthy();
+  const rc = await pc;
+  expect(rc.matchId).toBe(rd.matchId);
+  await closeAll(c, d);
+});

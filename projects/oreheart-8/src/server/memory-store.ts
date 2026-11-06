@@ -1,7 +1,7 @@
 // An in-memory Store for the PvP service: the unit tests and the local mock server (tools/pvp-mock-server.mjs) use it.
 // Nothing here is used by the real server function.
 import { rankOfRating } from '../content/ladder';
-import type { Store, Room, MoveLog, Summaries, QueueEntry, RankInfo } from './service';
+import type { Store, Room, MoveLog, Summaries, QueueEntry, RankInfo, RegionInfo } from './service';
 import type { MatchRecord, View, Seat, PlayerInfo, DeckChoice } from './referee';
 
 const season = () => { const d = new Date(); return `${d.getUTCFullYear()}-Q${Math.floor(d.getUTCMonth() / 3) + 1}`; };
@@ -22,6 +22,9 @@ export class MemoryStore implements Store {
   tiers = new Map<string, Record<string, number>>(); // user -> card id -> tier (the mock's /debug/tier sets it)
   pairings: { mode: string; waitedA: number; waitedB: number; at: number }[] = []; // Nov 5: for the average wait
   ratings = new Map<string, RankInfo>();
+  /** Nov 6 (regions): the three US regions as the admin setting seeds them; fallbackSeconds = when the game offers "Search all regions" */
+  regionList: RegionInfo[] = [{ id: 'us-east', name: 'US East', edge: 'us-east-1' }, { id: 'us-central', name: 'US Central', edge: 'us-east-1' }, { id: 'us-west', name: 'US West', edge: 'us-west-1' }];
+  fallbackSeconds = 45;
   private ids = 0;
   constructor(public rng: () => number = Math.random) {}
 
@@ -72,15 +75,19 @@ export class MemoryStore implements Store {
     if (!r) { r = { season: season(), rating: 1000, name: rankName(1000), games: 0, wins: 0, losses: 0, peak: 1000 }; this.ratings.set(userId, r); }
     return r;
   }
-  async queueJoin(user: PlayerInfo, mode: 'ranked' | 'unranked', deck: DeckChoice, now: number, wantAvg = false) {
+  async regions() { return clone(this.regionList); }
+  async queueJoin(user: PlayerInfo, mode: 'ranked' | 'unranked', deck: DeckChoice, now: number, wantAvg = false, region?: string, anyRegion = false) {
     const cur = this.queue.get(user.userId);
-    const e: QueueEntry = { user: clone(user), deck: clone(deck), mode, rating: this.rankRow(user.userId).rating, since: cur && cur.mode === mode ? cur.since : now };
+    const reg = region && this.regionList.some((r) => r.id === region) ? region : this.regionList[0].id;
+    const e: QueueEntry = { user: clone(user), deck: clone(deck), mode, rating: this.rankRow(user.userId).rating, since: cur && cur.mode === mode && cur.region === reg ? cur.since : now, region: reg, anyRegion };
     this.queue.set(user.userId, e);
-    let others = 0; for (const q of this.queue.values()) if (q.mode === mode && q.user.userId !== user.userId) others++;
-    if (!wantAvg) return { rating: e.rating, since: e.since, others };
+    let others = 0, othersAll = 0;
+    for (const q of this.queue.values()) if (q.mode === mode && q.user.userId !== user.userId) { othersAll++; if (q.region === reg || anyRegion || q.anyRegion) others++; }
+    const base = { rating: e.rating, since: e.since, others, othersAll, region: reg, fallback: this.fallbackSeconds };
+    if (!wantAvg) return base;
     const recent = this.pairings.filter((p) => p.mode === mode && now - p.at < 30 * 60 * 1000).slice(-20);
     const avgWait = recent.length >= 3 ? Math.round(recent.reduce((s, p) => s + (p.waitedA + p.waitedB) / 2, 0) / recent.length) : null;
-    return { rating: e.rating, since: e.since, others, avgWait, pairings: recent.length };
+    return { ...base, avgWait, pairings: recent.length };
   }
   async queuePair(userId: string, now: number) {
     const me = this.queue.get(userId);
@@ -89,14 +96,16 @@ export class MemoryStore implements Store {
     let best: QueueEntry | null = null;
     for (const q of this.queue.values()) {
       if (q.user.userId === userId || q.mode !== me.mode) continue;
+      if (!(q.region === me.region || me.anyRegion || q.anyRegion)) continue; // Nov 6: same region, unless either side searches all
       if (me.mode === 'ranked' && Math.abs(q.rating - me.rating) > win) continue;
       if (await this.activeMatchFor(q.user.userId)) continue;
-      if (!best || q.since < best.since) best = q;
+      // the same region first, then the longer wait
+      if (!best || ((q.region === me.region) !== (best.region === me.region) ? q.region === me.region : q.since < best.since)) best = q;
     }
     if (!best) return null;
     this.queue.delete(userId); this.queue.delete(best.user.userId);
     this.pairings.push({ mode: me.mode, waitedA: Math.round((now - best.since) / 1000), waitedB: Math.round((now - me.since) / 1000), at: now });
-    return { mode: me.mode, myRating: me.rating, other: clone(best) };
+    return { mode: me.mode, myRating: me.rating, other: clone(best), region: best.region };
   }
   async queueLeave(userId: string) { this.queue.delete(userId); }
   async rankOf(userId: string) { return clone(this.rankRow(userId)); }

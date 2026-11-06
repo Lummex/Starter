@@ -13,6 +13,7 @@ import { getPlayerName } from '../ui/players';
 import { ladderCharm, rankOfRating } from '../content/ladder';
 import { collectionCards } from './quest-summary';
 import { CARDS, COMMANDERS } from '../engine';
+import { loadRegions, serverPillText, startHeartbeat, type RegionsInfo } from './regions';
 
 type El = HTMLElement;
 const ico = (src: string, cls = '') => h('img', { src, alt: '', draggable: 'false', class: cls || null });
@@ -22,12 +23,12 @@ let app: App | null = null;
 let dashMode = ((): string => { try { return localStorage.getItem('oreheart.playMode') || 'ranked'; } catch { return 'ranked'; } })();
 const MODES: [string, string][] = [['ranked', 'Ranked'], ['unranked', 'Unranked'], ['friend', 'Friend'], ['computer', 'Computer']];
 
-export interface Data { shop: ShopInfo | null; quests: QuestsInfo | null; rank: RankCard | null; news: NewsFeed | null; owned: Record<string, number> | null; online: boolean }
+export interface Data { shop: ShopInfo | null; quests: QuestsInfo | null; rank: RankCard | null; news: NewsFeed | null; owned: Record<string, number> | null; online: boolean; regions?: RegionsInfo | null }
 export async function loadAll(): Promise<Data> {
-  const [shop, quests, rank, news, owned] = await Promise.allSettled([api.shopInfo(), api.myQuests(), api.myRank(), api.newsFeed(), api.myCollection()]);
+  const [shop, quests, rank, news, owned, regions] = await Promise.allSettled([api.shopInfo(), api.myQuests(), api.myRank(), api.newsFeed(), api.myCollection(), loadRegions()]);
   const v = <T,>(r: PromiseSettledResult<T>): T | null => (r.status === 'fulfilled' ? r.value : null);
   const s = v(shop); if (s) setShop(s);
-  return { shop: s, quests: v(quests), rank: v(rank), news: v(news), owned: v(owned), online: rank.status === 'fulfilled' };
+  return { shop: s, quests: v(quests), rank: v(rank), news: v(news), owned: v(owned), online: rank.status === 'fulfilled', regions: v(regions) };
 }
 
 /** "12d 06h" until the season ends */
@@ -47,6 +48,8 @@ export async function showDashboard(a: App): Promise<void> {
   a.root.append(root);
   root.append(h('h1', { class: 'sr-only' }, 'Oreheart'));
   const data = await loadAll();
+  // Nov 6 (regions): the heartbeat keeps this player counted as online and the server pill's count fresh while the dashboard is up
+  startHeartbeat(root, () => { const pill = root.querySelector('[data-testid="dash-server"]'); if (pill) pill.replaceChildren(h('span', { class: 'dot' + (data.online ? '' : ' off') }), serverPillText(data.online)); });
   if (!root.isConnected) return;
   build(root, data);
   if (isTestPage()) (window as any).__dash = { data: () => data, mode: () => dashMode };
@@ -66,7 +69,8 @@ export function topBar(data: Data, extra: El[] = []): El {
     h('button', { type: 'button', class: 'coins panel', 'aria-label': `${coins == null ? '' : fmt(coins) + ' '}coins: open the shop`, 'data-testid': 'dash-coins', onclick: () => { void openScreen('shop'); } }, ico(COIN), coins == null ? '…' : fmt(coins), h('span', { class: 'plus' }, '+')),
     free > 0 || stashN > 0 ? h('button', { type: 'button', class: 'free panel', 'data-testid': 'dash-free', onclick: () => { void openScreen('shop'); } }, ico(FREEPACK), free > 0 ? `${free} free pack${free === 1 ? '' : 's'}` : `${stashN} sealed pack${stashN === 1 ? '' : 's'}`) : null,
     h('div', { class: 'grow' }),
-    h('div', { class: 'server panel', 'data-testid': 'dash-server' }, h('span', { class: 'dot' + (data.online ? '' : ' off') }), data.online ? 'Test server · online' : 'Test server · cannot reach it'),
+    // Nov 6 (regions): the player's server and how many are on it; a tap opens the lobby where the server can be changed
+    h('button', { type: 'button', class: 'server panel', 'data-testid': 'dash-server', title: 'Your server: change it in the PvP Lobby', onclick: () => net.openPvp?.('ranked') }, h('span', { class: 'dot' + (data.online ? '' : ' off') }), serverPillText(data.online)),
     ...extra,
     h('button', { type: 'button', class: 'icn panel', 'aria-label': 'Settings', onclick: () => app?.showSettings() }, ico('/art/ui/silver/icon-settings.webp')));
 }

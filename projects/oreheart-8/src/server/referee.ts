@@ -26,6 +26,7 @@ export interface MatchRecord {
   mode?: MatchMode;       // Nov 5: friend (code), ranked / unranked (queue), practice (code, nothing paid or counted)
   tiers?: Record<Seat, Record<string, number>>; // Nov 5: each player's Commander tier ('commander-<id>' -> 2..5), public to both; a card's tier rides on its copy in the state
   rating?: Record<Seat, { before: number; after: number }>; // Nov 5: a ranked match's rating change, once the store paid it out
+  region?: string | null;  // Nov 6: the server region the match counts under (seat a's region; stats only)
   roomCode: string | null;
   players: Record<Seat, PlayerInfo>;
   decks: Record<Seat, DeckChoice>;

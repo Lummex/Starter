@@ -26,11 +26,11 @@ class SupabaseStore {
     const { data, error } = await this.db.from('rooms').select('*').eq('code', code).maybeSingle();
     if (error) throw new Error(error.message);
     if (!data) return null;
-    return { code: data.code, mode: data.host_deck.mode === 'practice' ? 'practice' : 'friend', host: data.host_deck.player, hostDeck: data.host_deck.deck, guest: data.guest_deck?.player ?? null, guestDeck: data.guest_deck?.deck ?? null,
+    return { code: data.code, mode: data.host_deck.mode === 'practice' ? 'practice' : 'friend', region: data.host_deck.region ?? null, host: data.host_deck.player, hostDeck: data.host_deck.deck, guest: data.guest_deck?.player ?? null, guestDeck: data.guest_deck?.deck ?? null,
       status: data.status, matchId: data.match_id, createdAt: Date.parse(data.created_at), expiresAt: Date.parse(data.expires_at) };
   }
   async putRoom(r: any) {
-    const row = { code: r.code, host: r.host.userId, guest: r.guest?.userId ?? null, host_deck: { player: r.host, deck: r.hostDeck, mode: r.mode || 'friend' }, guest_deck: r.guest ? { player: r.guest, deck: r.guestDeck } : null,
+    const row = { code: r.code, host: r.host.userId, guest: r.guest?.userId ?? null, host_deck: { player: r.host, deck: r.hostDeck, mode: r.mode || 'friend', region: r.region ?? null }, guest_deck: r.guest ? { player: r.guest, deck: r.guestDeck } : null,
       status: r.status, match_id: r.matchId, created_at: new Date(r.createdAt).toISOString(), expires_at: new Date(r.expiresAt).toISOString() };
     const { error } = await this.db.from('rooms').upsert(row, { onConflict: 'code' });
     if (error) throw new Error(error.message);
@@ -60,7 +60,7 @@ class SupabaseStore {
       result: m.result?.winner ?? (m.result ? 'tie' : null), end_reason: m.result?.reason ?? null, turns: m.state?.turn ?? 0, updated_at: new Date().toISOString(), ended_at: m.endedAt ? new Date(m.endedAt).toISOString() : null };
   }
   async insertMatch(m: any) {
-    const { error } = await this.db.from('matches').insert({ id: m.id, mode: m.mode || 'friend', room_code: m.roomCode, player_a: m.players.a.userId, player_b: m.players.b.userId, engine_version: m.engineVersion, created_at: new Date(m.createdAt).toISOString(), ...this.columns(m) });
+    const { error } = await this.db.from('matches').insert({ id: m.id, mode: m.mode || 'friend', region: m.region ?? null, room_code: m.roomCode, player_a: m.players.a.userId, player_b: m.players.b.userId, engine_version: m.engineVersion, created_at: new Date(m.createdAt).toISOString(), ...this.columns(m) });
     if (error) throw new Error(error.message);
   }
   async updateMatch(m: any, expectedSeq: number) {
@@ -90,18 +90,29 @@ class SupabaseStore {
     return ra && rb ? { rating: { a: { before: Number(ra.before), after: Number(ra.after) }, b: { before: Number(rb.before), after: Number(rb.after) } } } : true;
   }
   // Nov 5 (modes): the queue and the ratings live in the database (pvp_queue_* and pvp_rank_of are service-role doors)
-  async queueJoin(user: any, mode: 'ranked' | 'unranked', deck: any, _now?: number, wantAvg = false) {
-    const { data, error } = await this.db.rpc('pvp_queue_join', { p_user: user.userId, p_mode: mode, p_player: user, p_deck: deck, p_want_avg: wantAvg });
+  async queueJoin(user: any, mode: 'ranked' | 'unranked', deck: any, _now?: number, wantAvg = false, region?: string, anyRegion = false) {
+    // Nov 6 (regions): the 7-argument door; the database picks the default region when the one asked for is not enabled
+    const { data, error } = await this.db.rpc('pvp_queue_join', { p_user: user.userId, p_mode: mode, p_player: user, p_deck: deck, p_want_avg: wantAvg, p_region: region ?? null, p_any: anyRegion });
     if (error) throw new Error(error.message);
     return { rating: Number(data?.rating) || 1000, since: Date.parse(data?.since) || Date.now(), others: Number(data?.others) || 0,
-      avgWait: data && data.avg_wait != null ? Number(data.avg_wait) : null, pairings: Number(data?.pairings) || 0 };
+      avgWait: data && data.avg_wait != null ? Number(data.avg_wait) : null, pairings: Number(data?.pairings) || 0,
+      region: data?.region ? String(data.region) : region, othersAll: Number(data?.others_all) || 0, fallback: Number(data?.fallback) || 45 };
+  }
+  /** Nov 6: the enabled regions from the `regions` setting (id, name, edge), read once per half minute per instance */
+  async regions() {
+    if (regionsCache && Date.now() - regionsCache.at < 30_000) return regionsCache.list;
+    const { data } = await this.db.from('settings').select('value').eq('key', 'regions').maybeSingle();
+    const raw: any[] = data && Array.isArray(data.value) ? data.value : [];
+    const list = raw.filter((r) => r && r.enabled === true && typeof r.id === 'string').map((r) => ({ id: String(r.id), name: String(r.name || r.id), edge: String(r.edge || 'us-east-1') }));
+    regionsCache = { at: Date.now(), list: list.length ? list : [{ id: 'us-east', name: 'US East', edge: 'us-east-1' }] };
+    return regionsCache.list;
   }
   async queuePair(userId: string, _now?: number) {
     const { data, error } = await this.db.rpc('pvp_queue_pair', { p_user: userId });
     if (error) throw new Error(error.message);
     if (!data || !data.other) return null;
     const o = data.other;
-    return { mode: data.mode, myRating: Number(data.my_rating) || 1000, other: { user: o.player, deck: o.deck, mode: data.mode, rating: Number(o.rating) || 1000, since: Date.parse(o.since) || Date.now() } };
+    return { mode: data.mode, myRating: Number(data.my_rating) || 1000, region: data.region ? String(data.region) : undefined, other: { user: o.player, deck: o.deck, mode: data.mode, rating: Number(o.rating) || 1000, since: Date.parse(o.since) || Date.now(), region: o.region ? String(o.region) : undefined } };
   }
   async queueLeave(userId: string) { const { error } = await this.db.rpc('pvp_queue_leave', { p_user: userId }); if (error) throw new Error(error.message); }
   async rankOf(userId: string) {
@@ -128,6 +139,7 @@ class SupabaseStore {
 
 // Ken's clock numbers change rarely: read once per half minute per instance instead of on every move
 let rulesCache: { at: number; rules: any } | null = null;
+let regionsCache: { at: number; list: { id: string; name: string; edge: string }[] } | null = null;
 async function cachedRules(store: SupabaseStore) {
   if (rulesCache && Date.now() - rulesCache.at < 30_000) return rulesCache.rules;
   const rules = await store.rules();

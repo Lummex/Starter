@@ -7,6 +7,7 @@ import { startMatch, playerAction, applyTimeouts, forfeit, viewsFor, viewFor, se
 export interface Room {
   code: string;
   mode?: 'friend' | 'practice'; // Nov 5: a practice code pays and counts nothing
+  region?: string | null; // Nov 6: the host's region (the match counts under it)
   host: PlayerInfo; hostDeck: DeckChoice;
   guest: PlayerInfo | null; guestDeck: DeckChoice | null;
   status: 'waiting' | 'started' | 'cancelled' | 'expired';
@@ -14,7 +15,9 @@ export interface Room {
   createdAt: number; expiresAt: number;
 }
 /** Nov 5 (modes): a player waiting in the ranked or unranked queue. */
-export interface QueueEntry { user: PlayerInfo; deck: DeckChoice; mode: 'ranked' | 'unranked'; rating: number; since: number }
+export interface QueueEntry { user: PlayerInfo; deck: DeckChoice; mode: 'ranked' | 'unranked'; rating: number; since: number; region?: string; anyRegion?: boolean }
+/** Nov 6: a server region as the admin setting lists it (id, name, the Supabase edge for x-region) */
+export interface RegionInfo { id: string; name: string; edge: string }
 export interface RankInfo { season: string; rating: number; name: string; games: number; wins: number; losses: number; peak: number; place?: number | null }
 export interface MoveLog { matchId: string; seq: number; userId: string; action: any; ok: boolean; error: string | null; ms: number }
 export interface Summaries { a: any; b: any }
@@ -40,9 +43,11 @@ export interface Store {
   random(): number; // [0,1) from a secure source
   // Nov 5 (modes): the ranked / unranked queue and the season ratings
   /** wantAvg: also the average wait of recent pairings in this mode (seconds; null when fewer than 3 in the last 30 min) */
-  queueJoin(user: PlayerInfo, mode: 'ranked' | 'unranked', deck: DeckChoice, now: number, wantAvg?: boolean): Promise<{ rating: number; since: number; others: number; avgWait?: number | null; pairings?: number }>;
-  /** pairs this player with the longest-waiting fit; both leave the queue in the same step; null when nobody fits */
-  queuePair(userId: string, now: number): Promise<{ mode: 'ranked' | 'unranked'; myRating: number; other: QueueEntry } | null>;
+  queueJoin(user: PlayerInfo, mode: 'ranked' | 'unranked', deck: DeckChoice, now: number, wantAvg?: boolean, region?: string, anyRegion?: boolean): Promise<{ rating: number; since: number; others: number; avgWait?: number | null; pairings?: number; region?: string; othersAll?: number; fallback?: number }>;
+  /** pairs this player with the longest-waiting fit (Nov 6: in the same region, or across regions when either side said "search all"); both leave the queue in the same step; null when nobody fits */
+  queuePair(userId: string, now: number): Promise<{ mode: 'ranked' | 'unranked'; myRating: number; other: QueueEntry; region?: string } | null>;
+  /** Nov 6: the enabled server regions, first = the default */
+  regions(): Promise<RegionInfo[]>;
   queueLeave(userId: string): Promise<void>;
   rankOf(userId: string): Promise<RankInfo>;
   /** Nov 5 (upgraded cards): the best tier this player owns of each of these cards (card id -> 2..5); {} when none */
@@ -93,6 +98,7 @@ export class PvpService {
         case 'queue': return await this.queue(body, user, now);
         case 'leave': await this.store.queueLeave(user.userId); return { ok: true };
         case 'rank': return { ok: true, rank: await this.store.rankOf(user.userId) };
+        case 'regions': return { ok: true, regions: await this.store.regions() }; // Nov 6: the enabled servers (the full picker with counts is regions_info() in the database)
         default: return { ok: false, error: `Unknown op "${op}"` };
       }
     } catch (e: any) {
@@ -132,7 +138,7 @@ export class PvpService {
     const deck = await this.deckFor(user, body);
     let code = this.newCode();
     for (let i = 0; i < 20 && (await this.store.getRoom(code)); i++) code = this.newCode();
-    const room: Room = { code, mode: body?.practice === true ? 'practice' : 'friend', host: user, hostDeck: deck, guest: null, guestDeck: null, status: 'waiting', matchId: null, createdAt: now, expiresAt: now + ROOM_MINUTES * 60 * 1000 };
+    const room: Room = { code, mode: body?.practice === true ? 'practice' : 'friend', region: await this.regionOf(body), host: user, hostDeck: deck, guest: null, guestDeck: null, status: 'waiting', matchId: null, createdAt: now, expiresAt: now + ROOM_MINUTES * 60 * 1000 };
     await this.store.putRoom(room);
     return { ok: true, code, mode: room.mode, expiresAt: new Date(room.expiresAt).toISOString() };
   }
@@ -178,6 +184,7 @@ export class PvpService {
     const seed = Math.floor(this.store.random() * 2147483647);
     const m = startMatch(id, room.code, { a: room.host, b: user }, { a: room.hostDeck, b: deck }, now, this.rules, seed, this.engineVersion);
     m.mode = room.mode === 'practice' ? 'practice' : 'friend';
+    m.region = room.region ?? null;
     await this.tiersFor(m);
     room.guest = user; room.guestDeck = deck; room.status = 'started'; room.matchId = id;
     if (!(await this.store.claimRoom(room))) fail('Someone else just joined that code.');
@@ -197,11 +204,14 @@ export class PvpService {
     const pd = deckProblem(deck);
     if (pd) fail(pd);
     const wantAvg = body?.avg === true; // Nov 5 (Ken: the average wait): asked for now and then, not on every poll
-    const q = await this.store.queueJoin(user, mode!, deck, now, wantAvg);
+    // Nov 6 (regions): the queue is per region; anyRegion = the player agreed to "Search all regions" (offered after `fallback` seconds)
+    const region = await this.regionOf(body), anyRegion = body?.anyRegion === true;
+    const q = await this.store.queueJoin(user, mode!, deck, now, wantAvg, region, anyRegion);
     const avg = wantAvg ? { avgWait: q.avgWait ?? null, pairings: q.pairings ?? 0 } : {};
+    const where = { region: q.region ?? region, anyRegion, othersAll: q.othersAll ?? q.others, fallback: q.fallback ?? 45 };
     const pair = await this.store.queuePair(user.userId, now);
-    if (!pair) return { ok: true, waiting: true, mode, rating: q.rating, since: new Date(q.since).toISOString(), waited: Math.max(0, Math.round((now - q.since) / 1000)), others: q.others, ...avg };
-    if (await this.store.activeMatchFor(pair.other.user.userId)) return { ok: true, waiting: true, mode, rating: q.rating, since: new Date(q.since).toISOString(), waited: 0, others: 0, ...avg };
+    if (!pair) return { ok: true, waiting: true, mode, rating: q.rating, since: new Date(q.since).toISOString(), waited: Math.max(0, Math.round((now - q.since) / 1000)), others: q.others, ...where, ...avg };
+    if (await this.store.activeMatchFor(pair.other.user.userId)) return { ok: true, waiting: true, mode, rating: q.rating, since: new Date(q.since).toISOString(), waited: 0, others: 0, ...where, ...avg };
     const pa = deckProblem(pair.other.deck), pb = deckProblem(deck);
     if (pa || pb) fail(pa || pb!);
     const id = this.store.newId();
@@ -209,10 +219,19 @@ export class PvpService {
     // the one who waited longer is seat a (the host side), like the maker of a code
     const m = startMatch(id, null, { a: pair.other.user, b: user }, { a: pair.other.deck, b: deck }, now, this.rules, seed, this.engineVersion);
     m.mode = pair.mode;
+    m.region = pair.region ?? pair.other.region ?? region;
     await this.tiersFor(m);
     await this.store.insertMatch(m);
     await this.store.putViews(m, viewsFor(m, [{ type: 'newMatch' }]));
-    return { ok: true, matchId: id, mode: pair.mode, view: viewFor(m, 'b', [{ type: 'newMatch' }]) };
+    return { ok: true, matchId: id, mode: pair.mode, region: m.region, view: viewFor(m, 'b', [{ type: 'newMatch' }]) };
+  }
+
+  /** Nov 6: the region the player asked for, if the admin list has it enabled; else the first enabled one (an older game sends none) */
+  private async regionOf(body: any): Promise<string> {
+    const want = typeof body?.region === 'string' && /^[a-z][a-z0-9-]{1,19}$/.test(body.region) ? body.region : '';
+    const list = await this.store.regions();
+    if (want && list.some((r) => r.id === want)) return want;
+    return list.length ? list[0].id : 'us-east';
   }
 
   /** Nov 5: each player's upgraded cards for the match (looks only). Never stops a match from starting. */
