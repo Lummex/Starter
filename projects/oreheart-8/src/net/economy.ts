@@ -50,7 +50,7 @@ const STD_SLOTS: PackSlot[] = [
   { slot_no: 1, count: 4, odds: { Common: 10000 } },
   { slot_no: 2, count: 2, odds: { Uncommon: 10000 } },
   { slot_no: 3, count: 1, odds: { Rare: 10000 } }, // the sure Rare
-  { slot_no: 4, count: 1, odds: { Rare: 8500, 'Ultra Rare': 1300, Collector: 200 } }, // Rare or better
+  { slot_no: 4, count: 1, odds: { Rare: 7800, 'Ultra Rare': 2000, Collector: 200 } }, // Rare or better (Ken, Nov 5: 78 / 20 / 2)
 ];
 const stubPack = (id: string, name: string, blurb: string, faction: string | null): PackInfo => ({ id, name, blurb, price_coins: 100, faction, art: null, max_per_day: 50, opened_today: 0, slots: STD_SLOTS.map((s) => ({ ...s, odds: { ...s.odds } })) });
 const STUB = {

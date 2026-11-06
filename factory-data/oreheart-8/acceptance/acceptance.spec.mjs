@@ -2185,7 +2185,7 @@ const RENAMES = {
   'goblin-scrounger': 'Goblin Miner', 'goblin-scrapper': 'Bowler Brawler', 'goblin-slinger': 'Skullflinger',
   'goblin-bomber': 'Bare Knuckle Lunatic', 'goblin-sneak': 'Backstabbing Thief', 'wolf-rider': 'Mangewolf Rider',
   'grubnaks-big-boss-troll': 'Gronkowski Troll Tyrant', 'gnome-prospector': 'Gemsinger Miner', 'gnome-tinker': 'Aegis Tinkerer',
-  'spark-gnome': 'Stormcaller Savant', 'clockwork-beetle': 'Iron Scarab Automaton', 'gnome-illusionist': 'Mirrorveil Illusionist',
+  'spark-gnome': 'Stormcaller Savant', 'clockwork-beetle': 'Silver Scarab Automaton', 'gnome-illusionist': 'Mirrorveil Illusionist',
   'gyrocopter-ace': 'Thunderwing Gyronaut', 'the-great-steam-golem': 'The Arcane Colossus', 'dwarf-miner': 'Riot Shield Bearer',
   'shieldbeard': 'Ironwall Shieldbeard', 'axe-thrower': 'Grudge Hurler', 'ironhammer-berserker': 'Bloodbeard Berserker',
   'brewmaster': 'Corpsman Brewlord', 'ram-rider': 'Thunderhorn Ram Rider', 'queen-brunhilda-stonebeard': 'Queen Brunhilda',

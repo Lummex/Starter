@@ -2,8 +2,8 @@
 // Nov 5: moved out of ui/cardfmt.ts, which pulls in CSS the server bundle cannot load.
 import { CARDS, COMMANDERS } from '../engine';
 
-/** Ken renamed the top RARITY to Legendary (Nov 5), which clashes with this tier's name; Forge is asking him for a new tier name: swap it here. */
-export const TIER4_LABEL = 'Legendary';
+/** The third upgrade tier. Ken (Nov 5): "Radiant" (the top RARITY is called Legendary, so the tier got its own name). */
+export const TIER4_LABEL = 'Radiant';
 export const TIER_NAMES = ['', 'Original', 'Enhanced', 'Overcharged', TIER4_LABEL, 'Mythic'];
 /** The top rarity is stored as 'Collector' everywhere (keys, holo masks, odds); Ken calls it Legendary (Nov 5). Shown through this only. */
 export const RARITY_LABEL: Record<string, string> = { Common: 'Common', Uncommon: 'Uncommon', Rare: 'Rare', 'Ultra Rare': 'Ultra Rare', Collector: 'Legendary' };

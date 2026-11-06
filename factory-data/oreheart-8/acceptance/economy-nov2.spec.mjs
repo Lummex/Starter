@@ -240,7 +240,7 @@ test('AC650: the Shop shows the four packs (Oreheart, Junkpile, Gizmo, Deepforge
   for (let i = 0; i < 4; i++) {
     await expect(packs.nth(i).locator('.shop-price')).toContainText('100');
     await expect(packs.nth(i).locator('.shop-today')).toHaveText(/^\d+ opened today$/);
-    await expect(packs.nth(i).locator('.shop-odds')).toHaveText('11 cards: 3 cheap Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 85%, Ultra Rare 13%, Legendary 2%');
+    await expect(packs.nth(i).locator('.shop-odds')).toHaveText('11 cards: 3 cheap Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 78%, Ultra Rare 20%, Legendary 2%');
   }
   await expect(page.getByTestId('coin-chip').first()).toContainText('500');
   await expect(packs.first().locator('.shop-free'), 'the free pack ribbon').toHaveText('FREE');
@@ -875,7 +875,7 @@ test('AC669: FREE, NEW and the shop text are readable (white on a dark or painte
   await openEcon(page, 'shop');
   const fill = await page.locator('.shop-free').first().evaluate((e) => getComputedStyle(e).webkitTextFillColor);
   expect(fill).toBe('rgb(255, 255, 255)');
-  await expect(page.locator('.shop-odds').first()).toContainText('85%');
+  await expect(page.locator('.shop-odds').first()).toContainText('78%');
   const pale = await page.locator('.shop-free').first().evaluate((e) => getComputedStyle(e).backgroundImage);
   expect(pale).toBe('none');
 });

@@ -147,7 +147,7 @@ const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector'];
 const RARITY_SHOWN: Record<string, string> = { Collector: 'Legendary' }; // Ken, Nov 5: the top rarity reads Legendary (keys stay 'Collector')
 const shownR = (r: string) => RARITY_SHOWN[r] || r;
 const pct = (bp: number) => { const v = Math.round(bp) / 100; return (Number.isInteger(v) ? String(v) : v.toFixed(v < 1 ? 2 : 1).replace(/0+$/, '').replace(/\.$/, '')) + '%'; };
-/** "8 cards: 5 Common, 2 Uncommon, 1 Rare or better: Rare 85%, Ultra Rare 13%, Collector 2%" */
+/** "11 cards: 3 cheap Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 78%, Ultra Rare 20%, Legendary 2%" */
 export function oddsWords(slots: { slot_no: number; count: number; odds: Record<string, number>; pool?: string }[]): string {
   const ss = [...(slots || [])].sort((a, b) => a.slot_no - b.slot_no);
   const total = ss.reduce((n, s) => n + (+s.count || 0), 0);

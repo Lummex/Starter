@@ -54,7 +54,7 @@ select pg_temp.ok('4 default packs, each 11 cards (3 cheap Miners, 4 Common, 2 U
   (select count(*) from public.pack_types where active and price_coins = 100 and max_per_day = 50) = 4
   and (select count(*) from (select pack_type, sum(count) n from public.pack_slots group by pack_type having sum(count) = 11) x) = 4
   and (select bool_and(odds = '{"Rare": 10000}'::jsonb) from public.pack_slots where slot_no = 3)
-  and (select bool_and(odds = '{"Rare": 8500, "Ultra Rare": 1300, "Collector": 200}'::jsonb) from public.pack_slots where slot_no = 4));
+  and (select bool_and(odds = '{"Rare": 7800, "Ultra Rare": 2000, "Collector": 200}'::jsonb) from public.pack_slots where slot_no = 4));
 
 -- ========== 3. shop_info ==========
 select pg_temp.ok('shop_info: 4 packs, coins 500, no free packs, nothing opened today, odds sum 10000 per slot',
