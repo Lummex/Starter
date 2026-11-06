@@ -1,5 +1,5 @@
 {
- "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet). Oct 25: owner asked for all remaining gnome and dwarf models, character only (no accessories yet); Gemsinger Miner and Anvilsworn Miner already exist and are not remade; Overclocked Aethervein waits for a redrawn sheet. Oct 28: owner OK'd re-running Meshy for two models only, WITH a skeleton: anvilsworn-miner-rig (Anvilsworn Miner, card dwarf-smith-miner; old Stonebreaker Miner model had 0 bones) and borgo-rig (Thane Borgo Gravelgrim, cmd-borgo; old model had 0 bones). New ids so the old models are kept. Oct 29: Ken approved the Overclocked Aethervein robot sheet (redo, ChatGPT Oct 28) with the note \"He doesn't need the shield drawn\": job overclocked-conduit, character only, no shield.",
+ "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet). Oct 25: owner asked for all remaining gnome and dwarf models, character only (no accessories yet); Gemsinger Miner and Anvilsworn Miner already exist and are not remade; Overclocked Aethervein waits for a redrawn sheet. Oct 28: owner OK'd re-running Meshy for two models only, WITH a skeleton: anvilsworn-miner-rig (Anvilsworn Miner, card dwarf-smith-miner; old Stonebreaker Miner model had 0 bones) and borgo-rig (Thane Borgo Gravelgrim, cmd-borgo; old model had 0 bones). New ids so the old models are kept. Oct 29: Ken approved the Overclocked Aethervein robot sheet (redo, ChatGPT Oct 28) with the note \"He doesn't need the shield drawn\": job overclocked-conduit, character only, no shield. Nov 5-6 (Clay): new cards, BODIES ONLY first (Forge: Ken's Oct 30 order, all units, sheets by Sketch from Brush card art). Bipeds rig-only (\"actions\": {}), non-humanoids (piglets, mule, wisps) rig:false for Spring. Props are staged in \"nov5_props_round2\" and get moved into each job's \"parts\" for a second run only if credits allow.",
  "jobs": [
   {
    "id": "blastrat-sapper",
@@ -1291,6 +1291,599 @@
    "rig": false,
    "actions": {},
    "notes": "Oct 30 (Ken: batch props into one Meshy model). Sketch's sheet with 3 props laid apart, left to right: Madame Sprocket's wrench, Old Grumblebeard's gear hammer, Ironwall Shieldbeard's shoulder shield (place on the right shoulder as on the card). Not rigged. Clay splits it by loose parts in Blender (split_props.py) into wrench / hammer / shoulder-shield GLBs."
+  },
+  {
+   "id": "bang-snap-imp",
+   "char": [
+    "nov5-bang-snap-imp--char-front.jpg",
+    "nov5-bang-snap-imp--char-side.jpg",
+    "nov5-bang-snap-imp--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "bogwater-brewer",
+   "char": [
+    "nov5-bogwater-brewer--char-front.jpg",
+    "nov5-bogwater-brewer--char-side.jpg",
+    "nov5-bogwater-brewer--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "engineer-cogsworth-hammerhand",
+   "char": [
+    "nov5-engineer-cogsworth-hammerhand--char-front.jpg",
+    "nov5-engineer-cogsworth-hammerhand--char-side.jpg",
+    "nov5-engineer-cogsworth-hammerhand--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "fizzwick-the-fuse-lighter",
+   "char": [
+    "nov5-fizzwick-the-fuse-lighter--char-front.jpg",
+    "nov5-fizzwick-the-fuse-lighter--char-side.jpg",
+    "nov5-fizzwick-the-fuse-lighter--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "forgemaster-hildegrim-ashbeard",
+   "char": [
+    "nov5-forgemaster-hildegrim-ashbeard--char-front.jpg",
+    "nov5-forgemaster-hildegrim-ashbeard--char-side.jpg",
+    "nov5-forgemaster-hildegrim-ashbeard--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "grand-jinxmaster-wobblewick",
+   "char": [
+    "nov5-grand-jinxmaster-wobblewick--char-front.jpg",
+    "nov5-grand-jinxmaster-wobblewick--char-side.jpg",
+    "nov5-grand-jinxmaster-wobblewick--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "grease-gremlin",
+   "char": [
+    "nov5-grease-gremlin--char-front.jpg",
+    "nov5-grease-gremlin--char-side.jpg",
+    "nov5-grease-gremlin--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "grumble-drummer",
+   "char": [
+    "nov5-grumble-drummer--char-front.jpg",
+    "nov5-grumble-drummer--char-side.jpg",
+    "nov5-grumble-drummer--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "hammerhand-apprentice",
+   "char": [
+    "nov5-hammerhand-apprentice--char-front.jpg",
+    "nov5-hammerhand-apprentice--char-side.jpg",
+    "nov5-hammerhand-apprentice--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "hex-cadet",
+   "char": [
+    "nov5-hex-cadet--char-front.jpg",
+    "nov5-hex-cadet--char-side.jpg",
+    "nov5-hex-cadet--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "hexbolt-tinker",
+   "char": [
+    "nov5-hexbolt-tinker--char-front.jpg",
+    "nov5-hexbolt-tinker--char-side.jpg",
+    "nov5-hexbolt-tinker--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "hexfuse-battery-golem",
+   "char": [
+    "nov5-hexfuse-battery-golem--char-front.jpg",
+    "nov5-hexfuse-battery-golem--char-side.jpg",
+    "nov5-hexfuse-battery-golem--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "junk-catapult-crew",
+   "char": [
+    "nov5-junk-catapult-crew--char-front.jpg",
+    "nov5-junk-catapult-crew--char-side.jpg",
+    "nov5-junk-catapult-crew--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "junk-catapult-crew-2",
+   "char": [
+    "nov5-junk-catapult-crew--char2-front.jpg",
+    "nov5-junk-catapult-crew--char2-side.jpg",
+    "nov5-junk-catapult-crew--char2-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "lens-grinder-lorelei",
+   "char": [
+    "nov5-lens-grinder-lorelei--char-front.jpg",
+    "nov5-lens-grinder-lorelei--char-side.jpg",
+    "nov5-lens-grinder-lorelei--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "mama-grubsnout-brood-mother",
+   "char": [
+    "nov5-mama-grubsnout-brood-mother--char-front.jpg",
+    "nov5-mama-grubsnout-brood-mother--char-side.jpg",
+    "nov5-mama-grubsnout-brood-mother--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "master-smith-durga-ironthumb",
+   "char": [
+    "nov5-master-smith-durga-ironthumb--char-front.jpg",
+    "nov5-master-smith-durga-ironthumb--char-side.jpg",
+    "nov5-master-smith-durga-ironthumb--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "mule-wrangler-nessa",
+   "char": [
+    "nov5-mule-wrangler-nessa--char-front.jpg",
+    "nov5-mule-wrangler-nessa--char-side.jpg",
+    "nov5-mule-wrangler-nessa--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "pebble-tosser",
+   "char": [
+    "nov5-pebble-tosser--char-front.jpg",
+    "nov5-pebble-tosser--char-side.jpg",
+    "nov5-pebble-tosser--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "pox-doctor-ratsbane",
+   "char": [
+    "nov5-pox-doctor-ratsbane--char-front.jpg",
+    "nov5-pox-doctor-ratsbane--char-side.jpg",
+    "nov5-pox-doctor-ratsbane--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "ratchet-runt",
+   "char": [
+    "nov5-ratchet-runt--char-front.jpg",
+    "nov5-ratchet-runt--char-side.jpg",
+    "nov5-ratchet-runt--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "runt-piglet",
+   "char": [
+    "nov5-runt-piglet--char-front.jpg",
+    "nov5-runt-piglet--char-side.jpg",
+    "nov5-runt-piglet--char-back.jpg"
+   ],
+   "height": 1,
+   "rig": false
+  },
+  {
+   "id": "shield-cadet",
+   "char": [
+    "nov5-shield-cadet--char-front.jpg",
+    "nov5-shield-cadet--char-side.jpg",
+    "nov5-shield-cadet--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "shieldwall-sergeant-brasha",
+   "char": [
+    "nov5-shieldwall-sergeant-brasha--char-front.jpg",
+    "nov5-shieldwall-sergeant-brasha--char-side.jpg",
+    "nov5-shieldwall-sergeant-brasha--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "sludge-lobber",
+   "char": [
+    "nov5-sludge-lobber--char-front.jpg",
+    "nov5-sludge-lobber--char-side.jpg",
+    "nov5-sludge-lobber--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "snot-sergeant-gurk",
+   "char": [
+    "nov5-snot-sergeant-gurk--char-front.jpg",
+    "nov5-snot-sergeant-gurk--char-side.jpg",
+    "nov5-snot-sergeant-gurk--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "spark-caddy",
+   "char": [
+    "nov5-spark-caddy--char-front.jpg",
+    "nov5-spark-caddy--char-side.jpg",
+    "nov5-spark-caddy--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "stonebreaker-miner",
+   "char": [
+    "nov5-stonebreaker-miner--char-front.jpg",
+    "nov5-stonebreaker-miner--char-side.jpg",
+    "nov5-stonebreaker-miner--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
+  },
+  {
+   "id": "stray-spark-wisp",
+   "char": [
+    "nov5-stray-spark-wisp--char-front.jpg",
+    "nov5-stray-spark-wisp--char-side.jpg",
+    "nov5-stray-spark-wisp--char-back.jpg"
+   ],
+   "height": 1,
+   "rig": false
+  },
+  {
+   "id": "token-clockwork-mule",
+   "char": [
+    "nov5-token-clockwork-mule--char-front.jpg",
+    "nov5-token-clockwork-mule--char-side.jpg",
+    "nov5-token-clockwork-mule--char-back.jpg"
+   ],
+   "height": 1,
+   "rig": false
+  },
+  {
+   "id": "token-piglet",
+   "char": [
+    "nov5-token-piglet--char-front.jpg",
+    "nov5-token-piglet--char-side.jpg",
+    "nov5-token-piglet--char-back.jpg"
+   ],
+   "height": 1,
+   "rig": false
+  },
+  {
+   "id": "token-spark-wisp",
+   "char": [
+    "nov5-token-spark-wisp--char-front.jpg",
+    "nov5-token-spark-wisp--char-side.jpg",
+    "nov5-token-spark-wisp--char-back.jpg"
+   ],
+   "height": 1,
+   "rig": false
+  },
+  {
+   "id": "wispmother-tallulah",
+   "char": [
+    "nov5-wispmother-tallulah--char-front.jpg",
+    "nov5-wispmother-tallulah--char-side.jpg",
+    "nov5-wispmother-tallulah--char-back.jpg"
+   ],
+   "height": 1,
+   "actions": {}
   }
- ]
+ ],
+ "nov5_props_round2": {
+  "bang-snap-imp": {
+   "firework": [
+    "nov5-bang-snap-imp--firework-front.jpg",
+    "nov5-bang-snap-imp--firework-side.jpg",
+    "nov5-bang-snap-imp--firework-back.jpg"
+   ]
+  },
+  "bogwater-brewer": {
+   "ladle": [
+    "nov5-bogwater-brewer--ladle-front.jpg",
+    "nov5-bogwater-brewer--ladle-side.jpg",
+    "nov5-bogwater-brewer--ladle-back.jpg"
+   ],
+   "wheelbarrow": [
+    "nov5-bogwater-brewer--wheelbarrow-front.jpg",
+    "nov5-bogwater-brewer--wheelbarrow-side.jpg",
+    "nov5-bogwater-brewer--wheelbarrow-back.jpg"
+   ]
+  },
+  "engineer-cogsworth-hammerhand": {
+   "wrench": [
+    "nov5-engineer-cogsworth-hammerhand--wrench-front.jpg",
+    "nov5-engineer-cogsworth-hammerhand--wrench-side.jpg",
+    "nov5-engineer-cogsworth-hammerhand--wrench-back.jpg"
+   ]
+  },
+  "fizzwick-the-fuse-lighter": {
+   "match": [
+    "nov5-fizzwick-the-fuse-lighter--match-front.jpg",
+    "nov5-fizzwick-the-fuse-lighter--match-side.jpg",
+    "nov5-fizzwick-the-fuse-lighter--match-back.jpg"
+   ]
+  },
+  "forgemaster-hildegrim-ashbeard": {
+   "hammer": [
+    "nov5-forgemaster-hildegrim-ashbeard--hammer-front.jpg",
+    "nov5-forgemaster-hildegrim-ashbeard--hammer-side.jpg",
+    "nov5-forgemaster-hildegrim-ashbeard--hammer-back.jpg"
+   ],
+   "tongs": [
+    "nov5-forgemaster-hildegrim-ashbeard--tongs-front.jpg",
+    "nov5-forgemaster-hildegrim-ashbeard--tongs-side.jpg",
+    "nov5-forgemaster-hildegrim-ashbeard--tongs-back.jpg"
+   ]
+  },
+  "grand-jinxmaster-wobblewick": {
+   "hatstack": [
+    "nov5-grand-jinxmaster-wobblewick--hatstack-front.jpg",
+    "nov5-grand-jinxmaster-wobblewick--hatstack-side.jpg",
+    "nov5-grand-jinxmaster-wobblewick--hatstack-back.jpg"
+   ],
+   "wand": [
+    "nov5-grand-jinxmaster-wobblewick--wand-front.jpg",
+    "nov5-grand-jinxmaster-wobblewick--wand-side.jpg",
+    "nov5-grand-jinxmaster-wobblewick--wand-back.jpg"
+   ]
+  },
+  "grease-gremlin": {
+   "oilcan": [
+    "nov5-grease-gremlin--oilcan-front.jpg",
+    "nov5-grease-gremlin--oilcan-side.jpg",
+    "nov5-grease-gremlin--oilcan-back.jpg"
+   ],
+   "tank": [
+    "nov5-grease-gremlin--tank-front.jpg",
+    "nov5-grease-gremlin--tank-side.jpg",
+    "nov5-grease-gremlin--tank-back.jpg"
+   ]
+  },
+  "grumble-drummer": {
+   "drum": [
+    "nov5-grumble-drummer--drum-front.jpg",
+    "nov5-grumble-drummer--drum-side.jpg",
+    "nov5-grumble-drummer--drum-back.jpg"
+   ],
+   "drumsticks": [
+    "nov5-grumble-drummer--drumsticks-front.jpg",
+    "nov5-grumble-drummer--drumsticks-side.jpg",
+    "nov5-grumble-drummer--drumsticks-back.jpg"
+   ]
+  },
+  "hammerhand-apprentice": {
+   "hammer": [
+    "nov5-hammerhand-apprentice--hammer-front.jpg",
+    "nov5-hammerhand-apprentice--hammer-side.jpg",
+    "nov5-hammerhand-apprentice--hammer-back.jpg"
+   ],
+   "tongs": [
+    "nov5-hammerhand-apprentice--tongs-front.jpg",
+    "nov5-hammerhand-apprentice--tongs-side.jpg",
+    "nov5-hammerhand-apprentice--tongs-back.jpg"
+   ]
+  },
+  "hex-cadet": {
+   "wrench": [
+    "nov5-hex-cadet--wrench-front.jpg",
+    "nov5-hex-cadet--wrench-side.jpg",
+    "nov5-hex-cadet--wrench-back.jpg"
+   ]
+  },
+  "hexbolt-tinker": {
+   "crossbow": [
+    "nov5-hexbolt-tinker--crossbow-front.jpg",
+    "nov5-hexbolt-tinker--crossbow-side.jpg",
+    "nov5-hexbolt-tinker--crossbow-back.jpg"
+   ]
+  },
+  "junk-catapult-crew": {
+   "catapult": [
+    "nov5-junk-catapult-crew--catapult-front.jpg",
+    "nov5-junk-catapult-crew--catapult-side.jpg",
+    "nov5-junk-catapult-crew--catapult-back.jpg"
+   ]
+  },
+  "lens-grinder-lorelei": {
+   "lens": [
+    "nov5-lens-grinder-lorelei--lens-front.jpg",
+    "nov5-lens-grinder-lorelei--lens-side.jpg",
+    "nov5-lens-grinder-lorelei--lens-back.jpg"
+   ],
+   "rig": [
+    "nov5-lens-grinder-lorelei--rig-front.jpg",
+    "nov5-lens-grinder-lorelei--rig-side.jpg",
+    "nov5-lens-grinder-lorelei--rig-back.jpg"
+   ]
+  },
+  "mama-grubsnout-brood-mother": {
+   "crystal": [
+    "nov5-mama-grubsnout-brood-mother--crystal-front.jpg",
+    "nov5-mama-grubsnout-brood-mother--crystal-side.jpg",
+    "nov5-mama-grubsnout-brood-mother--crystal-back.jpg"
+   ]
+  },
+  "master-smith-durga-ironthumb": {
+   "hammer": [
+    "nov5-master-smith-durga-ironthumb--hammer-front.jpg",
+    "nov5-master-smith-durga-ironthumb--hammer-side.jpg",
+    "nov5-master-smith-durga-ironthumb--hammer-back.jpg"
+   ]
+  },
+  "mule-wrangler-nessa": {
+   "lasso": [
+    "nov5-mule-wrangler-nessa--lasso-front.jpg",
+    "nov5-mule-wrangler-nessa--lasso-side.jpg",
+    "nov5-mule-wrangler-nessa--lasso-back.jpg"
+   ]
+  },
+  "pebble-tosser": {
+   "sack": [
+    "nov5-pebble-tosser--sack-front.jpg",
+    "nov5-pebble-tosser--sack-side.jpg",
+    "nov5-pebble-tosser--sack-back.jpg"
+   ],
+   "sling": [
+    "nov5-pebble-tosser--sling-front.jpg",
+    "nov5-pebble-tosser--sling-side.jpg",
+    "nov5-pebble-tosser--sling-back.jpg"
+   ]
+  },
+  "pox-doctor-ratsbane": {
+   "lance": [
+    "nov5-pox-doctor-ratsbane--lance-front.jpg",
+    "nov5-pox-doctor-ratsbane--lance-side.jpg",
+    "nov5-pox-doctor-ratsbane--lance-back.jpg"
+   ],
+   "rig": [
+    "nov5-pox-doctor-ratsbane--rig-front.jpg",
+    "nov5-pox-doctor-ratsbane--rig-side.jpg",
+    "nov5-pox-doctor-ratsbane--rig-back.jpg"
+   ]
+  },
+  "ratchet-runt": {
+   "ratchet": [
+    "nov5-ratchet-runt--ratchet-front.jpg",
+    "nov5-ratchet-runt--ratchet-side.jpg",
+    "nov5-ratchet-runt--ratchet-back.jpg"
+   ]
+  },
+  "runt-piglet": {
+   "fork": [
+    "nov5-runt-piglet--fork-front.jpg",
+    "nov5-runt-piglet--fork-side.jpg",
+    "nov5-runt-piglet--fork-back.jpg"
+   ]
+  },
+  "shield-cadet": {
+   "backpack": [
+    "nov5-shield-cadet--backpack-front.jpg",
+    "nov5-shield-cadet--backpack-side.jpg",
+    "nov5-shield-cadet--backpack-back.jpg"
+   ],
+   "shield": [
+    "nov5-shield-cadet--shield-front.jpg",
+    "nov5-shield-cadet--shield-side.jpg",
+    "nov5-shield-cadet--shield-back.jpg"
+   ]
+  },
+  "shieldwall-sergeant-brasha": {
+   "shield": [
+    "nov5-shieldwall-sergeant-brasha--shield-front.jpg",
+    "nov5-shieldwall-sergeant-brasha--shield-side.jpg",
+    "nov5-shieldwall-sergeant-brasha--shield-back.jpg"
+   ]
+  },
+  "sludge-lobber": {
+   "bucket": [
+    "nov5-sludge-lobber--bucket-front.jpg",
+    "nov5-sludge-lobber--bucket-side.jpg",
+    "nov5-sludge-lobber--bucket-back.jpg"
+   ],
+   "slingshot": [
+    "nov5-sludge-lobber--slingshot-front.jpg",
+    "nov5-sludge-lobber--slingshot-side.jpg",
+    "nov5-sludge-lobber--slingshot-back.jpg"
+   ]
+  },
+  "snot-sergeant-gurk": {
+   "clipboard": [
+    "nov5-snot-sergeant-gurk--clipboard-front.jpg",
+    "nov5-snot-sergeant-gurk--clipboard-side.jpg",
+    "nov5-snot-sergeant-gurk--clipboard-back.jpg"
+   ]
+  },
+  "spark-caddy": {
+   "cart": [
+    "nov5-spark-caddy--cart-front.jpg",
+    "nov5-spark-caddy--cart-side.jpg",
+    "nov5-spark-caddy--cart-back.jpg"
+   ]
+  },
+  "stonebreaker-miner": {
+   "canteen": [
+    "nov5-stonebreaker-miner--canteen-front.jpg",
+    "nov5-stonebreaker-miner--canteen-side.jpg",
+    "nov5-stonebreaker-miner--canteen-back.jpg"
+   ],
+   "pack": [
+    "nov5-stonebreaker-miner--pack-front.jpg",
+    "nov5-stonebreaker-miner--pack-side.jpg",
+    "nov5-stonebreaker-miner--pack-back.jpg"
+   ],
+   "pickaxe": [
+    "nov5-stonebreaker-miner--pickaxe-front.jpg",
+    "nov5-stonebreaker-miner--pickaxe-side.jpg",
+    "nov5-stonebreaker-miner--pickaxe-back.jpg"
+   ]
+  },
+  "token-clockwork-mule": {
+   "cart": [
+    "nov5-token-clockwork-mule--cart-front.jpg",
+    "nov5-token-clockwork-mule--cart-side.jpg",
+    "nov5-token-clockwork-mule--cart-back.jpg"
+   ]
+  },
+  "wispmother-tallulah": {
+   "lantern": [
+    "nov5-wispmother-tallulah--lantern-front.jpg",
+    "nov5-wispmother-tallulah--lantern-side.jpg",
+    "nov5-wispmother-tallulah--lantern-back.jpg"
+   ]
+  }
+ }
 }
