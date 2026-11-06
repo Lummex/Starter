@@ -255,6 +255,138 @@
    "grubnaks-big-boss-troll": {
     "feet": 6.25,
     "squares": 1.638
+   },
+   "mama-grubsnout": {
+    "feet": 4.1,
+    "squares": 1.074
+   },
+   "pox-doctor-ratsbane": {
+    "feet": 3.6,
+    "squares": 0.943
+   },
+   "snot-sergeant-gurk": {
+    "feet": 3.5,
+    "squares": 0.917
+   },
+   "fizzwick-fuse-lighter": {
+    "feet": 3.3,
+    "squares": 0.865
+   },
+   "junk-catapult-crew": {
+    "feet": 3.3,
+    "squares": 0.865
+   },
+   "grease-gremlin": {
+    "feet": 3.1,
+    "squares": 0.812
+   },
+   "bogwater-brewer": {
+    "feet": 3.25,
+    "squares": 0.852
+   },
+   "runt-piglet": {
+    "feet": 1.6,
+    "squares": 0.419
+   },
+   "bang-snap-imp": {
+    "feet": 3,
+    "squares": 0.786
+   },
+   "sludge-lobber": {
+    "feet": 3.15,
+    "squares": 0.825
+   },
+   "piglet": {
+    "feet": 1.6,
+    "squares": 0.419
+   },
+   "wispmother-tallulah": {
+    "feet": 3.5,
+    "squares": 0.917
+   },
+   "jinxmaster-wobblewick": {
+    "feet": 3.4,
+    "squares": 0.891
+   },
+   "hexfuse-battery-golem": {
+    "feet": 4.5,
+    "squares": 1.179
+   },
+   "rune-scribe-nimbletoe": {
+    "feet": 3,
+    "squares": 0.786
+   },
+   "lens-grinder-lorelei": {
+    "feet": 2.8,
+    "squares": 0.734
+   },
+   "hexbolt-tinker": {
+    "feet": 2.8,
+    "squares": 0.734
+   },
+   "spark-caddy": {
+    "feet": 2.85,
+    "squares": 0.747
+   },
+   "stray-spark-wisp": {
+    "feet": 1.3,
+    "squares": 0.341
+   },
+   "hex-cadet": {
+    "feet": 2.65,
+    "squares": 0.694
+   },
+   "ratchet-runt": {
+    "feet": 2.6,
+    "squares": 0.681
+   },
+   "spark-wisp": {
+    "feet": 1.3,
+    "squares": 0.341
+   },
+   "engineer-cogsworth": {
+    "feet": 4.8,
+    "squares": 1.258
+   },
+   "forgemaster-hildegrim": {
+    "feet": 5.2,
+    "squares": 1.362
+   },
+   "shieldwall-sergeant-brasha": {
+    "feet": 4.5,
+    "squares": 1.179
+   },
+   "master-smith-durga": {
+    "feet": 4.2,
+    "squares": 1.1
+   },
+   "grumble-drummer": {
+    "feet": 4.2,
+    "squares": 1.1
+   },
+   "mule-wrangler-nessa": {
+    "feet": 4.35,
+    "squares": 1.14
+   },
+   "stonebreaker-miner": {
+    "feet": 4,
+    "squares": 1.048
+   },
+   "shield-cadet": {
+    "feet": 4,
+    "squares": 1.048
+   },
+   "pebble-tosser": {
+    "feet": 4,
+    "squares": 1.048
+   },
+   "hammerhand-apprentice": {
+    "feet": 4.05,
+    "squares": 1.061
+   },
+   "clockwork-mule": {
+    "feet": 3,
+    "squares": 0.786
    }
   }
  },
