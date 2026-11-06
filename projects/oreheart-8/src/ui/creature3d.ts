@@ -16,7 +16,7 @@ export const TABLE_H: Record<string, number> = Object.fromEntries(Object.entries
 /** bones that don't count for standing height: hands, forearms and fingers (a raised arm, weapon or staff), and anything named as a weapon or prop */
 const NOT_STANDING = /hand|forearm|finger|thumb|index|middle|ring|pinky|weapon|prop/i;
 /** Ledger (Oct 31): the standing box of a body as posed now, in world space. Every skinned vertex counts except those mostly bound to a hand / forearm / finger
- *  bone; attached items (plain meshes) are ignored when the body is skinned; an unskinned body (the Iron Scarab) counts whole. */
+ *  bone; attached items (plain meshes) are ignored when the body is skinned; an unskinned body (the Silver Scarab) counts whole. */
 export function standingBox(o: THREE.Object3D, into = new THREE.Box3()): THREE.Box3 {
   o.updateMatrixWorld(true);
   let skinned = false; o.traverse((m: any) => { if (m.isSkinnedMesh) skinned = true; });
@@ -443,7 +443,7 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   const out: C3D = {} as C3D;
   const play = (want: CreatureAnim) => {
     if (!Object.keys(actions).length) {
-      // no skeleton (the Iron Scarab beetle): log the action; the figure slides when moved and shakes when hit
+      // no skeleton (the Silver Scarab beetle): log the action; the figure slides when moved and shakes when hit
       if (want !== cur) { cur = want; log.push(want); out.onPlay?.(want); if (want === 'hit') shakeT = 0.45; }
       return;
     }
