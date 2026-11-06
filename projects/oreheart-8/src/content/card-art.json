@@ -79,15 +79,15 @@
     "file": "art/cards/blastrat-sapper.webp",
     "prompt": "dark fantasy trading card game character art, richly painted, stylized chunky proportions, dramatic rim lighting, glowing eyes and gems, moody toxic green glow, scrap-metal goblin look with rusty nails, patched leather, bottle caps and bones, a green goblin sapper hugging a lit powder keg with a fuse, one eye twitching, a tiny pickaxe on his belt, nervous grin, dark atmospheric background, no text, no letters, no logos, no watermark, original character"
   },
- {"cardId": "mama-grubsnout", "file": "art/cards/mama-grubsnout.webp", "prompt": "placeholder picture (Anvil, Nov 5) until Brush paints the card: a faction-coloured silhouette, no text, no letters, no logos, no watermark"},
- {"cardId": "pox-doctor-ratsbane", "file": "art/cards/pox-doctor-ratsbane.webp", "prompt": "placeholder picture (Anvil, Nov 5) until Brush paints the card: a faction-coloured silhouette, no text, no letters, no logos, no watermark"},
- {"cardId": "snot-sergeant-gurk", "file": "art/cards/snot-sergeant-gurk.webp", "prompt": "placeholder picture (Anvil, Nov 5) until Brush paints the card: a faction-coloured silhouette, no text, no letters, no logos, no watermark"},
- {"cardId": "fizzwick-fuse-lighter", "file": "art/cards/fizzwick-fuse-lighter.webp", "prompt": "placeholder picture (Anvil, Nov 5) until Brush paints the card: a faction-coloured silhouette, no text, no letters, no logos, no watermark"},
- {"cardId": "junk-catapult-crew", "file": "art/cards/junk-catapult-crew.webp", "prompt": "placeholder picture (Anvil, Nov 5) until Brush paints the card: a faction-coloured silhouette, no text, no letters, no logos, no watermark"},
- {"cardId": "grease-gremlin", "file": "art/cards/grease-gremlin.webp", "prompt": "placeholder picture (Anvil, Nov 5) until Brush paints the card: a faction-coloured silhouette, no text, no letters, no logos, no watermark"},
- {"cardId": "bogwater-brewer", "file": "art/cards/bogwater-brewer.webp", "prompt": "placeholder picture (Anvil, Nov 5) until Brush paints the card: a faction-coloured silhouette, no text, no letters, no logos, no watermark"},
- {"cardId": "runt-piglet", "file": "art/cards/runt-piglet.webp", "prompt": "placeholder picture (Anvil, Nov 5) until Brush paints the card: a faction-coloured silhouette, no text, no letters, no logos, no watermark"},
- {"cardId": "bang-snap-imp", "file": "art/cards/bang-snap-imp.webp", "prompt": "placeholder picture (Anvil, Nov 5) until Brush paints the card: a faction-coloured silhouette, no text, no letters, no logos, no watermark"},
- {"cardId": "sludge-lobber", "file": "art/cards/sludge-lobber.webp", "prompt": "placeholder picture (Anvil, Nov 5) until Brush paints the card: a faction-coloured silhouette, no text, no letters, no logos, no watermark"},
- {"cardId": "piglet", "file": "art/cards/piglet.webp", "prompt": "placeholder picture (Anvil, Nov 5) until Brush paints the card: a faction-coloured silhouette, no text, no letters, no logos, no watermark"}
+ {"cardId": "mama-grubsnout", "file": "art/owner/goblin/mama-grubsnout-card-art.webp", "prompt": "Brush, Nov 5-6: painted card art (art/new-cards-nov5), no text, no letters, no logos, no watermark"},
+ {"cardId": "pox-doctor-ratsbane", "file": "art/owner/goblin/pox-doctor-ratsbane-card-art.webp", "prompt": "Brush, Nov 5-6: painted card art (art/new-cards-nov5), no text, no letters, no logos, no watermark"},
+ {"cardId": "snot-sergeant-gurk", "file": "art/owner/goblin/snot-sergeant-gurk-card-art.webp", "prompt": "Brush, Nov 5-6: painted card art (art/new-cards-nov5), no text, no letters, no logos, no watermark"},
+ {"cardId": "fizzwick-fuse-lighter", "file": "art/owner/goblin/fizzwick-fuse-lighter-card-art.webp", "prompt": "Brush, Nov 5-6: painted card art (art/new-cards-nov5), no text, no letters, no logos, no watermark"},
+ {"cardId": "junk-catapult-crew", "file": "art/owner/goblin/junk-catapult-crew-card-art.webp", "prompt": "Brush, Nov 5-6: painted card art (art/new-cards-nov5), no text, no letters, no logos, no watermark"},
+ {"cardId": "grease-gremlin", "file": "art/owner/goblin/grease-gremlin-card-art.webp", "prompt": "Brush, Nov 5-6: painted card art (art/new-cards-nov5), no text, no letters, no logos, no watermark"},
+ {"cardId": "bogwater-brewer", "file": "art/owner/goblin/bogwater-brewer-card-art.webp", "prompt": "Brush, Nov 5-6: painted card art (art/new-cards-nov5), no text, no letters, no logos, no watermark"},
+ {"cardId": "runt-piglet", "file": "art/owner/goblin/runt-piglet-card-art.webp", "prompt": "Brush, Nov 5-6: painted card art (art/new-cards-nov5), no text, no letters, no logos, no watermark"},
+ {"cardId": "bang-snap-imp", "file": "art/owner/goblin/bang-snap-imp-card-art.webp", "prompt": "Brush, Nov 5-6: painted card art (art/new-cards-nov5), no text, no letters, no logos, no watermark"},
+ {"cardId": "sludge-lobber", "file": "art/owner/goblin/sludge-lobber-card-art.webp", "prompt": "Brush, Nov 5-6: painted card art (art/new-cards-nov5), no text, no letters, no logos, no watermark"},
+ {"cardId": "piglet", "file": "art/owner/goblin/piglet-card-art.webp", "prompt": "Brush, Nov 5-6: painted card art (art/new-cards-nov5), no text, no letters, no logos, no watermark"}
 ]

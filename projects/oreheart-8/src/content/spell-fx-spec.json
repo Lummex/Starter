@@ -3296,98 +3296,24 @@
   "sooey-hog-call": {
    "name": "Sooey! Hog Call",
    "target": "square",
-   "path": "at_caster",
-   "path_notes": "everything happens at the caster; the ring expands from the caster across the board",
+   "path": "drop_in",
+   "path_notes": "the bugle drops onto the mine square and blasts; the ground-crack ring bursts out around the mine (covers the 3x3 the Piglets fill) while the Piglets pop up",
    "total_ms": 2200,
-   "tint": "#ff3a1a",
+   "tint": "#8fd14a",
    "sound_word": "SOOEY!",
-   "shake": 0.4,
+   "shake": 0.45,
    "slowmo": false,
-   "layers": {
-    "core": {
-     "file": "art/spell-fx/battle-cry/battle-cry-core.webp",
-     "px": [
-      495,
-      484
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-core-m.webp",
-     "px_phone": [
-      320,
-      313
-     ]
-    },
-    "glow": {
-     "file": "art/spell-fx/battle-cry/battle-cry-glow.webp",
-     "px": [
-      520,
-      507
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-glow-m.webp",
-     "px_phone": [
-      320,
-      312
-     ]
-    },
-    "particles": {
-     "file": "art/spell-fx/battle-cry/battle-cry-particles.webp",
-     "px": [
-      498,
-      498
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-particles-m.webp",
-     "px_phone": [
-      256,
-      256
-     ]
-    },
-    "ring": {
-     "file": "art/spell-fx/battle-cry/battle-cry-ring.webp",
-     "px": [
-      601,
-      431
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-ring-m.webp",
-     "px_phone": [
-      320,
-      229
-     ]
-    },
-    "debris": {
-     "file": "art/spell-fx/battle-cry/battle-cry-debris.webp",
-     "px": [
-      464,
-      467
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-debris-m.webp",
-     "px_phone": [
-      254,
-      256
-     ]
-    },
-    "word": {
-     "file": "art/spell-fx/battle-cry/battle-cry-word.webp",
-     "px": [
-      533,
-      471
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-word-m.webp",
-     "px_phone": [
-      256,
-      226
-     ]
-    }
-   },
    "beats": [
     {
      "beat": "windup",
-     "ms": 550,
+     "ms": 450,
      "where": "caster",
      "do": [
       {
        "layer": "glow",
        "scale": [
         0.3,
-        2.52
+        2.0
        ],
        "alpha": [
         0,
@@ -3400,7 +3326,7 @@
        "layer": "particles",
        "scale": [
         0.6,
-        2.16
+        1.7
        ],
        "alpha": [
         0,
@@ -3413,7 +3339,7 @@
        "layer": "core",
        "scale": [
         0,
-        1.8
+        1.3
        ],
        "alpha": [
         0,
@@ -3425,15 +3351,16 @@
     },
     {
      "beat": "travel_impact",
-     "ms": 770,
+     "ms": 850,
      "where": "target",
+     "travel_ms": 420,
      "do": [
       {
        "layer": "core",
-       "move": "at_caster",
+       "move": "path",
        "scale": [
-        1.8,
-        2.07
+        1.3,
+        1.5
        ],
        "then": "hold"
       },
@@ -3451,13 +3378,13 @@
        "at": "impact",
        "scale": [
         0.2,
-        6.0
+        4.6
        ],
        "alpha": [
         1,
         0
        ],
-       "ms": 693,
+       "ms": 765,
        "blend": "add",
        "flat_on_board": true
       },
@@ -3465,15 +3392,15 @@
        "layer": "debris",
        "at": "impact",
        "scale": [
-        0.9,
-        3.24
+        0.7,
+        3.4
        ],
        "alpha": [
         1,
         0
        ],
        "spin_deg": 40,
-       "ms": 693
+       "ms": 765
       },
       {
        "layer": "word",
@@ -3483,7 +3410,7 @@
         1.25,
         1.0
        ],
-       "size_squares": 2.2,
+       "size_squares": 2.3,
        "offset_squares": [
         0.6,
         -1.0
@@ -3491,11 +3418,11 @@
       },
       {
        "fx": "shake",
-       "amount": 0.4
+       "amount": 0.45
       },
       {
        "fx": "flash",
-       "color": "#ff3a1a",
+       "color": "#8fd14a",
        "skip": false
       },
       {
@@ -3506,12 +3433,12 @@
     },
     {
      "beat": "aftermath",
-     "ms": 880,
+     "ms": 900,
      "where": "target",
      "do": [
       {
        "layer": "particles",
-       "drift_up_squares": 0.8,
+       "drift_up_squares": 0.9,
        "alpha": [
         1,
         0
@@ -3521,8 +3448,8 @@
       {
        "layer": "glow",
        "scale": [
-        1.8,
-        2.8800000000000003
+        1.5,
+        2.4000000000000004
        ],
        "alpha": [
         0.6,
@@ -3532,7 +3459,7 @@
       },
       {
        "layer": "word",
-       "hold_ms": 630,
+       "hold_ms": 650,
        "then": "fade 250 ms"
       },
       {
@@ -3545,105 +3472,104 @@
      ]
     }
    ],
-   "notes": "after the ring passes each of your creatures, play the glow on that creature small (0.8 sq) for the rest of the turn at 0.35 alpha",
-   "borrowed_from": "battle-cry",
-   "note": "Nov 5: placeholder, uses the painted files of battle-cry until Brush paints this spell"
-  },
-  "chain-lightning": {
-   "name": "Chain Lightning Lollapalooza",
-   "target": "unit",
-   "path": "sky_fall",
-   "path_notes": "core flies from the caster (Commander or played card) to the target on a high arc, spinning slowly, glow trailing behind it",
-   "total_ms": 2200,
-   "tint": "#ff7a1a",
-   "sound_word": "ZAP-ZAP-ZAP!",
-   "shake": 0.35,
-   "slowmo": true,
    "layers": {
     "core": {
-     "file": "art/spell-fx/fireball/fireball-core.webp",
+     "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-core.webp",
      "px": [
-      506,
-      521
+      512,
+      512
      ],
-     "file_phone": "art/spell-fx/fireball/fireball-core-m.webp",
+     "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-core-m.webp",
      "px_phone": [
-      311,
+      320,
       320
      ]
     },
     "glow": {
-     "file": "art/spell-fx/fireball/fireball-glow.webp",
+     "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-glow.webp",
      "px": [
-      500,
-      481
+      512,
+      512
      ],
-     "file_phone": "art/spell-fx/fireball/fireball-glow-m.webp",
+     "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-glow-m.webp",
      "px_phone": [
       320,
-      308
+      320
      ]
     },
     "particles": {
-     "file": "art/spell-fx/fireball/fireball-particles.webp",
+     "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-particles.webp",
      "px": [
-      457,
-      440
+      512,
+      512
      ],
-     "file_phone": "art/spell-fx/fireball/fireball-particles-m.webp",
+     "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-particles-m.webp",
      "px_phone": [
-      256,
-      246
+      320,
+      320
      ]
     },
     "ring": {
-     "file": "art/spell-fx/fireball/fireball-ring.webp",
+     "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-ring.webp",
      "px": [
-      540,
-      453
+      512,
+      512
      ],
-     "file_phone": "art/spell-fx/fireball/fireball-ring-m.webp",
+     "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-ring-m.webp",
      "px_phone": [
       320,
-      268
+      320
      ]
     },
     "debris": {
-     "file": "art/spell-fx/fireball/fireball-debris.webp",
+     "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-debris.webp",
      "px": [
-      443,
-      441
+      512,
+      512
      ],
-     "file_phone": "art/spell-fx/fireball/fireball-debris-m.webp",
+     "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-debris-m.webp",
      "px_phone": [
-      256,
-      255
+      320,
+      320
      ]
     },
     "word": {
-     "file": "art/spell-fx/fireball/fireball-word.webp",
+     "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-word.webp",
      "px": [
-      497,
-      429
+      512,
+      512
      ],
-     "file_phone": "art/spell-fx/fireball/fireball-word-m.webp",
+     "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-word-m.webp",
      "px_phone": [
-      256,
-      221
+      320,
+      320
      ]
     }
    },
+   "made_by": "Anvil (spec) + Brush (sprites), Nov 6",
+   "notes": "ring sized to cover the 3x3 around the mine; the Piglet summons land during the aftermath"
+  },
+  "chain-lightning": {
+   "name": "Chain Lightning Lollapalooza",
+   "target": "unit",
+   "path": "throw",
+   "path_notes": "the bolt shoots fast and straight from the caster to the target; when the target was Jinxed the game plays the same bolt again from that target to each neighbour, 160 ms apart, without the sound word or the shake (app.ts, chainJump)",
+   "total_ms": 1800,
+   "tint": "#b36bff",
+   "sound_word": "ZAP-ZAP-ZAP!",
+   "shake": 0.3,
+   "slowmo": true,
    "beats": [
     {
      "beat": "windup",
-     "ms": 400,
+     "ms": 350,
      "where": "caster",
      "do": [
       {
        "layer": "glow",
        "scale": [
         0.3,
-        1.9599999999999997
+        1.6
        ],
        "alpha": [
         0,
@@ -3656,7 +3582,7 @@
        "layer": "particles",
        "scale": [
         0.6,
-        1.68
+        1.36
        ],
        "alpha": [
         0,
@@ -3669,7 +3595,7 @@
        "layer": "core",
        "scale": [
         0,
-        1.4
+        1.2
        ],
        "alpha": [
         0,
@@ -3681,15 +3607,16 @@
     },
     {
      "beat": "travel_impact",
-     "ms": 900,
+     "ms": 650,
      "where": "target",
+     "travel_ms": 300,
      "do": [
       {
        "layer": "core",
-       "move": "arc",
+       "move": "path",
        "scale": [
-        1.4,
-        1.6099999999999999
+        1.2,
+        1.5
        ],
        "then": "hide at impact"
       },
@@ -3707,13 +3634,13 @@
        "at": "impact",
        "scale": [
         0.2,
-        2.6
+        2.2
        ],
        "alpha": [
         1,
         0
        ],
-       "ms": 693,
+       "ms": 585,
        "blend": "add",
        "flat_on_board": true
       },
@@ -3722,14 +3649,14 @@
        "at": "impact",
        "scale": [
         0.7,
-        2.52
+        2.0
        ],
        "alpha": [
         1,
         0
        ],
        "spin_deg": 40,
-       "ms": 693
+       "ms": 585
       },
       {
        "layer": "word",
@@ -3739,7 +3666,7 @@
         1.25,
         1.0
        ],
-       "size_squares": 2.2,
+       "size_squares": 2.3,
        "offset_squares": [
         0.6,
         -1.0
@@ -3747,28 +3674,27 @@
       },
       {
        "fx": "shake",
-       "amount": 0.35
+       "amount": 0.3
       },
       {
        "fx": "flash",
-       "color": "#ff7a1a",
+       "color": "#b36bff",
        "skip": false
       },
       {
        "fx": "slowmo",
        "on": true
       }
-     ],
-     "travel_ms": 800
+     ]
     },
     {
      "beat": "aftermath",
-     "ms": 500,
+     "ms": 800,
      "where": "target",
      "do": [
       {
        "layer": "particles",
-       "drift_up_squares": 0.8,
+       "drift_up_squares": 0.9,
        "alpha": [
         1,
         0
@@ -3778,8 +3704,8 @@
       {
        "layer": "glow",
        "scale": [
-        1.4,
-        2.2399999999999998
+        1.5,
+        2.4000000000000004
        ],
        "alpha": [
         0.6,
@@ -3789,7 +3715,7 @@
       },
       {
        "layer": "word",
-       "hold_ms": 630,
+       "hold_ms": 650,
        "then": "fade 250 ms"
       },
       {
@@ -3798,95 +3724,93 @@
      ]
     }
    ],
-   "ken_oct31": "Ken: 'I want the fireball to crash a little sooner. Or a little slower.' Flight 0.8 s on a clear arc that speeds into the target, crash at 1.2 s, whole spell about 1.8 s (the sound word may outlast it)",
-   "ken_oct31_sky": "Ken: 'the fireball and the meteor both need to come from like a random part from the top down. Not from the ground up.' Both fall from a random point high above (a different direction each cast, entering from the top of the screen) and crash on the target",
-   "borrowed_from": "fireball",
-   "note": "Nov 5: placeholder, uses the painted files of fireball until Brush paints this spell"
+   "layers": {
+    "core": {
+     "file": "art/spell-fx/chain-lightning/chain-lightning-core.webp",
+     "px": [
+      263,
+      540
+     ],
+     "file_phone": "art/spell-fx/chain-lightning/chain-lightning-core-m.webp",
+     "px_phone": [
+      146,
+      300
+     ]
+    },
+    "glow": {
+     "file": "art/spell-fx/chain-lightning/chain-lightning-glow.webp",
+     "px": [
+      331,
+      395
+     ],
+     "file_phone": "art/spell-fx/chain-lightning/chain-lightning-glow-m.webp",
+     "px_phone": [
+      251,
+      300
+     ]
+    },
+    "particles": {
+     "file": "art/spell-fx/chain-lightning/chain-lightning-particles.webp",
+     "px": [
+      312,
+      332
+     ],
+     "file_phone": "art/spell-fx/chain-lightning/chain-lightning-particles-m.webp",
+     "px_phone": [
+      282,
+      300
+     ]
+    },
+    "ring": {
+     "file": "art/spell-fx/chain-lightning/chain-lightning-ring.webp",
+     "px": [
+      415,
+      250
+     ],
+     "file_phone": "art/spell-fx/chain-lightning/chain-lightning-ring-m.webp",
+     "px_phone": [
+      300,
+      181
+     ]
+    },
+    "debris": {
+     "file": "art/spell-fx/chain-lightning/chain-lightning-debris.webp",
+     "px": [
+      390,
+      501
+     ],
+     "file_phone": "art/spell-fx/chain-lightning/chain-lightning-debris-m.webp",
+     "px_phone": [
+      234,
+      300
+     ]
+    },
+    "word": {
+     "file": "art/spell-fx/chain-lightning/chain-lightning-word.webp",
+     "px": [
+      540,
+      493
+     ],
+     "file_phone": "art/spell-fx/chain-lightning/chain-lightning-word-m.webp",
+     "px_phone": [
+      300,
+      274
+     ]
+    }
+   },
+   "made_by": "Anvil (spec) + Brush (sprites), Nov 6",
+   "jump_ms": 160
   },
   "stand-fast-lads": {
    "name": "Stand Fast, Lads!",
    "target": "all_own_units",
    "path": "at_caster",
-   "path_notes": "everything happens at the caster; the ring expands from the caster across the board",
-   "total_ms": 2200,
-   "tint": "#ff3a1a",
+   "path_notes": "the war-horn blasts at the caster; the shield-rune ring rolls out across the board; every Dwarf of the caster keeps a small blue rune glow while the spell lasts (syncBuff, like Thunderhorn Blast)",
+   "total_ms": 2300,
+   "tint": "#6fb4ff",
    "sound_word": "STAND FAST!",
-   "shake": 0.4,
+   "shake": 0.3,
    "slowmo": false,
-   "layers": {
-    "core": {
-     "file": "art/spell-fx/battle-cry/battle-cry-core.webp",
-     "px": [
-      495,
-      484
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-core-m.webp",
-     "px_phone": [
-      320,
-      313
-     ]
-    },
-    "glow": {
-     "file": "art/spell-fx/battle-cry/battle-cry-glow.webp",
-     "px": [
-      520,
-      507
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-glow-m.webp",
-     "px_phone": [
-      320,
-      312
-     ]
-    },
-    "particles": {
-     "file": "art/spell-fx/battle-cry/battle-cry-particles.webp",
-     "px": [
-      498,
-      498
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-particles-m.webp",
-     "px_phone": [
-      256,
-      256
-     ]
-    },
-    "ring": {
-     "file": "art/spell-fx/battle-cry/battle-cry-ring.webp",
-     "px": [
-      601,
-      431
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-ring-m.webp",
-     "px_phone": [
-      320,
-      229
-     ]
-    },
-    "debris": {
-     "file": "art/spell-fx/battle-cry/battle-cry-debris.webp",
-     "px": [
-      464,
-      467
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-debris-m.webp",
-     "px_phone": [
-      254,
-      256
-     ]
-    },
-    "word": {
-     "file": "art/spell-fx/battle-cry/battle-cry-word.webp",
-     "px": [
-      533,
-      471
-     ],
-     "file_phone": "art/spell-fx/battle-cry/battle-cry-word-m.webp",
-     "px_phone": [
-      256,
-      226
-     ]
-    }
-   },
    "beats": [
     {
      "beat": "windup",
@@ -3897,7 +3821,7 @@
        "layer": "glow",
        "scale": [
         0.3,
-        2.52
+        2.4
        ],
        "alpha": [
         0,
@@ -3910,7 +3834,7 @@
        "layer": "particles",
        "scale": [
         0.6,
-        2.16
+        2.04
        ],
        "alpha": [
         0,
@@ -3935,15 +3859,16 @@
     },
     {
      "beat": "travel_impact",
-     "ms": 770,
+     "ms": 800,
      "where": "target",
+     "travel_ms": 120,
      "do": [
       {
        "layer": "core",
-       "move": "at_caster",
+       "move": "path",
        "scale": [
         1.8,
-        2.07
+        2.0
        ],
        "then": "hold"
       },
@@ -3961,13 +3886,13 @@
        "at": "impact",
        "scale": [
         0.2,
-        6.0
+        6.5
        ],
        "alpha": [
         1,
         0
        ],
-       "ms": 693,
+       "ms": 720,
        "blend": "add",
        "flat_on_board": true
       },
@@ -3975,15 +3900,15 @@
        "layer": "debris",
        "at": "impact",
        "scale": [
-        0.9,
-        3.24
+        0.7,
+        3.0
        ],
        "alpha": [
         1,
         0
        ],
        "spin_deg": 40,
-       "ms": 693
+       "ms": 720
       },
       {
        "layer": "word",
@@ -3993,7 +3918,7 @@
         1.25,
         1.0
        ],
-       "size_squares": 2.2,
+       "size_squares": 2.3,
        "offset_squares": [
         0.6,
         -1.0
@@ -4001,11 +3926,11 @@
       },
       {
        "fx": "shake",
-       "amount": 0.4
+       "amount": 0.3
       },
       {
        "fx": "flash",
-       "color": "#ff3a1a",
+       "color": "#6fb4ff",
        "skip": false
       },
       {
@@ -4016,12 +3941,12 @@
     },
     {
      "beat": "aftermath",
-     "ms": 880,
+     "ms": 950,
      "where": "target",
      "do": [
       {
        "layer": "particles",
-       "drift_up_squares": 0.8,
+       "drift_up_squares": 0.9,
        "alpha": [
         1,
         0
@@ -4031,8 +3956,8 @@
       {
        "layer": "glow",
        "scale": [
-        1.8,
-        2.8800000000000003
+        2.0,
+        3.2
        ],
        "alpha": [
         0.6,
@@ -4042,7 +3967,7 @@
       },
       {
        "layer": "word",
-       "hold_ms": 630,
+       "hold_ms": 650,
        "then": "fade 250 ms"
       },
       {
@@ -4055,9 +3980,82 @@
      ]
     }
    ],
-   "notes": "after the ring passes each of your creatures, play the glow on that creature small (0.8 sq) for the rest of the turn at 0.35 alpha",
-   "borrowed_from": "battle-cry",
-   "note": "Nov 5: placeholder, uses the painted files of battle-cry until Brush paints this spell"
+   "layers": {
+    "core": {
+     "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-core.webp",
+     "px": [
+      512,
+      512
+     ],
+     "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-core-m.webp",
+     "px_phone": [
+      320,
+      320
+     ]
+    },
+    "glow": {
+     "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-glow.webp",
+     "px": [
+      512,
+      512
+     ],
+     "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-glow-m.webp",
+     "px_phone": [
+      320,
+      320
+     ]
+    },
+    "particles": {
+     "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-particles.webp",
+     "px": [
+      512,
+      512
+     ],
+     "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-particles-m.webp",
+     "px_phone": [
+      320,
+      320
+     ]
+    },
+    "ring": {
+     "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-ring.webp",
+     "px": [
+      512,
+      512
+     ],
+     "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-ring-m.webp",
+     "px_phone": [
+      320,
+      320
+     ]
+    },
+    "debris": {
+     "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-debris.webp",
+     "px": [
+      512,
+      512
+     ],
+     "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-debris-m.webp",
+     "px_phone": [
+      320,
+      320
+     ]
+    },
+    "word": {
+     "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-word.webp",
+     "px": [
+      512,
+      512
+     ],
+     "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-word-m.webp",
+     "px_phone": [
+      320,
+      320
+     ]
+    }
+   },
+   "made_by": "Anvil (spec) + Brush (sprites), Nov 6",
+   "notes": "after the ring passes each Dwarf of the caster, its glow stays small (0.8 sq, 0.35 alpha) until the caster's next turn"
   }
  }
 }

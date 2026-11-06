@@ -1560,8 +1560,10 @@ const _embV = new THREE.Vector3();
   });
   /** Thunderhorn Blast's glow stays on every unit of the buffed side while the buff lasts */
   function syncBuffNow(now: number) {
-    const fl = state?.flags, units: { uid: string; side: string; pos: THREE.Vector3; h: number }[] = [];
+    const fl = state?.flags, units: { uid: string; side: string; pos: THREE.Vector3; h: number; spell?: string }[] = [];
     if (fl) for (const f of figs.values()) if (!f.dying && (fl.battleCryN?.[f.owner] ?? (fl.battleCry === f.owner ? 1 : 0)) > 0) units.push({ uid: f.uid, side: f.owner, pos: f.group.position, h: f.c3d?.boardH || 1 });
+    // Nov 6: Stand Fast, Lads!: the caster's Dwarves keep a rune glow until the caster's next turn
+    if (state) for (const f of figs.values()) if (!f.dying && (state.players?.[f.owner]?.standFastUntil || 0) > state.turn && CARDS[f.cardId]?.faction === 'dwarves' && !units.some((u) => u.uid === f.uid)) units.push({ uid: f.uid, side: f.owner, pos: f.group.position, h: f.c3d?.boardH || 1, spell: 'stand-fast-lads' });
     spellFx.syncBuff(units, now);
   }
   /** load the painted FX of every spell either side holds (hand or deck), a texture at a time */
