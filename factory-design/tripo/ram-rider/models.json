@@ -1,0 +1,35 @@
+{
+ "source": "tripo",
+ "generated": "2026-11-06",
+ "from": "approved Model Editor sheet (factory-design/meshy-jobs views, same as Meshy)",
+ "tool": "tripo-cli 0.11.2, browser sign-in (no API key stored by Clay)",
+ "model": "v3.1-20260211 (H series), multiview, texture_quality detailed, PBR, face_limit 20000",
+ "views": "front, left, back",
+ "tasks": {
+  "multiview_to_model": "2b39c6d8-cf57-4a38-944a-c827ea523d3f",
+  "rig_check": "1e424548-eb99-4cdd-8bb0-87fcb7cc5267",
+  "rig": "c77f06f5-a1fb-40b8-9b51-e4c3a335ecaf",
+  "retarget": "868cbd51-0556-498f-83cb-0de51ee625ab"
+ },
+ "rigCheckSaid": "quadruped",
+ "rigged": true,
+ "rigType": "quadruped",
+ "rigModel": "v2.5-20260210",
+ "clips": [
+  "preset:quadruped:walk"
+ ],
+ "animateInPlace": true,
+ "credits": {
+  "model": 40,
+  "rig": 25,
+  "walk": 10,
+  "total": 75
+ },
+ "facing": "raw file faces +X (Tripo default); the slim file adds a root node \"tripoFacing\" turning it to face +Z like every other model",
+ "scale": "Tripo normalises the longest side to 1; set the game height in the unit config as usual",
+ "files": {
+  "ram.glb": "raw Tripo output (rig + walk), never overwritten",
+  "slim/ram.glb": "8k triangles, 1024 textures, meshopt, facing fixed"
+ },
+ "notes": "Living mount for Thunderhorn Ram Rider; replaces the static ram part once checked in the game."
+}

@@ -1,0 +1,35 @@
+{
+ "source": "tripo",
+ "generated": "2026-11-06",
+ "from": "approved Model Editor sheet (factory-design/meshy-jobs views, same as Meshy)",
+ "tool": "tripo-cli 0.11.2, browser sign-in (no API key stored by Clay)",
+ "model": "v3.1-20260211 (H series), multiview, texture_quality detailed, PBR, face_limit 20000",
+ "views": "front, left, back",
+ "tasks": {
+  "multiview_to_model": "0f82c5ac-0f12-4508-82b2-4dff53dc4deb",
+  "rig_check": "fa8219e7-8d0f-484f-b370-65d7fb010f1b",
+  "rig": "d6af0b9f-2e4a-4b23-8b88-1b81c7bdf9d5",
+  "retarget": "c9782ffb-8e81-4154-b2b8-89f6d45f6058"
+ },
+ "rigCheckSaid": "quadruped",
+ "rigged": true,
+ "rigType": "quadruped",
+ "rigModel": "v2.5-20260210",
+ "clips": [
+  "preset:quadruped:walk"
+ ],
+ "animateInPlace": true,
+ "credits": {
+  "model": 40,
+  "rig": 25,
+  "walk": 10,
+  "total": 75
+ },
+ "facing": "raw file faces +X (Tripo default); the slim file adds a root node \"tripoFacing\" turning it to face +Z like every other model",
+ "scale": "Tripo normalises the longest side to 1; set the game height in the unit config as usual",
+ "files": {
+  "wolf.glb": "raw Tripo output (rig + walk), never overwritten",
+  "slim/wolf.glb": "8k triangles, 1024 textures, meshopt, facing fixed"
+ },
+ "notes": "Living mount for Mangewolf Rider; replaces the static wolf part once checked in the game."
+}
