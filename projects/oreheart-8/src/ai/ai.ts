@@ -168,7 +168,7 @@ function lineReach(s: any, a: any, b: any, range: number): boolean {
 }
 /** Can enemy unit f hit square/unit `t` on its next turn without help (melee next to it, ranged in line, Charge within reach)? */
 function threatens(s: any, f: any, t: any): boolean {
-  if ((f.lockedUntil || 0) > s.turn + 1 || (f.wardUntil || 0) > s.turn + 1) return false;
+  if ((f.lockedUntil || 0) > s.turn + 1 || (f.wardUntil || 0) > s.turn + 1 || ab(f, 'noAttack')) return false; // Nov 6: a Clockwork Mule never attacks
   if (ab(f, 'overwatch')) return true;
   if (rangedOf(s, f) > 0) return lineReach(s, f, t, rangeOf(s, f));
   const d = cheb(f, t);
@@ -263,12 +263,14 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
     v += unitVal(s, c, isMiner(CARDS[c.cardId]) ? mr++ : 0);
     if (c.poison > 0) { const fut = (c.poisonStacks || 1) * (CONFIG.poisonDamage ?? 1) * Math.min(c.poison, 4); v -= fut >= c.health ? unitVal(s, c, 9) * 0.6 : fut * 3; }
   }
+  const pox = mine.some((c) => ab(c, 'poxDoctor')) ? 2 : 1; // Nov 6: Pox Doctor Ratsbane doubles our poison and takes 1 Attack off every poisoned enemy
   for (const f of foes) {
     // Hard (Oct 31): enemy units count for more, so a kill always outweighs the lost "go and get it" goal below (killing an adjacent enemy used to score as a loss)
     v -= unitVal(s, f, isMiner(CARDS[f.cardId]) ? fr++ : 0) * (isMiner(CARDS[f.cardId]) ? P.foeMinerM || 1 : 1) * (P.foeM || 1);
+    if (f.jinxed && myTurn) v += 2.5; // Nov 6: a Jinxed enemy swings weaker and takes more from our spells this turn
     if (f.poison > 0) {
       // poisoned units don't heal: their damage stays, and the poison keeps ticking
-      const fut = (f.poisonStacks || 1) * (CONFIG.poisonDamage ?? 1) * Math.min(f.poison, 4);
+      const fut = (f.poisonStacks || 1) * (CONFIG.poisonDamage ?? 1) * pox * Math.min(f.poison, 4);
       v += fut >= f.health ? unitVal(s, f, 9) * 0.6 : fut * 3 + (f.maxHealth - f.health) * 3;
     } else if (myTurn && f.health < f.maxHealth) {
       // focus fire: a hurt enemy that one of our ready units can still hit this turn is nearly a kill
@@ -287,6 +289,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
     v += n > 0 ? 6 : n < 0 ? -6 : 0; // owning a mine (more of your creatures mining it than theirs)
   }
   v += my.bank * 1.2 + my.crystals * 0.3 + my.hand.length * 2.5;
+  if (myTurn && (s.flags?.wispDiscount?.[me] || 0) > 0 && my.hand.some((h: any) => CARDS[h.cardId]?.type === 'spell')) v += 1.5 * Math.min(4, s.flags.wispDiscount[me]); // Nov 6: a popped Wisp's discount is worth crystals while a spell waits in hand
   // ---- positions: every fighter heads for its best goal; Miners for a mine
   const myHome = sh(me), foeHome = sh(foe);
   const sites = s.sites;
@@ -362,6 +365,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
   return v;
 }
 function threatensNow(s: any, c: any, f: any): boolean {
+  if (ab(c, 'noAttack')) return false;
   if (ab(c, 'overwatch')) return true;
   if (rangedOf(s, c) > 0) return lineReach(s, c, f, rangeOf(s, c));
   return cheb(c, f) <= Math.max(1, CARDS[c.cardId].move || 1) + (ab(c, 'charge') ? 1 : 0); // v2: a unit walks (points - 1) and still attacks; Charge attacks at 0

@@ -33,7 +33,7 @@ export const SHOT_SOUNDS: Record<string, { fire: string; hit?: string }> = {
 /** Which punch layer goes under which hit sound: bonk = unarmoured hit, clink = armoured hit, stronghold = a Commander hit. */
 export const PUNCH_FOR: Record<string, string> = { bonk: 'punch', clink: 'punch-armour', stronghold: 'punch-heavy' };
 /** All 13 spells have their own file, started together with the spell FX. */
-export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-rush', 'battle-cry', 'healing-light', 'shield-bubble', 'second-wind', 'prospectors-prayer', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex'];
+export const SPELL_SOUNDS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-rush', 'battle-cry', 'healing-light', 'shield-bubble', 'second-wind', 'prospectors-prayer', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex', 'chain-lightning', 'sooey-hog-call', 'stand-fast-lads' /* Nov 6: Brush's sounds for the three new spells */];
 for (const id of SPELL_SOUNDS) SFX['spell:' + id] = D('spell-' + id, 1, 0);
 const OLD_SPELL: Record<string, string> = { fireball: 'fireball', 'meteor-strike': 'meteor', 'healing-light': 'heal', 'second-wind': 'heal', 'shield-bubble': 'bubble' };
 const MAX_VOICES = 3;

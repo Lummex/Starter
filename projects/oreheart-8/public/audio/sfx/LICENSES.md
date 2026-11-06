@@ -25,3 +25,4 @@ Not part of this set (unchanged, Ken's own): public/audio/music/*.mp3 and public
 
 bowl-roll.ogg and pins-scatter.ogg re-made 2026-11-01 (Ken: a heavy metal ball rolling on concrete; bowling pins being hit): synthesized from scratch by Brush (art/sound/synth/bowler.py, numpy/scipy; no samples, recordings or AI audio); CC0, project-owned.
 - rocket-launch and rocket-crash (Rocket Rider, 2026-11-01): synthesized by Brush, CC0, project-owned; see art/sound/synth/rocket.py.
+- spell-chain-lightning, spell-sooey-hog-call and spell-stand-fast-lads (2026-11-06): synthesized by Brush, CC0, project-owned; see art/sound/synth/spells_nov6.py.
