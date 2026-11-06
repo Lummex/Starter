@@ -1,0 +1,15 @@
+{
+ "generated": "2026-11-06T08:39:59.402Z",
+ "from": "Model Editor approved sheet",
+ "tasks": {
+  "character": "01a1b001-35bb-7068-a544-a782d9b41952",
+  "rig": "01a1b003-6692-7733-80da-92adbf6db843"
+ },
+ "actions": {},
+ "rigged": true,
+ "parts": [],
+ "notes": "",
+ "fileSizes": {
+  "char.glb": 14035076
+ }
+}

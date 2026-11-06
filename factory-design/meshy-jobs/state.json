@@ -308,5 +308,136 @@
  },
  "props-batch-1": {
   "character": "01a18b58-1ca3-729f-ad59-db49bb2923fa"
+ },
+ "bang-snap-imp": {
+  "character": "01a1affb-4bfb-7693-9bd7-6b738e50478b",
+  "rig": "01a1affd-f78b-724c-8bce-2d3fe041c337"
+ },
+ "bogwater-brewer": {
+  "character": "01a1affb-4bfc-71c8-bfa3-7834604024aa",
+  "rig": "01a1affd-cf7f-76dd-9df6-091bda236bd2"
+ },
+ "engineer-cogsworth-hammerhand": {
+  "character": "01a1affb-4c07-7325-b1f6-64f74882686b",
+  "rig": "01a1affd-cfce-70fa-8480-9b02e7ff0b40"
+ },
+ "fizzwick-the-fuse-lighter": {
+  "character": "01a1affb-4c01-7072-ad3f-c9d134c466b7",
+  "rig": "01a1affd-7fc1-7314-9e6c-0ca02d57493b"
+ },
+ "forgemaster-hildegrim-ashbeard": {
+  "character": "01a1affd-dcbf-749d-bee7-68c0b43e8634",
+  "rig": "01a1b000-0fc5-76ff-ae8e-2f1eb5f9913d"
+ },
+ "grand-jinxmaster-wobblewick": {
+  "character": "01a1affe-2d55-70e0-823b-ab9afd545d7c",
+  "rig": "01a1b000-afb0-76ed-b1f3-1859316a1889"
+ },
+ "grease-gremlin": {
+  "character": "01a1affe-3008-7347-877a-15c548fdb561",
+  "rig": "01a1b000-d752-73c0-91ad-0461d212ffc5"
+ },
+ "grumble-drummer": {
+  "character": "01a1affe-565f-766c-ab1c-e792fabd594d",
+  "rig": "01a1b000-d6f6-75c5-b579-8057d50b90ff"
+ },
+ "hammerhand-apprentice": {
+  "character": "01a1b000-6d68-75b6-89df-614e0cf4759a",
+  "rig": "01a1b002-7811-70ba-8aeb-3f93442df426"
+ },
+ "hex-cadet": {
+  "character": "01a1b001-0e4a-7555-90e9-38f86093d305",
+  "rig": "01a1b002-effa-73ce-a095-871c02e48a26"
+ },
+ "hexbolt-tinker": {
+  "character": "01a1b001-35bb-7068-a544-a782d9b41952",
+  "rig": "01a1b003-6692-7733-80da-92adbf6db843"
+ },
+ "hexfuse-battery-golem": {
+  "character": "01a1b001-36ec-77bd-ba56-16c799f0833e",
+  "rig": "01a1b003-6703-7168-849d-78910ced01d4"
+ },
+ "junk-catapult-crew": {
+  "character": "01a1b002-d5bd-74aa-a694-6304cf15b2f7",
+  "rig": "01a1b005-0876-72dc-bf9f-2a4fdc75820f"
+ },
+ "junk-catapult-crew-2": {
+  "character": "01a1b003-5135-7353-a769-17b3bf7d6fe0",
+  "rig": "01a1b005-5802-7253-99b5-fa6fe0674893"
+ },
+ "lens-grinder-lorelei": {
+  "character": "01a1b003-c4e2-724e-900e-2ef53987cd10",
+  "rig": "01a1b006-4631-768d-9e64-7ed10a64112c"
+ },
+ "mama-grubsnout-brood-mother": {
+  "character": "01a1b003-c581-7332-9ee0-c7f6c3d12f22",
+  "rig": "01a1b006-9669-725f-b380-97b5c57ac3d8"
+ },
+ "master-smith-durga-ironthumb": {
+  "character": "01a1b005-6748-748e-8297-e480a63b37ea",
+  "rig": "01a1b007-9714-724e-af59-06636f880ff5"
+ },
+ "mule-wrangler-nessa": {
+  "character": "01a1b005-b4e5-7450-9c85-d329c4730940",
+  "rig": "01a1b008-0ecf-74f2-b461-fa2d769268a2"
+ },
+ "pebble-tosser": {
+  "character": "01a1b006-cbf9-723d-a364-68ebd2c8de8d",
+  "rig": "01a1b008-faf1-713b-9b6c-7ecf3ecd06d9"
+ },
+ "pox-doctor-ratsbane": {
+  "character": "01a1b007-1c94-76e9-a165-43c3f8e787ed",
+  "rig": "01a1b00a-ac03-739e-a9a9-ba61f68d861a"
+ },
+ "ratchet-runt": {
+  "character": "01a1b007-f552-77b7-8460-85bb3f7afe81",
+  "rig": "01a1b00a-2796-7577-beb1-02feb55c28d0"
+ },
+ "runt-piglet": {
+  "character": "01a1b008-7c94-72b0-9c99-ffd64d677a4c"
+ },
+ "shield-cadet": {
+  "character": "01a1b009-5752-7229-8ee2-986a2ac46160",
+  "rig": "01a1b00b-37d7-75d5-815a-61e4eda194ea"
+ },
+ "shieldwall-sergeant-brasha": {
+  "character": "01a1b00a-85cf-7176-ad3a-959b6360664e",
+  "rig": "01a1b00d-02d8-71c9-b804-d8375f5ecc41"
+ },
+ "sludge-lobber": {
+  "character": "01a1b00b-3062-715b-b33e-a7ae1bfc5090",
+  "rig": "01a1b00e-2414-74ab-a4ce-79767c89b977"
+ },
+ "snot-sergeant-gurk": {
+  "character": "01a1b00b-7347-7191-b355-32711d4c86f9",
+  "rig": "01a1b00d-c939-7093-bf26-f6589c44d5f9"
+ },
+ "spark-caddy": {
+  "character": "01a1b00b-9411-772c-bf9b-3346aa7679b8",
+  "rig": "01a1b00d-c967-7493-becd-362b656f7234"
+ },
+ "stonebreaker-miner": {
+  "character": "01a1b00d-5fb5-7118-8fb0-acb1a4045b29",
+  "rig": "01a1b00f-90ac-73f6-9e77-4958a793a0af"
+ },
+ "stray-spark-wisp": {
+  "character": "01a1b00e-25ea-7110-b456-08af7a0cc612"
+ },
+ "token-clockwork-mule": {
+  "character": "01a1b00e-275a-7466-84a1-a0d5d1db5e3a"
+ },
+ "token-piglet": {
+  "character": "01a1b00e-8817-7085-87f0-5bbd65ae5b7e"
+ },
+ "token-spark-wisp": {
+  "character": "01a1b00f-ed51-75b7-9408-097b49b3c0f0"
+ },
+ "wispmother-tallulah": {
+  "character": "01a1b010-80dc-7071-9642-fb1d4a8d6273",
+  "rig": "01a1b012-ddf5-72bc-a192-198455e71021"
+ },
+ "rune-scribe-nimbletoe": {
+  "character": "01a1b010-d0d7-70c6-8799-fa210c529e41",
+  "rig": "01a1b013-a564-768a-8f0d-0c8fe34b35a5"
  }
 }

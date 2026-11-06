@@ -1,16 +1,208 @@
 {
- "at": "2026-10-30T06:23:44.599Z",
+ "at": "2026-11-06T08:57:44.498Z",
  "results": [
   {
-   "id": "cmd-sprocket-rig",
-   "partsAdded": {
-    "wrench.glb": 10822100
+   "id": "fizzwick-the-fuse-lighter",
+   "sizes": {
+    "char.glb": 15451676
    }
   },
   {
-   "id": "shieldbeard",
-   "partsAdded": {
-    "shoulder-shield.glb": 12074060
+   "id": "engineer-cogsworth-hammerhand",
+   "sizes": {
+    "char.glb": 14784568
+   }
+  },
+  {
+   "id": "bogwater-brewer",
+   "sizes": {
+    "char.glb": 14878000
+   }
+  },
+  {
+   "id": "bang-snap-imp",
+   "sizes": {
+    "char.glb": 15102108
+   }
+  },
+  {
+   "id": "forgemaster-hildegrim-ashbeard",
+   "sizes": {
+    "char.glb": 14045020
+   }
+  },
+  {
+   "id": "grand-jinxmaster-wobblewick",
+   "sizes": {
+    "char.glb": 14198868
+   }
+  },
+  {
+   "id": "grumble-drummer",
+   "sizes": {
+    "char.glb": 14595752
+   }
+  },
+  {
+   "id": "grease-gremlin",
+   "sizes": {
+    "char.glb": 15191076
+   }
+  },
+  {
+   "id": "hammerhand-apprentice",
+   "sizes": {
+    "char.glb": 13612892
+   }
+  },
+  {
+   "id": "hex-cadet",
+   "sizes": {
+    "char.glb": 12697840
+   }
+  },
+  {
+   "id": "hexbolt-tinker",
+   "sizes": {
+    "char.glb": 14035076
+   }
+  },
+  {
+   "id": "hexfuse-battery-golem",
+   "sizes": {
+    "char.glb": 14437428
+   }
+  },
+  {
+   "id": "junk-catapult-crew",
+   "sizes": {
+    "char.glb": 14798252
+   }
+  },
+  {
+   "id": "junk-catapult-crew-2",
+   "sizes": {
+    "char.glb": 14911124
+   }
+  },
+  {
+   "id": "lens-grinder-lorelei",
+   "sizes": {
+    "char.glb": 14237556
+   }
+  },
+  {
+   "id": "mama-grubsnout-brood-mother",
+   "sizes": {
+    "char.glb": 15843032
+   }
+  },
+  {
+   "id": "master-smith-durga-ironthumb",
+   "sizes": {
+    "char.glb": 14329596
+   }
+  },
+  {
+   "id": "mule-wrangler-nessa",
+   "sizes": {
+    "char.glb": 14358880
+   }
+  },
+  {
+   "id": "pebble-tosser",
+   "sizes": {
+    "char.glb": 13139276
+   }
+  },
+  {
+   "id": "ratchet-runt",
+   "sizes": {
+    "char.glb": 13155204
+   }
+  },
+  {
+   "id": "pox-doctor-ratsbane",
+   "sizes": {
+    "char.glb": 14659764
+   }
+  },
+  {
+   "id": "runt-piglet",
+   "sizes": {
+    "char.glb": 14216340
+   }
+  },
+  {
+   "id": "shield-cadet",
+   "sizes": {
+    "char.glb": 13069140
+   }
+  },
+  {
+   "id": "shieldwall-sergeant-brasha",
+   "sizes": {
+    "char.glb": 14097400
+   }
+  },
+  {
+   "id": "snot-sergeant-gurk",
+   "sizes": {
+    "char.glb": 15470656
+   }
+  },
+  {
+   "id": "spark-caddy",
+   "sizes": {
+    "char.glb": 14625948
+   }
+  },
+  {
+   "id": "sludge-lobber",
+   "sizes": {
+    "char.glb": 14946556
+   }
+  },
+  {
+   "id": "stonebreaker-miner",
+   "sizes": {
+    "char.glb": 13888468
+   }
+  },
+  {
+   "id": "stray-spark-wisp",
+   "sizes": {
+    "char.glb": 9565908
+   }
+  },
+  {
+   "id": "token-clockwork-mule",
+   "sizes": {
+    "char.glb": 12773344
+   }
+  },
+  {
+   "id": "token-spark-wisp",
+   "sizes": {
+    "char.glb": 9824168
+   }
+  },
+  {
+   "id": "token-piglet",
+   "sizes": {
+    "char.glb": 14193808
+   }
+  },
+  {
+   "id": "wispmother-tallulah",
+   "sizes": {
+    "char.glb": 13581544
+   }
+  },
+  {
+   "id": "rune-scribe-nimbletoe",
+   "sizes": {
+    "char.glb": 14914712
    }
   }
  ]
