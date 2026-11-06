@@ -1,0 +1,40 @@
+{
+ "generated": "2026-11-06",
+ "from": "Clay's Tripo tier model (factory-design/tripo/commander-tiers/grubnak/5-mythic/slim/char.glb, main d377266) + Spring's fixes (studio/spring-nov1/tripo/)",
+ "commander": "grubnak",
+ "tier": "5-mythic",
+ "files": {
+  "char": "char.glb",
+  "sceptre": null,
+  "throne": null
+ },
+ "clips": {},
+ "notes": "Moves come from the shared biped pack, like the base Commander: bones renamed to the pack (Mixamo Spine/Spine1/Spine2 -> Spine02/Spine01/Spine; fingers kept as mixamorig_*). The staff is part of the mesh: re-skinned 100% to RightHand (Tripo had it on RightForeArm, RightLeg, RightShoulder) and its rest grip turned 30.7 deg so it stands upright in biped-idle-01. Uncompressed (Blender export); meshopt it if you like.",
+ "staffHand": "Right",
+ "fixed": {
+  "idle": "biped-idle-01",
+  "walk": "biped-walk-03",
+  "attack": "biped-attack-03",
+  "cast": "biped-attack-03",
+  "point": "biped-attack-03",
+  "cheer": "biped-cheer-02",
+  "celebrate": "biped-cheer-02",
+  "laugh": "biped-cheer-02",
+  "taunt": "biped-cheer-02",
+  "hit": "biped-bonk-01",
+  "surprised": "biped-bonk-01",
+  "flinch": "biped-bonk-01",
+  "defeat": "biped-death-01"
+ },
+ "hold": [
+  "idle",
+  "walk",
+  "cheer",
+  "celebrate",
+  "laugh",
+  "taunt"
+ ],
+ "fileSizes": {
+  "char.glb": 1598096
+ }
+}

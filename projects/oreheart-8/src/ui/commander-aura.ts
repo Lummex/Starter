@@ -187,7 +187,7 @@ export function makeCommanderAura(o: AuraOpts): CommanderAura {
   let rays: THREE.Sprite | null = null;
   if (T.weapon.rays) { rays = new THREE.Sprite(keep(add('#ffffff', raysTex(), 1))); rays.scale.setScalar(T.weapon.rays * H); rays.renderOrder = 4; group.add(rays); layers.rays = 1; } weaponGlow.scale.setScalar(T.weapon.size * H); weaponGlow.renderOrder = 4; group.add(weaponGlow); layers.weapon = o.weapon ? 1 : 0;
   const tipLocal = new THREE.Vector3(); let hasTip = false;
-  if (o.weapon) { const b = new THREE.Box3().setFromObject(o.weapon, true); if (!b.isEmpty()) { tipLocal.set((b.min.x + b.max.x) / 2, b.max.y, (b.min.z + b.max.z) / 2); o.weapon.worldToLocal(tipLocal); hasTip = true; } }
+  if (o.weapon) { const b = new THREE.Box3().setFromObject(o.weapon, true); if (!b.isEmpty()) { tipLocal.set((b.min.x + b.max.x) / 2, b.max.y, (b.min.z + b.max.z) / 2); o.weapon.worldToLocal(tipLocal); hasTip = true; } else { tipLocal.set(0, 0, 0); hasTip = true; } } // an empty marker = the tip itself (a staff built into the mesh)
   if (!hasTip) { weaponGlow.visible = false; weaponCore.visible = false; if (rays) rays.visible = false; }
   const head = o.char.getObjectByName('Head') || o.char.getObjectByName('head') || null;
 

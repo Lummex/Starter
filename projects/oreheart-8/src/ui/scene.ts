@@ -6,7 +6,7 @@ import { loadCreature3d, creature3dReady, makeCreature3d, missingClips as missin
 import { stagePlow, plowFrame } from './plow';
 import { SHOTS, isShooter, createProjectiles, preloadShots, type ShotSpec } from './projectiles';
 import { makeCommanderAura, CommanderAura } from './commander-aura';
-import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D, loadCommander3d, makeCommander3d, commander3dReady, commanderIds3d } from './grubnak3d';
+import { loadGrubnak3d, makeGrubnak3d, grubnak3dReady, skinBox, G3D, loadCommander3d, makeCommander3d, commander3dReady, commanderIds3d, commanderModelId } from './grubnak3d';
 import { makeMineFx, MineFx } from './mineFx';
 import { createSpellFx, fxImpactMs, type SpellFxRequest } from './spell-fx';
 import { SPELL_VISUALS } from '../content/spell-visuals';
@@ -271,7 +271,7 @@ export function createBoardView(container: HTMLElement, low: boolean, arenaFacti
   // glowing crystal mines inside spiked palisades
   const mines: MineArt[] = [];
   const mineFx: MineFx[] = [];
-  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; o.setCommanderTier = (side: 'player' | 'opponent', tier: number) => { cmdTier[side] = Math.max(1, Math.min(5, Math.round(tier) || 1)); applyAura(side); }; if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
+  try { const o = ((window as any).oreheart = (window as any).oreheart || {}); if (testMode && !o.advanceIdle) o.advanceIdle = (sec: number) => { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }; o.setCommanderTier = (side: 'player' | 'opponent', tier: number) => setTier(side, tier); if (testMode && !o.setGraphics) o.setGraphics = (v: string) => { try { localStorage.setItem('oreheart.graphics', v === 'low' ? 'low' : 'high'); } catch { /* ignore */ } }; } catch { /* ignore */ }
   for (let mi = 0; mi < CONFIG.mineCount; mi++) {
     const m = makeMine(low, mi);
     m.recolor('#ffffff');
@@ -404,6 +404,12 @@ const _embV = new THREE.Vector3();
   // before the collection is live, ?cmdTier=5 (both) / ?cmdTier=p5,o3 in the address.
   const cmdTier: Record<string, number> = { player: 1, opponent: 1 };
   try { const q = new URLSearchParams(location.search).get('cmdTier') || ''; for (const part of q.split(',')) { const m = /^([po]?)([1-5])$/.exec(part.trim()); if (m) { if (m[1] !== 'o') cmdTier.player = +m[2]; if (m[1] !== 'p') cmdTier.opponent = +m[2]; } } } catch { /* no address */ }
+  /** a new tier: his tier model when it differs (rebuilt, aura included), else just the aura */
+  function setTier(side: 'player' | 'opponent', tier: number) {
+    cmdTier[side] = Math.max(1, Math.min(5, Math.round(tier) || 1));
+    const cm = cmd[side];
+    if (cm.id && commanderModelId(cm.id, cmdTier[side]) !== (cm as any).mid) buildCommander(side, cm.faction, cm.id); else applyAura(side);
+  }
   function applyAura(side: 'player' | 'opponent') {
     const cm = cmd[side];
     cm.aura?.dispose(); cm.aura = null;
@@ -416,9 +422,11 @@ const _embV = new THREE.Vector3();
     cm.aura?.dispose(); cm.aura = null;
     cm.group.clear();
     cm.g3d = null;
-    const a3 = id === 'grubnak' ? grubnak3dReady() : commander3dReady(id);
-    if (!a3 && id !== 'grubnak' && commanderIds3d().includes(id)) loadCommander3d(id).then((x) => { if (x && !disposed) for (const sd of ['player', 'opponent'] as const) if (cmd[sd].id === id && !cmd[sd].g3d) buildCommander(sd, cmd[sd].faction, id); });
-    const onThrone = !!a3 && id === 'grubnak'; // Grubnak's throne replaces the stronghold; other 3D Commanders (Oct 30: Borgo) stand on theirs
+    const mid = commanderModelId(id, cmdTier[side]); // Nov 6: an upgraded Commander stands as his tier model (Clay, Spring)
+    (cm as any).mid = mid;
+    const a3 = mid === 'grubnak' ? grubnak3dReady() : commander3dReady(mid);
+    if (!a3 && mid !== 'grubnak' && commanderIds3d().includes(mid)) loadCommander3d(mid).then((x) => { if (x && !disposed) for (const sd of ['player', 'opponent'] as const) if ((cmd[sd] as any).mid === mid && !cmd[sd].g3d) buildCommander(sd, cmd[sd].faction, id); });
+    const onThrone = !!a3 && mid === 'grubnak'; // Grubnak's throne replaces the stronghold; other 3D Commanders (Oct 30: Borgo) stand on theirs
     if (onThrone) { cm.keep = null; cm.retreat = null; } else { cm.keep = makeStronghold(faction, low); cm.group.add(cm.keep.group); if (a3) cm.retreat = null; }
     cm.fig = new THREE.Group();
     cm.grub = null;
@@ -426,7 +434,7 @@ const _embV = new THREE.Vector3();
       // Oct 30: Thane Borgo (and later Commanders) as the Meshy model standing on his stronghold, posed like Grubnak (owner layout turn + size)
       const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
       const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
-      cm.g3d = makeCommander3d(id, a3, cm.keep!.group, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: CS.commanders ?? 1, base: CS.commanderBase ?? true });
+      cm.g3d = makeCommander3d(mid, a3, cm.keep!.group, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: CS.commanders ?? 1, base: CS.commanderBase ?? true });
       cm.fig = cm.g3d.figure;
     } else if (a3) {
       // Round 7 Part B: the Meshy 3D Grubnak on his own fortress
@@ -1947,7 +1955,7 @@ const _embV = new THREE.Vector3();
     spellShards: (at: { row: number; col: number }, countered: string | null) => spellFx.shatter(at, countered),
     isBusy: () => boardBusy(performance.now()), swingMs: SWING_MS,
     topAt: (row: number, col: number) => thingBox(row, col),
-    is3D: true, setCarry, setCommanderTier(side: 'player' | 'opponent', tier: number) { cmdTier[side] = Math.max(1, Math.min(5, Math.round(tier) || 1)); applyAura(side); }, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setCarry, setCommanderTier(side: 'player' | 'opponent', tier: number) { setTier(side, tier); }, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       spellFx.dispose(); proj.dispose();
       disposed = true; for (const ev of inputEvs) window.removeEventListener(ev, onInput, true); window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);

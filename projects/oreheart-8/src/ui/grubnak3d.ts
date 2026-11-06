@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { attachPart, packClipsFor } from './creature3d';
+import { attachPart, packClipsFor, standingBox } from './creature3d';
+import tiersJson from '../content/commander-tiers.json';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 const BASE = '/models/creatures/grubnak/';
@@ -199,7 +200,7 @@ const EMOTE_FALLBACK: Record<string, string> = { laugh: 'attack', point: 'attack
 const RIGHT_HELD = { fixed: { idle: 'biped-idle-01', walk: 'biped-walk-03', attack: 'biped-attack-03', cast: 'biped-attack-03', point: 'biped-attack-03', cheer: 'biped-cheer-02', celebrate: 'biped-cheer-02', laugh: 'biped-cheer-02', taunt: 'biped-cheer-02', hit: 'biped-bonk-01', surprised: 'biped-bonk-01', flinch: 'biped-bonk-01', defeat: 'biped-death-01' }, hold: ['idle', 'walk', 'cheer', 'celebrate', 'laugh', 'taunt'] };
 /** per Commander: model folder, files and how tall he stands (board squares) on top of his stronghold */
 type Look = { bone: string; pos: [number, number, number]; rot: [number, number, number]; scale: [number, number, number] };
-const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortress: string; scepter: string }; figH: number; keepK: number; deck: number; sceptre: { len: number; grip: number; rot: [number, number, number]; upright?: boolean }; prop?: { file: string; look: Look }; /** Nov 2 (Spring): fixed pack clips per role instead of random ones */ fixed?: Record<string, string>; /** roles that keep the prop arm still */ hold?: string[] }> = {
+const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortress: string; scepter: string }; figH: number; keepK: number; deck: number; sceptre: { len: number; grip: number; rot: [number, number, number]; upright?: boolean }; prop?: { file: string; look: Look }; /** Nov 2 (Spring): fixed pack clips per role instead of random ones */ fixed?: Record<string, string>; /** Nov 6: the hand holding a staff built into the mesh */ propSide?: 'Left' | 'Right'; /** Nov 6: the staff is part of the mesh (tier models) */ fused?: boolean; /** roles that keep the prop arm still */ hold?: string[] }> = {
   borgo: { base: '/models/commanders/borgo/', files: { source: 'borgo.glb', fortress: 'dwarf-stronghold', scepter: 'borgo-sceptre.glb' }, figH: 0.8, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] },
     // Nov 2 (Spring): as on his card: the sceptre upright in his LEFT hand, foot on the ground. The old grip rule held it out sideways and its dark shaft vanished, so the head seemed to float.
     prop: { file: 'sceptre.glb', look: { bone: 'LeftHand', pos: [-3.575, 1.633, 10.306], rot: [-57.54, -9.65, 153.59], scale: [52.514, 52.514, 52.514] } },
@@ -212,6 +213,15 @@ const OTHER_CMDS: Record<string, { base: string; files: { source: string; fortre
   sprocket: { base: '/models/commanders/sprocket/', files: { source: 'sprocket.glb', fortress: 'gnome-stronghold', scepter: '' }, figH: 0.68, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] }, prop: { file: 'wrench.glb', look: { bone: 'RightHand', pos: [-2.293, 7.176, 7.017], rot: [-16.36, -20.67, 135.98], scale: [15.776, 15.776, 15.776] } }, ...RIGHT_HELD },
   grumblebeard: { base: '/models/commanders/grumblebeard/', files: { source: 'grumblebeard.glb', fortress: 'dwarf-stronghold', scepter: '' }, figH: 0.84, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [90, 0, 0] }, prop: { file: 'hammer.glb', look: { bone: 'RightHand', pos: [-4.807, -4.132, 0.907], rot: [-3.17, -47.48, 163.5], scale: [44.699, 44.699, 44.699] } }, ...RIGHT_HELD },
 };
+// Nov 6: Clay's tier models (Spring's fixes): '<id>@<tier>' with the base Commander's stronghold and height. The staff is part of the mesh (`fused`):
+// no prop file; its tip is found from the hand-weighted vertices so the aura can light it.
+const GRUBNAK_FIG_H = SEAT.k * THRONE_H; // Grubnak's body height on his (hidden) throne, so his tiers stand as tall
+for (const [key, m] of Object.entries((tiersJson as any).models as Record<string, any>)) {
+  const b = OTHER_CMDS[m.commander];
+  OTHER_CMDS[key] = { base: m.base, files: { source: 'char.glb', fortress: b ? b.files.fortress : 'goblin-stronghold', scepter: '' }, figH: b ? b.figH : GRUBNAK_FIG_H, keepK: 1.1, deck: 0.71, sceptre: { len: 0.5, grip: 0.2, rot: [0, 0, 0] }, fixed: m.fixed, hold: m.hold, propSide: m.propSide, fused: true };
+}
+/** the model to show for a Commander at an upgrade tier (falls back to the base model) */
+export const commanderModelId = (id: string, tier: number) => (tier >= 2 && `${id}@${tier}` in OTHER_CMDS ? `${id}@${tier}` : id);
 /** Oct 30: which pack kind fills each Commander role it lacks (or has only as a stock Meshy clip) */
 const CMD_PACK: [string, string][] = [['idle', 'idle'], ['walk', 'walk'], ['attack', 'attack'], ['hit', 'hit'], ['defeat', 'defeat'], ['cheer', 'cheer'], ['celebrate', 'cheer'], ['laugh', 'cheer'], ['taunt', 'cheer'], ['cast', 'attack'], ['point', 'attack'], ['surprised', 'hit'], ['flinch', 'hit']];
 const CMD_STOCK = /^(Idle|Casual_Walk|Walk|Heavy_Hammer_Swing|Hit_Reaction|Dead)$/;
@@ -243,11 +253,11 @@ export function loadCommander3d(id: string): Promise<G3DAssets | null> {
           if (clips[role] && !CMD_STOCK.test(clips[role].name)) continue;
           const l = sh.byKind[kind] || []; if (l.length) clips[role] = l[Math.floor(Math.random() * l.length)];
         }
-        const propSide = cfg.prop?.look.bone.startsWith('Left') ? 'Left' : 'Right';
+        const propSide = cfg.propSide || (cfg.prop?.look.bone.startsWith('Left') ? 'Left' : 'Right');
         if (sh && cfg.fixed) for (const [role, nm] of Object.entries(cfg.fixed)) { const cl = sh.byName[nm]; if (cl) clips[role] = cl; }
         if (cfg.hold && clips.idle) { const idle0 = clips.idle; for (const role of cfg.hold) if (clips[role]) clips[role] = holdArm(clips[role], idle0, propSide); }
         const pr = cfg.prop ? await gl.loadAsync(cfg.base + cfg.prop.file).then((x) => x.scene).catch(() => null) : null;
-        const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info, prop: pr, breaks: CMD_PACK_CLIPS ? commanderBreaks(sh, clips.idle, !!(s || pr), propSide) : [] };
+        const a: G3DAssets = { char: c.scene, clips, fortress: new THREE.Group(), scepter: s ? s.scene : null, info, prop: pr, breaks: CMD_PACK_CLIPS ? commanderBreaks(sh, clips.idle, !!(s || pr || cfg.fused), propSide) : [] };
         otherLoaded.set(id, a);
         return a;
       } catch {
@@ -273,12 +283,16 @@ export function makeCommander3d(id: string, a: G3DAssets, keep: THREE.Object3D, 
   ch.traverse((o: any) => { if (o.isMesh || o.isSkinnedMesh) { o.frustumCulled = false; o.castShadow = false; } });
   const m0 = new THREE.AnimationMixer(ch); if (a.clips.idle) { m0.clipAction(a.clips.idle).play(); m0.setTime(0); }
   ch.updateMatrixWorld(true);
-  const cb0 = box(ch), H0 = cb0.max.y - cb0.min.y;
+  const cb0 = box(ch);
+  const sb0 = cfg.fused ? standingBox(ch) : cb0; // a staff built into the mesh does not count toward his height
+  const H0 = sb0.max.y - sb0.min.y;
   let scepterBone = '';
   const items: { name: string; bone: string; obj: THREE.Object3D | null }[] = []; // Oct 31 test hook: the items a Commander carries
   const lastChild = (bn: string) => { const o = ch.getObjectByName(bn); return o && o.children.length ? o.children[o.children.length - 1] : null; };
   if (a.scepter) { scepterBone = attachPart(ch, { name: 'scepter', file: '', bone: ['RightHand'], len: cfg.sceptre.len, grip: cfg.sceptre.grip, rot: cfg.sceptre.rot, axis: 'y', upright: (cfg.sceptre as any).upright }, a.scepter, H0, () => {}); if (scepterBone) items.push({ name: cfg.files.scepter.replace(/\.glb$/, ''), bone: scepterBone, obj: lastChild(scepterBone) }); }
   if (a.prop && cfg.prop) { const bn = ch.getObjectByName(cfg.prop.look.bone); if (bn) { const p = a.prop.clone(true); const L = cfg.prop.look; p.position.set(...L.pos); p.rotation.set(...(L.rot.map((d) => THREE.MathUtils.degToRad(d)) as [number, number, number]), 'XYZ'); p.scale.set(...L.scale); p.traverse((o: any) => { if (o.isMesh) o.frustumCulled = false; }); bn.add(p); scepterBone = scepterBone || bn.name; items.push({ name: cfg.prop.file.replace(/\.glb$/, ''), bone: bn.name, obj: p }); } } // Ken's Studio placement (Ledger)
+  const tip = cfg.fused ? staffTip(ch, (cfg.propSide || 'Right') + 'Hand') : null; // in the idle's first frame, like the props above
+  if (tip) { scepterBone = tip.parent!.name; items.push({ name: 'staff', bone: scepterBone, obj: tip }); }
   m0.stopAllAction(); m0.uncacheRoot(ch);
   const sc = new THREE.Group(); sc.scale.setScalar((cfg.figH * gk * size) / Math.max(H0, 0.01));
   ch.position.set(-(cb0.min.x + cb0.max.x) / 2, -cb0.min.y, -(cb0.min.z + cb0.max.z) / 2);
@@ -293,4 +307,26 @@ export function makeCommander3d(id: string, a: G3DAssets, keep: THREE.Object3D, 
   (g as any).items = items;
   g.weapon = items.length ? items[items.length - 1].obj : null;
   return g;
+}
+
+/** Nov 6: the far end of a staff built into the mesh: the vertex weighted to the hand that lies farthest from it, as an empty on the hand bone */
+function staffTip(ch: THREE.Object3D, handName: string): THREE.Object3D | null {
+  const hand = ch.getObjectByName(handName); if (!hand) return null;
+  ch.updateMatrixWorld(true);
+  const hp = hand.getWorldPosition(new THREE.Vector3()), v = new THREE.Vector3(), best = new THREE.Vector3(); let bd = -1;
+  ch.traverse((m: any) => {
+    if (!m.isSkinnedMesh) return;
+    const hi = m.skeleton.bones.indexOf(hand); if (hi < 0) return;
+    const pos = m.geometry.attributes.position, si = m.geometry.attributes.skinIndex, sw = m.geometry.attributes.skinWeight;
+    m.skeleton.update();
+    for (let i = 0; i < pos.count; i++) {
+      let w = 0; for (let k = 0; k < 4; k++) if (si.getComponent(i, k) === hi) w += sw.getComponent(i, k);
+      if (w < 0.9) continue;
+      m.getVertexPosition(i, v); m.localToWorld(v);
+      const d = v.distanceToSquared(hp); if (d > bd) { bd = d; best.copy(v); }
+    }
+  });
+  if (bd < 0) return null;
+  const o = new THREE.Object3D(); o.name = 'staff-tip'; hand.add(o); o.position.copy(hand.worldToLocal(best.clone()));
+  return o;
 }

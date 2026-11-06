@@ -1,0 +1,365 @@
+{
+ "_note": "Nov 6: Clay's Tripo tier models with Spring's fixes (bones renamed to the pack, staff re-skinned to its hand, rest grip turned upright). Each is a Commander variant '<id>@<tier>' with the base Commander's stronghold and height; moves from the shared pack (fixed per role), the staff arm held still in the hold roles on propSide.",
+ "models": {
+  "grubnak@2": {
+   "commander": "grubnak",
+   "tier": 2,
+   "base": "/models/commanders/tiers/grubnak/2/",
+   "propSide": "Right",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-03",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-02",
+    "celebrate": "biped-cheer-02",
+    "laugh": "biped-cheer-02",
+    "taunt": "biped-cheer-02",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  },
+  "grubnak@3": {
+   "commander": "grubnak",
+   "tier": 3,
+   "base": "/models/commanders/tiers/grubnak/3/",
+   "propSide": "Right",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-03",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-02",
+    "celebrate": "biped-cheer-02",
+    "laugh": "biped-cheer-02",
+    "taunt": "biped-cheer-02",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  },
+  "grubnak@4": {
+   "commander": "grubnak",
+   "tier": 4,
+   "base": "/models/commanders/tiers/grubnak/4/",
+   "propSide": "Right",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-03",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-02",
+    "celebrate": "biped-cheer-02",
+    "laugh": "biped-cheer-02",
+    "taunt": "biped-cheer-02",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  },
+  "grubnak@5": {
+   "commander": "grubnak",
+   "tier": 5,
+   "base": "/models/commanders/tiers/grubnak/5/",
+   "propSide": "Right",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-03",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-02",
+    "celebrate": "biped-cheer-02",
+    "laugh": "biped-cheer-02",
+    "taunt": "biped-cheer-02",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  },
+  "sproingle@2": {
+   "commander": "sproingle",
+   "tier": 2,
+   "base": "/models/commanders/tiers/sproingle/2/",
+   "propSide": "Right",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-03",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-02",
+    "celebrate": "biped-cheer-02",
+    "laugh": "biped-cheer-02",
+    "taunt": "biped-cheer-02",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  },
+  "sproingle@3": {
+   "commander": "sproingle",
+   "tier": 3,
+   "base": "/models/commanders/tiers/sproingle/3/",
+   "propSide": "Left",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-03",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-02",
+    "celebrate": "biped-cheer-02",
+    "laugh": "biped-cheer-02",
+    "taunt": "biped-cheer-02",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  },
+  "sproingle@4": {
+   "commander": "sproingle",
+   "tier": 4,
+   "base": "/models/commanders/tiers/sproingle/4/",
+   "propSide": "Left",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-03",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-02",
+    "celebrate": "biped-cheer-02",
+    "laugh": "biped-cheer-02",
+    "taunt": "biped-cheer-02",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  },
+  "sproingle@5": {
+   "commander": "sproingle",
+   "tier": 5,
+   "base": "/models/commanders/tiers/sproingle/5/",
+   "propSide": "Right",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-03",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-02",
+    "celebrate": "biped-cheer-02",
+    "laugh": "biped-cheer-02",
+    "taunt": "biped-cheer-02",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  },
+  "borgo@2": {
+   "commander": "borgo",
+   "tier": 2,
+   "base": "/models/commanders/tiers/borgo/2/",
+   "propSide": "Left",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-01",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-01",
+    "celebrate": "biped-cheer-01",
+    "laugh": "biped-cheer-01",
+    "taunt": "biped-cheer-01",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "attack",
+    "cast",
+    "point",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  },
+  "borgo@3": {
+   "commander": "borgo",
+   "tier": 3,
+   "base": "/models/commanders/tiers/borgo/3/",
+   "propSide": "Left",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-01",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-01",
+    "celebrate": "biped-cheer-01",
+    "laugh": "biped-cheer-01",
+    "taunt": "biped-cheer-01",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "attack",
+    "cast",
+    "point",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  },
+  "borgo@4": {
+   "commander": "borgo",
+   "tier": 4,
+   "base": "/models/commanders/tiers/borgo/4/",
+   "propSide": "Left",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-01",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-01",
+    "celebrate": "biped-cheer-01",
+    "laugh": "biped-cheer-01",
+    "taunt": "biped-cheer-01",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "attack",
+    "cast",
+    "point",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  },
+  "borgo@5": {
+   "commander": "borgo",
+   "tier": 5,
+   "base": "/models/commanders/tiers/borgo/5/",
+   "propSide": "Left",
+   "fixed": {
+    "idle": "biped-idle-01",
+    "walk": "biped-walk-01",
+    "attack": "biped-attack-03",
+    "cast": "biped-attack-03",
+    "point": "biped-attack-03",
+    "cheer": "biped-cheer-01",
+    "celebrate": "biped-cheer-01",
+    "laugh": "biped-cheer-01",
+    "taunt": "biped-cheer-01",
+    "hit": "biped-bonk-01",
+    "surprised": "biped-bonk-01",
+    "flinch": "biped-bonk-01",
+    "defeat": "biped-death-01"
+   },
+   "hold": [
+    "idle",
+    "walk",
+    "attack",
+    "cast",
+    "point",
+    "cheer",
+    "celebrate",
+    "laugh",
+    "taunt"
+   ]
+  }
+ }
+}
