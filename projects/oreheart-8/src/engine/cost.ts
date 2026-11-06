@@ -15,7 +15,7 @@ export const isMinerCard = (card: any) => card.role === 'Gatherer' || card.role 
 export function abilityBonus(card: any): number {
   let b = 0;
   for (const a of (card.abilities || []) as string[]) {
-    if (CF.minerAbilities.includes(a)) continue;
+    if (CF.minerAbilities.includes(a) || (CF.zeroAbilities || []).includes(a)) continue; // Nov 5: tiny perks (Hex Cadet, Ratchet Runt, Eager) and a token's Harmless cost nothing
     b = Math.max(b, CF.bigAbilities.includes(a) ? CF.bigBonus : CF.smallBonus);
   }
   return b;

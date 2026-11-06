@@ -29,7 +29,7 @@ export function deckMainFaction(ids: string[]): string | undefined {
 export const deckLegal = (d: SavedDeck, commander?: string) => d.cards.every((id) => CARDS[id]) && deckProblems(d.cards, commander).length === 0;
 
 const ORDER = ['goblins', 'gnomes', 'dwarves', 'any'];
-const ALL = (Object.values(CARDS) as any[]).slice().sort((a, b) => {
+const ALL = (Object.values(CARDS) as any[]).filter((c) => !c.token /* Nov 5: tokens appear in play only */).slice().sort((a, b) => {
   const t = (c: any) => (c.type === 'creature' ? 0 : c.type === 'spell' ? 1 : 2);
   return t(a) - t(b) || ORDER.indexOf(a.faction) - ORDER.indexOf(b.faction) || a.cost - b.cost || a.name.localeCompare(b.name);
 });

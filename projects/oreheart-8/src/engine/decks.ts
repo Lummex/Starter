@@ -20,6 +20,7 @@ export function deckProblems(ids: string[], commander?: string): string[] {
     const c = CARDS[id];
     if (!c || seen.has(id)) continue;
     if (c.disabled) { seen.add(id); out.push(`${c.name} is not available yet.`); }
+    else if (c.token) { seen.add(id); out.push(`${c.name} is a token: it appears in play and can't go in a deck.`); } // Nov 5
     else if (fac && c.type === 'spell' && c.faction !== 'any' && c.faction !== fac) { seen.add(id); out.push(`${c.name}: only for ${SING[c.faction] ?? c.faction} Commanders.`); }
   }
   if (ids.length < CONFIG.deckMin || ids.length > CONFIG.deckMax) out.push(`Needs ${CONFIG.deckMin} to ${CONFIG.deckMax} cards (now ${ids.length}).`);

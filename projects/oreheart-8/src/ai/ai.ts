@@ -7,7 +7,7 @@
 // Medium adds randomness and the odd second-best pick. No hidden information is used: the opponent's hand and deck are never read,
 // Respond windows opened by a trial action are always answered "pass", and trial actions use a reshuffled random seed so the
 // AI can't foresee knock-back directions.
-import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, nextPool, previewAttack, canRedraw, basicGatherer, typeBonus, expectedSwings, withDiceMode } from '../engine';
+import { applyAction, legalActions, atkValue, CARDS, CONFIG, FACTIONS, other, spellCost, creatureAt, isMiner, nextPool, previewAttack, canRedraw, basicGatherer, typeBonus, expectedSwings, withDiceMode, rangedOf } from '../engine';
 import { aiOrderAction } from './orders-ai';
 import { planFor, StyleId, isStyle, StyleW } from './styles';
 
@@ -87,6 +87,14 @@ function scoreRespond(s: any, who: string, a: any): number {
       return t && t.maxHealth - t.health >= 2 ? 6 : 0;
     }
     case 'healCommander': return s.players[who].health <= 12 ? 8 : 0;
+    case 'standFast': { // Nov 5: worth it when the attack would kill one of our Dwarves (or hurt it a lot)
+      if (pend.kind === 'attack' && pend.creatureUid && pend.target?.row) {
+        const pv: any = previewAttack(s, pend.creatureUid, pend.target);
+        const t = creatureAt(s, pend.target.row, pend.target.col);
+        if (pv && t && CARDS[t.cardId].faction === 'dwarves') return pv.targetDefeated ? 24 + CARDS[t.cardId].cost * 2 : pv.youDeal >= 2 ? 8 : 0;
+      }
+      return 0;
+    }
   }
   return 0;
 }
@@ -103,6 +111,17 @@ function scoreCast(s: any, who: string, a: any): number {
       if (!t) return 0;
       const kills = t.health <= card.params.amount; // v2: spells are flat and unblockable
       return kills ? 50 + CARDS[t.cardId].cost * 6 : 5;
+    }
+    case 'chainLightning': { // Nov 5
+      if (!t) return 0;
+      let v = t.health <= card.params.amount + (t.jinxed ? 1 : 0) ? 50 + CARDS[t.cardId].cost * 6 : 5;
+      if (t.jinxed) for (const o of s.board.creatures) if (o.owner === foe && o !== t && cheb(o, t) === 1) v += o.health <= card.params.jump + (o.jinxed ? 1 : 0) ? 20 + CARDS[o.cardId].cost * 4 : 4;
+      return v;
+    }
+    case 'hogCall': { // Nov 5: a Piglet on every free space around the mine
+      if (!a.target) return 0;
+      let n = 0; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if ((dr || dc) && !creatureAt(s, a.target.row + dr, a.target.col + dc)) n++;
+      return n >= 3 ? 10 + n * 7 : 0;
     }
     case 'poison': return !t ? 0 : !t.poison ? 8 + CARDS[t.cardId].cost * 3 : (t.poisonStacks || 1) < (CONFIG.stackCap ?? 3) ? Math.round((8 + CARDS[t.cardId].cost * 3) / 2) : 0; // stacking (Ken, Oct 30): a second dagger is worth about half
     case 'areaDamage': {
@@ -128,7 +147,7 @@ function scoreCast(s: any, who: string, a: any): number {
 // ---------------------------------------------------------------- Medium / Hard: board evaluation
 const ab = (c: any, k: string) => !!CARDS[c.cardId].abilities?.includes(k);
 const backRow = (p: string) => CONFIG.backRow[p];
-const rangeOf = (c: any) => CARDS[c.cardId].range ?? CONFIG.rangedRange ?? 7;
+const rangeOf = (s: any, c: any) => rangedOf(s, c) || (CARDS[c.cardId].range ?? CONFIG.rangedRange ?? 7); // Nov 5: the engine's reach (Lens Grinder, Spark Caddy)
 const isStrongholdCell = (r: number, c: number) => ['player', 'opponent'].some((p) => CONFIG.strongholds[p][0] === r && CONFIG.strongholds[p][1] === c);
 
 /** Straight or diagonal line from a to b within `range`, with nothing in between (the engine's ranged rule). */
@@ -151,7 +170,7 @@ function lineReach(s: any, a: any, b: any, range: number): boolean {
 function threatens(s: any, f: any, t: any): boolean {
   if ((f.lockedUntil || 0) > s.turn + 1 || (f.wardUntil || 0) > s.turn + 1) return false;
   if (ab(f, 'overwatch')) return true;
-  if (ab(f, 'ranged')) return lineReach(s, f, t, rangeOf(f));
+  if (rangedOf(s, f) > 0) return lineReach(s, f, t, rangeOf(s, f));
   const d = cheb(f, t);
   if (d === 1) return true;
   if ((ab(f, 'charge') || ab(f, 'ramMove')) && d <= (CARDS[f.cardId].move || 1) + 1 && !((f.rootUntil || 0) > s.turn + 1)) return true;
@@ -287,7 +306,7 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
       }
       continue;
     }
-    const reach = ab(c, 'ranged') ? Math.min(rangeOf(c), 7) : 1;
+    const reach = rangedOf(s, c) > 0 ? Math.min(rangeOf(s, c), 7) : 1;
     const mv = card.move || 1;
     const turns = (t: any, r = reach) => Math.max(0, Math.ceil((cheb(c, t) - r) / mv));
     const T = P.turnW;
@@ -334,17 +353,17 @@ export function evaluate(s: any, me: string, P: Prm = { threatW: 1, goalW: 1, tu
     for (const f of foes) {
       if (isMiner(CARDS[f.cardId]) || threatens(s, f, myHome)) continue;
       const mv = CARDS[f.cardId].move || 1;
-      if (ab(f, 'ranged') ? cheb(f, myHome) <= Math.min(rangeOf(f), 7) + mv : free.some((q) => cheb(f, q) <= mv)) D2 += atk(f);
+      if (rangedOf(s, f) > 0 ? cheb(f, myHome) <= Math.min(rangeOf(s, f), 7) + mv : free.some((q) => cheb(f, q) <= mv)) D2 += atk(f);
     }
     v -= P.threatW * D2 * (TUNE.d2Base + 6 * rush);
   }
   // ---- pressure: our units already in position to hit the enemy Commander
-  for (const c of mine) if (!isMiner(CARDS[c.cardId]) && (cheb(c, foeHome) === 1 || (ab(c, 'ranged') && lineReach(s, c, foeHome, rangeOf(c))))) v += c.attack * TUNE.pressW * (P.pressM || 1);
+  for (const c of mine) if (!isMiner(CARDS[c.cardId]) && (cheb(c, foeHome) === 1 || (rangedOf(s, c) > 0 && lineReach(s, c, foeHome, rangeOf(s, c))))) v += c.attack * TUNE.pressW * (P.pressM || 1);
   return v;
 }
 function threatensNow(s: any, c: any, f: any): boolean {
   if (ab(c, 'overwatch')) return true;
-  if (ab(c, 'ranged')) return lineReach(s, c, f, rangeOf(c));
+  if (rangedOf(s, c) > 0) return lineReach(s, c, f, rangeOf(s, c));
   return cheb(c, f) <= Math.max(1, CARDS[c.cardId].move || 1) + (ab(c, 'charge') ? 1 : 0); // v2: a unit walks (points - 1) and still attacks; Charge attacks at 0
 }
 
@@ -600,7 +619,7 @@ function smartChooseInner(s: any, hard: boolean, rand: Rand, legal: any[], done:
       if (performance.now() - t0 > budget * 1.5) break;
       const b0 = evaluate(x.t, me, P);
       const hand1 = x.t.players[me].hand;
-      const strike = (b: any) => b.type === 'attack' || b.type === 'ability' || (b.type === 'cast' && ['damage', 'poison', 'buffAttack', 'areaDamage'].includes(CARDS[hand1.find((h: any) => h.uid === b.uid)?.cardId]?.effect))
+      const strike = (b: any) => b.type === 'attack' || b.type === 'ability' || (b.type === 'cast' && ['damage', 'poison', 'buffAttack', 'areaDamage', 'chainLightning'].includes(CARDS[hand1.find((h: any) => h.uid === b.uid)?.cardId]?.effect))
         || (b.type === 'move' && ab(x.t.board.creatures.find((c: any) => c.uid === b.creatureUid) || { cardId: 'goblin-grunt' }, 'charge'));
       const follow = shortlist(x.t, me, legalActions(x.t).filter(strike), rand, false);
       // best follow-up per unit; a set-up (spell or special) is credited with its two best follow-ups (Thunderhorn Blast helps every attacker)

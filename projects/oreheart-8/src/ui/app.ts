@@ -81,7 +81,7 @@ export const rarityKey = (c: any) => RARITY_KEY[c.rarity] || 'common';
 /** Owner-supplied paintings (round 12a) override the generated art. */
 export const OWNER_ART: Record<string, string> = { 'goblin-scrounger': '/art/owner/goblin/goblin-miner-card-art.png', 'goblin-pebbler': '/art/owner/goblin/boneknocker-card-art.png', 'shiv-rat': '/art/owner/goblin/shiv-rat-card-art.png', 'goblin-smith-miner': '/art/owner/goblin/scrapsmith-miner-card-art.png', 'goblin-sneak': '/art/owner/goblin/goblin-sneak-card-art.webp', 'goblin-bomber': '/art/owner/goblin/goblin-bomber-card-art.webp', 'goblin-scrapper': '/art/owner/goblin/goblin-scrapper-card-art.webp', 'grubnaks-big-boss-troll': '/art/owner/goblin/grubnaks-big-boss-troll-card-art.webp', 'junk-shaman': '/art/owner/goblin/junk-shaman-card-art.webp', 'wolf-rider': '/art/owner/goblin/wolf-rider-card-art.webp', 'rotgut-grenadier': '/art/owner/goblin/rotgut-grenadier-card-art.webp', 'shard-guzzler': '/art/owner/goblin/shard-guzzler-card-art.webp', 'blastrat-sapper': '/art/owner/goblin/blastrat-sapper-card-art.webp', 'hold-it': '/art/owner/goblin/hold-it-card-art.webp', 'tunnel-rush': '/art/owner/goblin/tunnel-rush-card-art.webp', 'goblin-grunt': '/art/owner/goblin/goblin-grunt-card-art.webp', 'skullbasher-rusher': '/art/owner/goblin/skullbasher-rusher-card-art.webp', 'goblin-slinger': '/art/owner/goblin/goblin-slinger-card-art.webp', 'gnome-tinker': '/art/owner/gnome/gnome-tinker-card-art.webp', 'gearward-sentinel': '/art/owner/gnome/gearward-sentinel-card-art.webp', 'gnome-prospector': '/art/owner/gnome/gnome-prospector-card-art.webp', 'glyphshield-warden': '/art/owner/gnome/glyphshield-warden-card-art.webp', 'clockwork-beetle': '/art/owner/gnome/clockwork-beetle-card-art.webp', 'gnome-illusionist': '/art/owner/gnome/gnome-illusionist-card-art.webp', 'the-great-steam-golem': '/art/owner/gnome/the-great-steam-golem-card-art.webp', 'spark-gnome': '/art/owner/gnome/spark-gnome-card-art.webp', 'gnome-cogger': '/art/owner/gnome/gnome-cogger-card-art.webp', 'fireball': '/art/owner/gnome/fireball-card-art.webp', 'meteor-strike': '/art/owner/gnome/meteor-strike-card-art.webp', 'spell-snap': '/art/owner/gnome/spell-snap-card-art.webp', 'gnome-smith-miner': '/art/owner/gnome/gnome-smith-miner-card-art.webp', 'axe-thrower': '/art/owner/dwarf/axe-thrower-card-art.webp', 'barrelback-courier': '/art/owner/dwarf/barrelback-courier-card-art.webp', 'brewmaster': '/art/owner/dwarf/brewmaster-card-art.webp', 'crystal-cluster': '/art/owner/neutral/crystal-cluster-card-art.webp', 'crystal-drunk-delver': '/art/owner/dwarf/crystal-drunk-delver-card-art.webp', 'deepforge-crossbowman': '/art/owner/dwarf/deepforge-crossbowman-card-art.webp', 'dwarf-miner': '/art/owner/dwarf/dwarf-miner-card-art.webp', 'dwarf-pickman': '/art/owner/dwarf/dwarf-pickman-card-art.webp', 'dwarf-stoneback': '/art/owner/dwarf/dwarf-stoneback-card-art.webp', 'fizzle': '/art/owner/neutral/fizzle-card-art.webp', 'glowing-geode': '/art/owner/neutral/glowing-geode-card-art.webp', 'gnome-widget': '/art/owner/gnome/gnome-widget-card-art.webp', 'grimhold-ravager': '/art/owner/dwarf/grimhold-ravager-card-art.webp', 'gyrocopter-ace': '/art/owner/gnome/gyrocopter-ace-card-art.webp', 'healing-light': '/art/owner/neutral/healing-light-card-art.webp', 'heart-of-the-fallen': '/art/owner/neutral/heart-of-the-fallen-card-art.webp', 'hexwright-apprentice': '/art/owner/gnome/hexwright-apprentice-card-art.webp', 'ironhammer-berserker': '/art/owner/dwarf/ironhammer-berserker-card-art.webp', 'motherlode': '/art/owner/neutral/motherlode-card-art.webp', 'oathbound-pikeman': '/art/owner/dwarf/oathbound-pikeman-card-art.webp', 'overclocked-conduit': '/art/owner/gnome/overclocked-conduit-card-art.webp', 'phase-stalker': '/art/owner/gnome/phase-stalker-card-art.webp', 'prospectors-prayer': '/art/owner/neutral/prospectors-prayer-card-art.webp', 'queen-brunhilda-stonebeard': '/art/owner/dwarf/queen-brunhilda-stonebeard-card-art.webp', 'ram-rider': '/art/owner/dwarf/ram-rider-card-art.webp', 'rune-splitter': '/art/owner/dwarf/rune-splitter-card-art.webp', 'runic-siphoner': '/art/owner/gnome/runic-siphoner-card-art.webp', 'second-wind': '/art/owner/dwarf/second-wind-card-art.webp', 'shield-bubble': '/art/owner/dwarf/shield-bubble-card-art.webp', 'shieldbeard': '/art/owner/dwarf/shieldbeard-card-art.webp', 'soul-shard': '/art/owner/neutral/soul-shard-card-art.webp', 'venom-shiv': '/art/owner/goblin/venom-shiv-card-art.webp', 'battle-cry': '/art/owner/dwarf/battle-cry-card-art.webp', 'dwarf-smith-miner': '/art/owner/dwarf/dwarf-smith-miner-card-art.webp', 'mirror-hex': '/art/owner/neutral/mirror-hex-card-art.webp' };
 export const commanderPortrait = (id: string) => (id === 'grubnak' ? '/art/owner/goblin/grubnak-on-throne-art.png' : id === 'sproingle' ? '/art/owner/gnome/sproingle-portrait.webp' : id === 'borgo' ? '/art/owner/dwarf/borgo-portrait.webp' : `/art/commanders/${id}.webp`);
-export const pictureOf = (c: any): string | null => (c && OWNER_ART[c.id]) ? OWNER_ART[c.id] : (c && ((c.type === 'creature' && c.faction === 'goblins') || (c.type === 'spell' && !c.disabled)) ? `/art/cards/${c.id}.webp` : null);
+export const pictureOf = (c: any): string | null => (c && OWNER_ART[c.id]) ? OWNER_ART[c.id] : (c && ((c.type === 'creature' && c.faction === 'goblins') || (c.type === 'spell' && !c.disabled) || c.placeholder /* Nov 5: the new cards' placeholder pictures until Brush's art lands */) ? `/art/cards/${c.id}.webp` : null);
 export const FRAME: Record<string, string> = { goblins: 'goblin', gnomes: 'gnome', dwarves: 'dwarf' };
 export const frameKey = (c: any) => (c.type === 'spell' ? `spell-${FRAME[c.faction] || 'shared'}` : FRAME[c.faction] || 'neutral');
 export function typeOf(c: any): { icon: string; name: string } {
@@ -132,7 +132,15 @@ export const ABILITY_UI: Record<string, { icon: string; name: string; text: stri
   sacrifice: { icon: '🩸', name: 'Sacrifice', text: 'Sacrifice an ally to gain 1 Bank crystal.', burst: 'SACRIFICE!' },
   brew: { icon: '🍺', name: 'Brew', text: 'Once per turn, even on the enemy turn: heal an adjacent wounded dwarf (it survives lethal damage with 1 Health). It becomes Drunk for 2 rounds.', burst: 'BREW!' },
   blink: { icon: '✨', name: 'Blink', text: 'Once, swap places with any of your creatures.', burst: 'BLINK!' },
+  // Nov 5: the new cards
+  brood: { icon: '🐷', name: 'Brood', text: 'Deploy phase, 2 crystals: a Piglet appears on an empty space next to her (max 4 Piglets).', burst: 'OINK!' },
+  spark: { icon: '✨', name: 'Spark', text: 'Deploy phase, 1 crystal: a Spark Wisp appears on an empty space next to her (max 3 Wisps).', burst: 'SPARK!' },
+  build: { icon: '🔧', name: 'Build', text: 'Deploy phase, 2 crystals, once per turn: a Clockwork Mule appears on an empty space next to him (max 3 Mules).', burst: 'CLANK!' },
+  fling: { icon: '🎯', name: 'Fling', text: 'Pay 1, once per turn: throw a Piglet standing next to the crew onto an empty space up to 5 away; it can attack this turn.', burst: 'WHEEE!' },
+  brewPoison: { icon: '🥣', name: 'Bog Brew', text: 'Pay 1: a Goblin next to the Brewer poisons what it hits this turn (Poison 2).', burst: 'SLURP!' },
+  forgeTouch: { icon: '🔨', name: 'Forge Touch', text: 'Pay 2, once per turn: a Dwarf next to her gets +1 Attack and +1 Health for good (counts toward its 3 upgrades).', burst: 'CLANG!' },
 };
+const DEPLOY_OK = ['brew', 'ward', 'brood', 'spark', 'build', 'forgeTouch']; // Nov 5: abilities that work in the Deploy phase too
 /** Owner-facing names of the activated abilities (the data-ability attribute); the engine keeps its own names. */
 export const PUB_ABILITY: Record<string, string> = { slide: 'run', bowl: 'strike', shaman: 'pickUp', rocket: 'rocketRide', ramMove: 'gallop' };
 export const INTERNAL_ABILITY: Record<string, string> = Object.fromEntries(Object.entries(PUB_ABILITY).map(([a, b]) => [b, a]));
@@ -3183,6 +3191,7 @@ export class App {
     if (c.shield > 0 || c.bubble) list.push({ k: 'shield', n: c.shield > 0 ? c.shield : 0, x: c.shield > 0 ? 0 : bs, label: c.shield > 0 ? `Shield ${c.shield}` : bs > 1 ? `Shield bubble x${bs}: blocks the next ${bs} hits` : 'Shield bubble' });
     if (bc > 0) list.push({ k: 'attackup', n: 0, x: bc, label: `+${bc} Attack this turn` });
     if ((c.lockedUntil || 0) > t) list.push({ k: 'sleep', n: c.lockedUntil - t, label: `Can't attack for ${c.lockedUntil - t} more turn${c.lockedUntil - t > 1 ? 's' : ''}` }); // Oct 31: a shielded Bearer can still walk and mine
+    if (c.jinxed) list.push({ k: 'jinx', n: 0, label: 'Jinxed: -1 Attack, +1 damage from spells, until its next turn' }); // Nov 5
     let box = el.querySelector('.st-icons') as El | null;
     const key = list.map((x) => x.k + x.n + 'x' + (x.x || 0)).join(',');
     if (!list.length) { box?.remove(); return; }
@@ -3195,7 +3204,7 @@ export class App {
   }
   renderAbilityButtons(st: any) {
     const live = st.phase !== 'over' && st.phase !== 'mulligan';
-    const legal: any[] = [...(live ? brewActions(st, 'player') : []), ...(live && st.priority === 'player' ? this.game.legalActions().filter((a: any) => a.type === 'ability' && (a.ability === 'brew' || (st.activePlayer === 'player' && st.phase === 'action'))) : [])];
+    const legal: any[] = [...(live ? brewActions(st, 'player') : []), ...(live && st.priority === 'player' ? this.game.legalActions().filter((a: any) => a.type === 'ability' && (a.ability === 'brew' || (st.activePlayer === 'player' && (st.phase === 'action' || DEPLOY_OK.includes(a.ability))))) : [])]; // Nov 5: spawn buttons light up in the Deploy phase
     for (const c of st.board.creatures) {
       const el = this.tokens.get(c.uid);
       if (!el) continue;
@@ -3320,7 +3329,7 @@ export class App {
   hideAbilityTip() { document.getElementById('ab-tip')?.remove(); }
   useAbility(cr: any, k: string) {
     const ui = ABILITY_UI[k];
-    if (this.game.state.priority !== 'player' || (this.game.state.phase !== 'action' && k !== 'brew')) { this.flash('Abilities are used in your Action phase'); return; }
+    if (this.game.state.priority !== 'player' || (this.game.state.phase !== 'action' && !DEPLOY_OK.includes(k))) { this.flash('Abilities are used in your Action phase'); return; }
     const opts = this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === cr.uid && a.ability === k);
     if (!opts.length) { this.flash(`${ui.name}: not available (needs crystals, or already used this turn)`); return; }
     this.pick = null; this.clearGlow();
@@ -3331,7 +3340,7 @@ export class App {
     this.pick = { cells, done: (cell) => {
       this.pick = null; this.clearGlow();
       const here = opts.filter((a: any) => { const q = cellOf(a); return q && q.row === cell.row && q.col === cell.col; });
-      const a = k === 'shaman' ? this.bestShaman(here, cr) : here[0];
+      const a = k === 'shaman' ? this.bestShaman(here, cr) : k === 'fling' ? here.slice().sort((x: any, y: any) => Math.max(Math.abs(x.from.row - cell.row), Math.abs(x.from.col - cell.col)) - Math.max(Math.abs(y.from.row - cell.row), Math.abs(y.from.col - cell.col)))[0] : here[0]; // Nov 5: Fling throws the Piglet nearest the chosen square
       if (a) { const r = this.game.act(a); if (!r.ok) this.flash(r.error!); }
     } };
     this.setGlow(cells, 'glow-swap');
@@ -4826,6 +4835,7 @@ export class App {
       case 'bowl': return { row: cr.row + a.dr, col: cr.col + a.dc };
       case 'plow': return { row: cr.row + a.dr * a.dist, col: cr.col + a.dc * a.dist };
       case 'shaman': return a.from;
+      case 'brood': case 'spark': case 'build': case 'fling': return a.target; // Nov 5: pick the square
       default: return null;
     }
   }
@@ -4841,10 +4851,10 @@ export class App {
   /** Tap menu for abilities that are not aimed by dragging (Shockwave, Ward, Sacrifice). */
   abilityMenu(cr: any) {
     document.querySelector('.ability-menu')?.remove();
-    if (this.game.state.phase !== 'action' || this.game.state.priority !== 'player') return;
-    const opts = this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === cr.uid && ['shockwave', 'ward', 'sacrifice'].includes(a.ability));
+    if ((this.game.state.phase !== 'action' && this.game.state.phase !== 'deploy') || this.game.state.priority !== 'player') return;
+    const opts = this.game.legalActions().filter((a: any) => a.type === 'ability' && a.creatureUid === cr.uid && ['shockwave', 'ward', 'sacrifice', 'brewPoison', 'forgeTouch'].includes(a.ability)); // Nov 5
     if (!opts.length) return;
-    const NAME: Record<string, string> = { shockwave: 'Shockwave (1)', ward: 'Ward an ally (2)', sacrifice: 'Sacrifice an ally (+1 Bank)' };
+    const NAME: Record<string, string> = { shockwave: 'Shockwave (1)', ward: 'Ward an ally (2)', sacrifice: 'Sacrifice an ally (+1 Bank)', brewPoison: 'Bog Brew (1)', forgeTouch: 'Forge Touch (2)' };
     const menu = h('div', { class: 'ability-menu', role: 'menu', 'aria-label': 'Abilities' });
     for (const a of opts.slice(0, 8)) {
       const t = a.target ? this.game.state.board.creatures.find((o: any) => o.row === a.target.row && o.col === a.target.col) : null;
