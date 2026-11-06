@@ -1,0 +1,32 @@
+{
+ "source": "tripo",
+ "generated": "2026-11-06",
+ "commander": "Thane Borgo",
+ "tier": "Radiant (art file 4-legendary)",
+ "route": "Tripo website Agentic Canvas (Ken's plan), browser session: Generate Image (GPT Image 2, free on the plan) from [model sheet + tier card art] -> HD Model (v3.x, 4k PBR, polycount 60000) -> Rigging (Humanoid, Mixamo skeleton, 65 bones)",
+ "canvasProject": "https://studio.tripo3d.ai/canvas/projects/01a1b24c-cbb2-7764-a0fd-8c5e160212b1",
+ "canvasNodes": {
+  "picture": "#28",
+  "hdModel": "#39",
+  "rig": "#50"
+ },
+ "inputs": {
+  "identity": "art/model-references/commanders/borgo-model-sheet.png",
+  "tierArt": "art/card-upgrades-samples/_masters/cmd-borgo-4.webp"
+ },
+ "credits": {
+  "picture": 0,
+  "hdModel": 55,
+  "rig": 20,
+  "total": 75
+ },
+ "rigged": true,
+ "skeleton": "mixamo (mixamorig:Hips ... 65 bones incl. fingers); not the 24-bone shared pack: Spring retargets",
+ "clips": [],
+ "facing": "raw char.glb faces +X; slim/char.glb has root node tripoFacing turning it to +Z",
+ "scale": "raw ~1 unit tall; set game height as for the base Commander",
+ "files": {
+  "slim/char.glb": "10k triangles, 1024 textures, meshopt, facing fixed",
+  "raw": "kept on Ken's PC: models/tripo/commander-tiers/borgo/4-radiant/char.glb"
+ }
+}
