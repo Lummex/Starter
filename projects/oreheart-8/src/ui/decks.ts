@@ -4,7 +4,8 @@ import { CARDS, FACTIONS, COMMANDERS, CONFIG, isMiner, deckCounts, deckProblems,
 import { h, btn, combo, App, faceKids, rarityKey, FRAME, commanderPortrait } from './app';
 
 import { net } from '../net/state';
-export interface SavedDeck { name: string; cards: string[]; commander?: string; id?: string }
+import { TIER_NAMES } from '../content/card-labels';
+export interface SavedDeck { name: string; cards: string[]; commander?: string; id?: string; tiers?: number[] /* Nov 5: each slot's copy tier (1 when plain) */ }
 const CMD_NAMES: Record<string, string> = { grubnak: 'Grubnak', sproingle: 'Sproingle', borgo: 'Borgo' };
 const CMD_BY_NAME: Record<string, string> = { Grubnak: 'grubnak', Sproingle: 'sproingle', Borgo: 'borgo' };
 const KEY = 'oreheart.decks';
@@ -12,7 +13,7 @@ const MAX_DECKS = 5;
 
 export const maxDecks = () => (net.active ? net.maxDecks : MAX_DECKS);
 export function loadDecks(): SavedDeck[] {
-  if (net.active) return net.decks.map((d) => ({ ...d, cards: d.cards.slice() }));
+  if (net.active) return net.decks.map((d) => ({ ...d, cards: d.cards.slice(), tiers: d.tiers ? d.tiers.slice() : undefined }));
   return loadBrowserDecks();
 }
 /** The decks kept in this browser, whatever the online state (used for the one-time import). */
@@ -55,6 +56,13 @@ export const ownsNothing = () => ownedMode() && !Object.entries(ownedCounts!).so
 const ownedMode = () => net.active && !!ownedCounts;
 /** Copies owned, or null when ownership doesn't apply (offline). Nov 5: crystals are owned cards too. */
 export const ownedOf = (id: string): number | null => (ownedMode() ? ownedCounts![id] || 0 : null);
+// Nov 5 (Ken, per copy): the copies per tier (index 0 = plain .. 4 = Mythic); a deck slot names the tier of the copy in it
+let ownedTiers: Record<string, number[]> | null = null;
+export function setOwnedTiers(m: Record<string, number[]> | null) { ownedTiers = m ? { ...m } : null; }
+/** copies owned per tier; without tier data every owned copy counts as plain */
+export const ownedTiersOf = (id: string): number[] => { const o = ownedOf(id); if (o == null) return [99, 0, 0, 0, 0]; const t = ownedTiers && ownedTiers[id]; return t && t.length === 5 ? t.slice() : [o, 0, 0, 0, 0]; };
+/** the words for a card's copies by tier, best first ("Overcharged ×1 · Original ×5"); '' when all are plain */
+export const tierSummary = (id: string): string => { const t = ownedTiersOf(id); if (!t.slice(1).some((n) => n > 0)) return ''; return [5, 4, 3, 2, 1].filter((k) => t[k - 1] > 0).map((k) => `${TIER_NAMES[k]} ×${t[k - 1]}`).join(' · '); };
 /** The copy limit in the deck builder: the normal limit, capped by the copies owned when signed in. */
 export const deckLimit = (id: string): number => { const o = ownedOf(id); return o == null ? copyLimit(id) : Math.min(copyLimit(id), o); };
 // test pages only: ?test=1&econ=shop|collection|quests|pack loads the economy screens with stand-in data (no database)
@@ -126,7 +134,13 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   app.clear();
   let saved = loadDecks();
   let deck: string[] = [];
+  let deckTiers: number[] = []; // Nov 5: the tier of the copy in each slot, parallel to deck (1 = plain)
   let editing = -1;
+  // the tiers used so far in the deck for a card, and the best tier that still has a spare copy (plain when nothing better)
+  const usedTiers = (id: string, skip = -1) => { const u = [0, 0, 0, 0, 0]; deck.forEach((x, i) => { if (x === id && i !== skip) u[Math.max(1, Math.min(5, deckTiers[i] || 1)) - 1]++; }); return u; };
+  const spareTier = (id: string, skip = -1, below = 6) => { const own = ownedTiersOf(id), used = usedTiers(id, skip); for (let t = Math.min(5, below - 1); t >= 1; t--) if (own[t - 1] - used[t - 1] > 0) return t; return 1; };
+  /** keeps deckTiers in step with deck: new slots take the best spare copy; the test page reads it */
+  const syncTiers = () => { while (deckTiers.length < deck.length) deckTiers.push(spareTier(deck[deckTiers.length])); if (deckTiers.length > deck.length) deckTiers.length = deck.length; if (app.test) (window as any).__dbTiers = () => deck.map((id, i) => ({ id, tier: deckTiers[i] || 1 })); };
   const defaultName = () => { for (let i = 1; ; i++) if (!saved.some((d) => d.name === `Deck ${i}`)) return `Deck ${i}`; };
   let name = defaultName();
 
@@ -197,7 +211,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   };
   const lockedFor = (id: string) => { const c = CARDS[id]; return c.faction !== 'any' && c.faction !== COMMANDERS[cmdId].faction; };
   const addCard = (id: string, from?: DOMRect | null, noFly = false) => { if (lockedFor(id)) { status.textContent = `Only for ${SING[CARDS[id].faction]} Commanders`; return; } if (count(id) >= deckLimit(id)) { const o = ownedOf(id); if (o != null && count(id) >= o) status.textContent = `You own ${o} of ${CARDS[id].name}`; return; } if (!noFly) fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };
-  const removeCard = (id: string) => { const i = deck.indexOf(id); if (i >= 0) deck.splice(i, 1); status.textContent = ''; renderDeck(); };
+  const removeCard = (id: string) => { syncTiers(); let i = -1; deck.forEach((x, k) => { if (x === id && (i < 0 || (deckTiers[k] || 1) < (deckTiers[i] || 1))) i = k; }); if (i >= 0) { deck.splice(i, 1); deckTiers.splice(i, 1); } status.textContent = ''; renderDeck(); }; // the plainest copy leaves first
 
   function enlarge(c: any) { app.closeUp(c.id, true); }
   const ghostW = () => Math.max(40, ((cardsEl.clientWidth || 300) - 8 - 2 * 10) / 3);
@@ -228,7 +242,8 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   }
   function tile(c: any) {
     const own = ownedOf(c.id);
-    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : '') + (own === 0 ? ' unowned' : ''), 'data-owned': own == null ? null : String(own), 'data-locked': lockedFor(c.id) ? 'true' : null, 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, cardFace(c), lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, own == null ? null : h('span', { class: 'db-owned', 'aria-label': `You own ${own}` }, own === 0 ? '' : `owned ×${own}`), h('span', { hidden: '' }, c.longText || '')) as any;
+    const summary = tierSummary(c.id); // Nov 5: "Overcharged ×1 · Original ×5" on a card with upgraded copies
+    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : '') + (own === 0 ? ' unowned' : ''), 'data-owned': own == null ? null : String(own), 'data-locked': lockedFor(c.id) ? 'true' : null, 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': summary ? `${c.name}: ${summary}` : c.name, 'data-card': c.id }, cardFace(c), summary ? h('span', { class: 'db-tiersum', 'aria-hidden': 'true' }, summary) : null, lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, own == null ? null : h('span', { class: 'db-owned', 'aria-label': `You own ${own}` }, own === 0 ? '' : `owned ×${own}`), h('span', { hidden: '' }, c.longText || '')) as any;
     let timer: any = null;
     el.addEventListener('click', () => {
       if (el._dragged) return;
@@ -301,6 +316,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   });
 
   function renderDeck() {
+    syncTiers();
     syncPlay();
     syncThumb();
     const n: Record<string, number> = {};
@@ -315,14 +331,25 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
         const nm = CARDS[id].name;
         const cnt = h('span', { class: 'db-cnt' }, '');
         const plus = btn('+', 'small', () => addCard(id, null, true), { 'aria-label': `Add ${nm}` }) as HTMLButtonElement;
-        li = h('li', {}, h('span', { class: 'db-lbl' }, cnt, ' ', h('span', { class: 'db-nm' }, nm)), plus, btn('−', 'small', () => removeCard(id), { 'aria-label': `Remove ${nm}` })) as HTMLElement;
-        (li as any)._cnt = cnt; (li as any)._plus = plus;
+        const tiersEl = h('span', { class: 'db-tiers', role: 'group', 'aria-label': `${nm}: which copies` });
+        li = h('li', {}, h('span', { class: 'db-lbl' }, cnt, ' ', h('span', { class: 'db-nm' }, nm), tiersEl), plus, btn('−', 'small', () => removeCard(id), { 'aria-label': `Remove ${nm}` })) as HTMLElement;
+        (li as any)._cnt = cnt; (li as any)._plus = plus; (li as any)._tiers = tiersEl;
         rows.set(id, li);
       }
       const cnt = (li as any)._cnt as HTMLElement;
       const txt = `${n[id]} ×`;
       if (cnt.textContent !== txt) cnt.textContent = txt;
       (li as any)._plus.disabled = n[id] >= deckLimit(id);
+      // Nov 5 (Ken): one chip per copy in the deck; a tap swaps that slot to the next tier with a spare copy (best first, round and round)
+      const slots: number[] = []; deck.forEach((x, k) => { if (x === id) slots.push(k); });
+      const own = ownedTiersOf(id), anyUp = own.slice(1).some((v) => v > 0) || slots.some((k) => (deckTiers[k] || 1) > 1);
+      const te = (li as any)._tiers as HTMLElement;
+      const key = anyUp ? slots.map((k) => deckTiers[k] || 1).join(',') + '|' + own.join(',') : '';
+      if (te.dataset.key !== key) {
+        te.dataset.key = key;
+        te.replaceChildren(...(anyUp ? slots.map((k, j) => { const t = deckTiers[k] || 1; return h('button', { type: 'button', class: 'db-tier', 'data-tier': String(t), 'data-slot': String(k), title: `${TIER_NAMES[t]} copy. Tap to change which copy goes in.`, 'aria-label': `copy ${j + 1}: ${TIER_NAMES[t]}, tap to change`,
+          onclick: (e: Event) => { e.preventDefault(); e.stopPropagation(); const next = spareTier(id, k, t); deckTiers[k] = next === t ? spareTier(id, k, 6) : next; renderDeck(); } }, '★'.repeat(t)); }) : []));
+      }
       if (listEl.children[i] !== li) listEl.insertBefore(li, listEl.children[i] || null);
     });
     const c = deckCounts(deck);
@@ -359,9 +386,9 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     if (load) {
       if (cur < saved.length) {
         const d = saved[cur];
-        deck = d.cards.slice(); editing = cur; name = d.name;
+        deck = d.cards.slice(); deckTiers = d.tiers && d.tiers.length === d.cards.length ? d.tiers.slice() : []; editing = cur; name = d.name;
         cmdId = d.commander && CMD_NAMES[d.commander] ? d.commander : 'grubnak';
-      } else { deck = []; editing = -1; name = defaultName(); cmdId = 'grubnak'; }
+      } else { deck = []; deckTiers = []; editing = -1; name = defaultName(); cmdId = 'grubnak'; }
       fCmd.set(CMD_NAMES[cmdId]);
       status.textContent = ''; limitMsg.textContent = '';
       renderCards();
@@ -420,7 +447,8 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     let idx = editing;
     if (idx < 0) idx = saved.findIndex((d) => d.name === name);
     if (idx < 0 && saved.length >= maxDecks()) { status.textContent = ''; limitMsg.textContent = `You can save up to ${maxDecks()} decks.`; return; }
-    const rec: SavedDeck = { name, cards: deck.slice(), commander: cmdId };
+    syncTiers();
+    const rec: SavedDeck = { name, cards: deck.slice(), commander: cmdId, ...(deckTiers.some((t) => t > 1) ? { tiers: deckTiers.slice() } : {}) };
     if (net.active) {
       // server decks: the server may refuse; the edits stay on screen
       alertEl.textContent = ''; status.textContent = '';

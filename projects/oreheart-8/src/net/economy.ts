@@ -9,7 +9,7 @@ import { net } from './state';
 import { rpc } from './online';
 import { h } from '../ui/app';
 import { CARDS } from '../engine';
-import { setOwnedCounts, deckLimit, ownedOf, copyLimit } from '../ui/decks';
+import { setOwnedCounts, setOwnedTiers, deckLimit, ownedOf, copyLimit } from '../ui/decks';
 import { COMMANDER_PACK_IDS, commanderPackCard, cardFor } from '../content/card-labels';
 import { summarize, capSummary } from './quest-summary';
 
@@ -21,9 +21,9 @@ export interface PackInfo { id: string; name: string; blurb: string; price_coins
 export interface ShopInfo { packs: PackInfo[]; coins: number; free_packs: number }
 export interface PulledCard { card_id: string; rarity: string; is_new: boolean; tier?: number }
 /** Upgraded cards (Nov 5): thresholds = copies for tiers 2..5; cards = per card id its best tier, owned copies and upgraded copies. */
-export interface UpgradeInfo { steps: Record<string, number[]>; drop_bp: Record<string, number>; drop_tiers: Record<string, number>; cards: Record<string, { best: number; owned: number; upgraded: number }> }
+export interface UpgradeInfo { steps: Record<string, number[]>; drop_bp: Record<string, number>; drop_tiers: Record<string, number>; cards: Record<string, { best: number; owned: number; upgraded: number; by_tier?: number[] /* Nov 5: copies per tier 1..5 */ }> }
 export interface CardCopy { id: string; tier: number; worth: number; since: string }
-export interface UpgradeResult { event_id: string; target: string; card_id: string; spent: number; worth_before: number; worth_after: number; tier_before: number; tier_after: number; next_worth: number | null; repeat: boolean }
+export interface UpgradeResult { event_id: string; target: string; card_id: string; spent: number; left?: number; decks?: string[]; worth_before: number; worth_after: number; tier_before: number; tier_after: number; next_worth: number | null; repeat: boolean }
 export { TIER_NAMES } from '../content/card-labels';
 /** Extra copies per step (Enhanced, Overcharged, Legendary, Mythic) by rarity (Ken and Forge, Nov 5); the server's setting upgrade_steps is the truth */
 export const DEFAULT_STEPS: Record<string, number[]> = { Common: [5, 15, 30, 50], Uncommon: [4, 12, 24, 40], Rare: [2, 4, 7, 14], 'Ultra Rare': [1, 2, 3, 4], Collector: [1, 1, 1, 1] };
@@ -38,7 +38,7 @@ export interface QuestsInfo { quests: Quest[]; reroll_left: number; streak_days:
 const params = () => new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
 export const isTestPage = () => params().get('test') === '1';
 /** Stand-in data: only on test pages, and only while nobody is signed in. */
-export const stubMode = () => isTestPage() && !net.active;
+export const stubMode = () => isTestPage() && (!net.active || STUB.pretend);
 export const RARITIES = ['Common', 'Uncommon', 'Rare', 'Ultra Rare', 'Collector'];
 /** what the player reads for a rarity key (Collector is shown as Legendary, Ken Nov 5) */
 export { rarityLabel } from '../content/card-labels';
@@ -56,6 +56,7 @@ const stubPack = (id: string, name: string, blurb: string, faction: string | nul
 const STUB = {
   coins: 500,
   free_packs: 1,
+  pretend: false, // a test page pretending to be signed in (packs.setOwned): the stand-in data stays in use
   packs: [
     stubPack('standard', 'Oreheart Pack', 'Every army, every crystal. Shake well before opening.', null),
     stubPack('goblin', 'Junkpile Pack', 'Goblin cards and neutral finds. Smells faintly of victory (and old socks).', 'goblins'),
@@ -73,9 +74,11 @@ const addDays = (d: string, n: number) => { const t = new Date(d + 'T00:00:00Z')
 function stubInit() {
   if (STUB.quests) return;
   // a starter-ish collection: four of most commons, a couple of the rest, some missing
-  const ids = Object.keys(CARDS).filter((id) => !(CARDS as any)[id].disabled); // Nov 5: crystals are owned cards like any other
-  ids.forEach((id, i) => { const r = (CARDS as any)[id].rarity; const n = r === 'Common' ? 4 : r === 'Uncommon' ? 2 : r === 'Rare' ? (i % 2 ? 1 : 0) : 0; if (n) STUB.owned[id] = n; });
-  for (const id of COMMANDER_PACK_IDS) STUB.owned[id] = 1; // everyone starts with the three Commanders (Ken, Nov 5)
+  if (!STUB.pretend) {
+    const ids = Object.keys(CARDS).filter((id) => !(CARDS as any)[id].disabled); // Nov 5: crystals are owned cards like any other
+    ids.forEach((id, i) => { const r = (CARDS as any)[id].rarity; const n = r === 'Common' ? 4 : r === 'Uncommon' ? 2 : r === 'Rare' ? (i % 2 ? 1 : 0) : 0; if (n) STUB.owned[id] = n; });
+    for (const id of COMMANDER_PACK_IDS) STUB.owned[id] = 1; // everyone starts with the three Commanders (Ken, Nov 5)
+  }
   const t = today();
   STUB.quests = { today: t, reroll_left: 1, streak_days: 3, free_packs: STUB.free_packs, quests: [
     { id: 'stub-q1', quest_id: 'thwack', name: 'THWACK!', text: 'Land 10 hits.', tier: 'easy', reward: 25, progress: 10, target: 10, done: true, expires_on: addDays(t, 3) },
@@ -146,7 +149,7 @@ export const api = {
     if (stubMode()) {
       stubInit();
       const cards: UpgradeInfo['cards'] = {};
-      for (const id of Object.keys(STUB.owned)) { const cs = stubCopies(id); if (cs.length) cards[id] = { best: Math.max(...cs.map((c) => c.tier)), owned: cs.length, upgraded: cs.filter((c) => c.tier > 1).length }; }
+      for (const id of Object.keys(STUB.owned)) { const cs = stubCopies(id); if (cs.length) cards[id] = { best: Math.max(...cs.map((c) => c.tier)), owned: cs.length, upgraded: cs.filter((c) => c.tier > 1).length, by_tier: [1, 2, 3, 4, 5].map((t) => cs.filter((c) => c.tier === t).length) }; }
       return { steps: JSON.parse(JSON.stringify(STUB_STEPS)), drop_bp: { Common: 200, Uncommon: 100, Rare: 50, 'Ultra Rare': 20, Collector: 5 }, drop_tiers: { '2': 8000, '3': 1500, '4': 400, '5': 100 }, cards };
     }
     return await rpc<UpgradeInfo>('my_upgrade_info');
@@ -155,7 +158,7 @@ export const api = {
     if (stubMode()) { stubInit(); return stubCopies(cardId).map((c) => ({ ...c })); }
     return (await rpc<CardCopy[]>('my_card_copies', { p_card: cardId })) || [];
   },
-  async upgradeCard(target: string, sources: string[], idemKey: string): Promise<UpgradeResult> {
+  async upgradeCard(target: string, sources: string[], idemKey: string, force = false): Promise<UpgradeResult> {
     if (stubMode()) {
       stubInit();
       const id = Object.keys(STUB.copies).find((k) => STUB.copies[k].some((c) => c.id === target));
@@ -167,9 +170,9 @@ export const api = {
       const before = { worth: t.worth, tier: t.tier };
       t.worth += srcs.reduce((s, c) => s + c.worth, 0); t.tier = tierOfWorth(t.worth, stubSteps(id));
       STUB.copies[id] = list.filter((c) => !srcs.includes(c)); STUB.owned[id] = STUB.copies[id].length;
-      return { event_id: 'stub-e' + (++stubUid), target, card_id: id, spent: srcs.length, worth_before: before.worth, worth_after: t.worth, tier_before: before.tier, tier_after: t.tier, next_worth: t.tier < 5 ? worthOfTier(t.tier + 1, stubSteps(id)) : null, repeat: false };
+      return { event_id: 'stub-e' + (++stubUid), target, card_id: id, spent: srcs.length, left: STUB.copies[id].length, decks: [], worth_before: before.worth, worth_after: t.worth, tier_before: before.tier, tier_after: t.tier, next_worth: t.tier < 5 ? worthOfTier(t.tier + 1, stubSteps(id)) : null, repeat: false };
     }
-    return await retryOnce(() => rpc<UpgradeResult>('upgrade_card', { p_target: target, p_sources: sources, p_idem_key: idemKey }));
+    return await retryOnce(() => rpc<UpgradeResult>('upgrade_card', { p_target: target, p_sources: sources, p_idem_key: idemKey, p_force: force === true }));
   },
   async myQuests(): Promise<QuestsInfo> {
     if (stubMode()) { stubInit(); return JSON.parse(JSON.stringify({ ...STUB.quests!, free_packs: STUB.free_packs })); }
@@ -237,7 +240,13 @@ export async function refreshCoins(): Promise<void> {
 /** The deck builder's owned counts (crystals are free and unlimited there). */
 export async function refreshOwned(): Promise<Record<string, number> | null> {
   if (!net.active && !stubMode()) { setOwnedCounts(null); return null; }
-  try { const m = await api.myCollection(); if (net.active) setOwnedCounts(m); return m; } catch { return null; }
+  try {
+    const m = await api.myCollection();
+    if (net.active) setOwnedCounts(m);
+    // Nov 5 (Ken, per copy): the copies per tier, so the Deck Builder can say which copy goes in
+    try { const u = await api.myUpgradeInfo(); const t: Record<string, number[]> = {}; for (const [id, x] of Object.entries(u.cards || {})) if (Array.isArray(x.by_tier)) t[id] = x.by_tier.map((n) => Number(n) || 0); if (net.active) setOwnedTiers(t); } catch { if (net.active) setOwnedTiers(null); }
+    return m;
+  } catch { return null; }
 }
 
 // ------------------------------------------------------------------ toast
@@ -364,7 +373,15 @@ if (isTestPage() && typeof window !== 'undefined') {
     /** the deck builder's copy limit for a card (signed in: capped by the copies owned) */
     deckLimit: (id: string) => ({ limit: deckLimit(id), owned: ownedOf(id), copyLimit: copyLimit(id) }),
     /** test pages: pretend to be signed in with exactly these owned counts (zero start checks) */
-    setOwned: (m: Record<string, number>) => { if (params().get('test') !== '1') return false; net.active = true; setOwnedCounts(m); net.openShop = () => { void openScreen('shop'); }; return true; },
+    /** a count, or the tiers of the copies ([2, 1, 1] = one Enhanced and two plain); `decks` stands in for the saved decks */
+    setOwned: (m: Record<string, number | number[]>, decks?: { name: string; cards: string[]; commander?: string }[]) => {
+      if (params().get('test') !== '1') return false;
+      STUB.pretend = true; STUB.owned = {}; STUB.copies = {};
+      const counts: Record<string, number> = {}, tiers: Record<string, number[]> = {};
+      for (const [id, v] of Object.entries(m)) { const ts = Array.isArray(v) ? v.slice() : []; const n = Array.isArray(v) ? v.length : Number(v) || 0; STUB.owned[id] = n; counts[id] = n; for (const t of ts) stubCopy(id, Math.max(1, Math.min(5, Number(t) || 1))); tiers[id] = [1, 2, 3, 4, 5].map((t) => stubCopies(id).filter((c) => c.tier === t).length); }
+      net.active = true; setOwnedCounts(counts); setOwnedTiers(tiers); net.decks = (decks || []).map((d, i) => ({ id: 'stub-d' + i, name: d.name, cards: d.cards.slice(), commander: d.commander || 'grubnak' }));
+      net.openShop = () => { void openScreen('shop'); }; return true;
+    },
   };
   const attach = () => { const w = window as any; w.oreheart = Object.assign(w.oreheart || {}, { packs }); };
   attach(); setTimeout(attach, 0); setTimeout(attach, 500);

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PvpService } from '../src/server/service';
 import { MemoryStore } from '../src/server/memory-store';
-import { legalActions } from '../src/engine';
+import { legalActions, STARTER_DECKS } from '../src/engine';
 
 // Modes (Ken, Nov 4): Ranked and Unranked queues, Practice codes. The service pairs players; the store keeps the queue and the ratings.
 const alice = { userId: 'u-alice', username: 'Alice', avatar: null };
@@ -65,15 +65,25 @@ describe('modes: the ranked / unranked queue', () => {
     expect(plain.mode).toBe('friend');
     void legalActions;
   });
-  it("a match carries each player's upgraded cards (best tier per card), shown to both players as me / them", async () => {
+  it("Nov 5 (Ken, per copy): a saved deck's copies carry their own tiers into the match (hidden in the other player's hand); the id map carries only the Commander", async () => {
     const { store, svc } = rig();
-    store.tiers.set('u-alice', { 'goblin-grunt': 5, 'shiv-rat': 2, 'not-in-deck': 4 });
-    await svc.handle('queue', { mode: 'unranked', ...pick }, alice, T0);
+    const cards = STARTER_DECKS['goblin-warband'].slice();
+    const tiers = cards.map((_, i) => (i === 0 ? 5 : i === 1 ? 2 : 1)); // one Mythic copy, one Enhanced, the rest plain
+    store.savedDecks.set('u-alice/mine', { commander: 'grubnak', cards, tiers });
+    store.tiers.set('u-alice', { 'commander-grubnak': 3, 'goblin-grunt': 5, 'not-in-deck': 4 });
+    await svc.handle('queue', { mode: 'unranked', commander: 'grubnak', deckId: 'mine' }, alice, T0);
     const r = await svc.handle('queue', { mode: 'unranked', commander: 'borgo', deckId: 'dwarf-warband' }, bob, T0 + 500);
     const m = (await store.getMatch(r.matchId))!;
-    expect(m.tiers!.a).toEqual({ 'goblin-grunt': 5, 'shiv-rat': 2 }); // only cards of the deck
-    expect(m.tiers!.b).toEqual({});
-    expect(r.view.tiers).toEqual({ me: {}, them: { 'goblin-grunt': 5, 'shiv-rat': 2 } }); // Bob's view
-    expect((await svc.handle('state', { matchId: r.matchId }, alice, T0 + 600)).view.tiers.me['goblin-grunt']).toBe(5);
+    expect(m.tiers!.a).toEqual({ 'commander-grubnak': 3 }); // the id map is the Commander's alone now
+    const all = [...m.state.players.player.hand, ...m.state.players.player.deck];
+    expect(all.filter((k: any) => k.tier === 5).length).toBe(1);
+    expect(all.filter((k: any) => k.tier === 2).length).toBe(1);
+    expect(all.filter((k: any) => k.tier).length).toBe(2); // plain copies carry no tier at all
+    expect(m.state.players.opponent.deck.some((k: any) => k.tier)).toBe(false);
+    // Bob's view: Alice's hand and deck are hidden, tiers included; the id map shows her Commander
+    expect(r.view.tiers).toEqual({ me: {}, them: { 'commander-grubnak': 3 } });
+    expect(r.view.state.players.opponent.hand.every((k: any) => k.hidden && k.tier === undefined)).toBe(true);
+    const mine = (await svc.handle('state', { matchId: r.matchId }, alice, T0 + 600)).view.state.players.player;
+    expect([...mine.hand, ...mine.deck.filter((k: any) => !k.hidden)].filter((k: any) => k.tier).length + mine.deck.filter((k: any) => k.hidden).length).toBeGreaterThan(0);
   });
 });

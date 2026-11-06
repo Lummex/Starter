@@ -71,7 +71,7 @@ export interface BoardView {
   cellQuad(row: number, col: number): { x: number; y: number }[];
   screenRects(): any;
   setFlowMode(m: string): void;
-  setTierLookup?(fn: (cardId: string, owner: 'player' | 'opponent') => number): void;
+  setTierLookup?(fn: (cardId: string, owner: 'player' | 'opponent', inst?: any) => number): void;
   setFlowTarget?(side: string, el: HTMLElement | null): void;
   flowDestinations?(): any;
   mineBox?(row: number, col: number): { x: number; y: number; width: number; height: number };
@@ -771,7 +771,7 @@ const _embV = new THREE.Vector3();
   const creatureAnimLog: { uid: string; cardId: string; anim: string; clip?: string; gait?: string; at?: number }[] = [];
   const asked = new Set<string>();
   // Nov 5 (upgraded cards): the app says which cards are upgraded this match; a Legendary or Mythic unit keeps a coloured halo ring that breathes
-  let tierLookup: ((cardId: string, owner: 'player' | 'opponent') => number) | null = null;
+  let tierLookup: ((cardId: string, owner: 'player' | 'opponent', inst?: any) => number) | null = null;
   const TIER_HALO: Record<number, number> = { 4: 0xc58cff, 5: 0xffb347 };
   function addTierHalo(g: THREE.Group, tier: number, baseScale: number) {
     const col = TIER_HALO[tier]; if (!col) return;
@@ -1097,7 +1097,7 @@ const _embV = new THREE.Vector3();
         scene.add(m.group);
         f = { group: m.group, target: tgt.clone(), born, bornAt: born || pendingBorn.get(c.uid) || 0, dying: 0, lunge: null, lungeT: 0, owner: c.owner, uid: c.uid, cardId: c.cardId, row: c.row, col: c.col, finished: m.finished, mats: m.mats, parts: m.parts, baseScale: m.baseScale, hitT: 0, mineT: 0, poke: null, upg: 0, moving: 0, shootT: 0, c3d: (m.group as any).userData.c3d || null };
         figs.set(c.uid, f);
-        (f as any).tier = tierLookup ? tierLookup(c.cardId, c.owner) : 1;
+        (f as any).tier = tierLookup ? tierLookup(c.cardId, c.owner, c) : 1;
         if ((f as any).tier >= 4) addTierHalo(f.group, (f as any).tier, m.baseScale);
         if (mirror && c.owner === 'opponent') applyMirrorLook(f.group, mirror, st.players.opponent.faction);
         if (born && !c.ghost) { spawnFx('dust', tgt, 6); audio.play('summon'); if (f.finished) audio.voiceLine('grunt'); }

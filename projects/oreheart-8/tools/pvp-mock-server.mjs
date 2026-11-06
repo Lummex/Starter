@@ -75,6 +75,7 @@ const server = http.createServer(async (req, res) => {
     if (!seat) return json(res, 200, { ok: false });
     const tier = Math.max(1, Math.min(5, Number(url.searchParams.get('tier')) || 5)), card = url.searchParams.get('card');
     m.tiers = m.tiers || { a: {}, b: {} }; m.tiers[seat][card] = tier;
+    { const side = seat === 'a' ? 'player' : 'opponent', pl = m.state.players[side]; for (const k of [...pl.hand, ...pl.deck, ...pl.discard]) if (k.cardId === card) k.tier = tier; for (const c of m.state.board.creatures) if (c.owner === side && c.cardId === card) c.tier = tier; } // Nov 5: per copy
     const t = store.tiers.get(u.userId) || {}; t[card] = tier; store.tiers.set(u.userId, t);
     const before = m.seq++;
     await store.updateMatch(m, before);

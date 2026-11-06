@@ -24,7 +24,7 @@ export interface Store {
   getRoom(code: string): Promise<Room | null>;
   putRoom(room: Room): Promise<void>;
   /** the player's own saved deck (card ids) by its id, or null */
-  getSavedDeck(userId: string, deckId: string): Promise<{ commander: string; cards: string[] } | null>;
+  getSavedDeck(userId: string, deckId: string): Promise<{ commander: string; cards: string[]; tiers?: number[] | null } | null>;
   getMatch(id: string): Promise<MatchRecord | null>;
   insertMatch(m: MatchRecord): Promise<void>;
   /** compare-and-swap on seq: false when someone else changed the match first */
@@ -123,7 +123,8 @@ export class PvpService {
     if (!saved) fail("That deck isn't one of yours.");
     const v = validateDeck(saved.cards.slice(), commander);
     if (!v.legal) fail('That deck is not legal: ' + v.problems.join('; '));
-    return { commander, cards: saved.cards.slice(), deckId };
+    const tiers = Array.isArray(saved.tiers) && saved.tiers.length === saved.cards.length ? saved.tiers.map((t) => Math.max(1, Math.min(5, Number(t) || 1))) : null;
+    return { commander, cards: saved.cards.slice(), deckId, tiers };
   }
 
   async create(body: any, user: PlayerInfo, now: number) {
@@ -216,7 +217,7 @@ export class PvpService {
 
   /** Nov 5: each player's upgraded cards for the match (looks only). Never stops a match from starting. */
   private async tiersFor(m: MatchRecord) {
-    const cardsOf = (d: DeckChoice): string[] | null => (d.cards && d.cards.length ? d.cards : d.deckId && STARTER_DECKS[d.deckId] ? STARTER_DECKS[d.deckId] : null);
+    const cardsOf = (d: DeckChoice): string[] => ['commander-' + d.commander]; // Nov 5 (Ken): a card's tier is its own copy's, carried in the deck; only the Commander's best tier comes from the collection
     try {
       m.tiers = { a: await this.store.tiersOf(m.players.a.userId, cardsOf(m.decks.a)), b: await this.store.tiersOf(m.players.b.userId, cardsOf(m.decks.b)) };
     } catch { m.tiers = { a: {}, b: {} }; }

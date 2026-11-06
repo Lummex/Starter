@@ -440,7 +440,39 @@ select pg_temp.refused('upgrade_card: nothing to combine is refused', :P2, 'aal1
 update public.card_instances set tier = 5, worth = 20 where id = (select id from rats where n = 1);
 select pg_temp.refused('upgrade_card: a Mythic takes no more', :P2, 'aal1',
   format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-9-aaaaaaaa') $q$, (select id from rats where n = 1), (select id from rats where n = 6)), 'already Mythic');
-select pg_temp.ok('four upgrade events stored', (select count(*) from public.upgrade_events where user_id = :P2) = 4);
+
+-- Nov 5 (Ken): per-copy tiers in decks; a combine that leaves a deck short needs force and repairs the deck's tiers
+select private.card_grant(:P2, 'goblin-grunt', 5, 'admin_grant', 'test-tiers', null);
+create temp table gr as select id, row_number() over (order by created_at, id) as n from public.card_instances where owner_id = :P2 and card_id = 'goblin-grunt' and status = 'owned' and origin_ref = 'test-tiers';
+create temp table gr0 as select count(*) as c from public.card_instances where owner_id = :P2 and card_id = 'goblin-grunt' and status = 'owned';
+select pg_temp.refused('save_deck: the tiers must match the cards one for one', :P2, 'aal1',
+  $q$ select public.save_deck(null, 'Tier deck', 'grubnak', array['goblin-grunt','goblin-grunt'], array[1]::smallint[]) $q$, 'do not match');
+select pg_temp.refused('save_deck: a deck cannot claim an Enhanced copy the player does not own', :P2, 'aal1',
+  $q$ select public.save_deck(null, 'Tier deck', 'grubnak', array['goblin-grunt','goblin-grunt'], array[2,1]::smallint[]) $q$, 'you own 0 Enhanced');
+select pg_temp.works('one Enhanced Grunt (grunt 1 + grunt 2)', :P2, 'aal1',
+  format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-gr-1-aaaaaaaa') $q$, (select id from gr where n = 1), (select id from gr where n = 2)));
+select pg_temp.ok('my_upgrade_info: the copies per tier (one Enhanced, the rest plain)',
+  (select (r -> 'cards' -> 'goblin-grunt' -> 'by_tier' ->> 1)::int = 1 and (r -> 'cards' -> 'goblin-grunt' -> 'by_tier' ->> 0)::int = (select (c - 2)::int from gr0)
+   from pg_temp.json_as(:P2, 'aal1', $q$ select public.my_upgrade_info() $q$) r),
+  (select (r -> 'cards' -> 'goblin-grunt')::text from pg_temp.json_as(:P2, 'aal1', $q$ select public.my_upgrade_info() $q$) r));
+select pg_temp.works('save_deck: a deck with the one Enhanced copy and every plain one', :P2, 'aal1',
+  format($q$ select public.save_deck(null, 'Tier deck', 'grubnak', array_fill('goblin-grunt'::text, array[%s]), array[2]::smallint[] || array_fill(1::smallint, array[%s])) $q$, (select (c - 1)::int from gr0), (select (c - 2)::int from gr0)));
+select pg_temp.ok('the deck stores the tiers slot by slot',
+  (select card_tiers[1] = 2 and card_tiers[2] = 1 and cardinality(card_tiers) = cardinality(cards) from public.decks where user_id = :P2 and name = 'Tier deck'), 'tiers');
+select pg_temp.refused('upgrade_card: without force, a deck that needs the copies stops the combine', :P2, 'aal1',
+  format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-gr-2-aaaaaaaa') $q$, (select id from gr where n = 1), (select id from gr where n = 3)), 'Keep');
+-- the Enhanced slot sits last for now; the repair puts the best copy first again
+update public.decks set card_tiers = array_fill(1::smallint, array[cardinality(cards) - 1]) || 2::smallint where user_id = :P2 and name = 'Tier deck';
+create temp table u9 as select pg_temp.json_as(:P2, 'aal1', format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-gr-2-aaaaaaaa', true) $q$, (select id from gr where n = 1), (select id from gr where n = 3))) as r;
+select pg_temp.ok('upgrade_card: with force (the player confirmed) it goes through, says what is left and names the deck it touched',
+  (select r ->> 'worth_after' = '3' and (r -> 'decks') ? 'Tier deck' and (r ->> 'left')::int = (select (c - 2)::int from gr0) from u9), (select r::text from u9));
+select pg_temp.ok('the deck''s tiers were repaired: the Enhanced copy first, plain ones after, the short slot plain',
+  (select card_tiers[1] = 2 and (select count(*) from unnest(card_tiers) t where t = 2) = 1 and cardinality(card_tiers) = cardinality(cards) from public.decks where user_id = :P2 and name = 'Tier deck'), 'repair');
+select pg_temp.works('save_deck without tiers still works (every slot plain)', :P2, 'aal1',
+  format($q$ select public.save_deck(%L, 'Tier deck', 'grubnak', array['goblin-grunt','goblin-grunt']) $q$, (select id from public.decks where user_id = :P2 and name = 'Tier deck')));
+select pg_temp.ok('a save without tiers stores plain tiers', (select card_tiers = '{1,1}'::smallint[] from public.decks where user_id = :P2 and name = 'Tier deck'), 'plain');
+delete from public.decks where user_id = :P2 and name = 'Tier deck';
+select pg_temp.ok('six upgrade events stored (four Shiv Rat, two Goblin Grunt)', (select count(*) from public.upgrade_events where user_id = :P2) = 6);
 select pg_temp.refused('upgrade_events: players cannot touch the table', :P2, 'aal1', format($q$ delete from public.upgrade_events where user_id = %L $q$, :P2), 'permission denied');
 select pg_temp.refused('settings: upgrade_steps needs four whole numbers per rarity', :A1, 'aal2',
   $q$ select public.admin_set_setting('upgrade_steps', '{"Common": [5, 15, 30], "Uncommon": [4, 12, 24, 40], "Rare": [2, 4, 7, 14], "Ultra Rare": [1, 2, 3, 4], "Collector": [1, 1, 1, 1]}', 'test') $q$, 'four whole');

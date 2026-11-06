@@ -8,7 +8,7 @@ import { presentFor, realAction } from '../engine/view';
 
 export type Seat = 'a' | 'b';
 export interface PlayerInfo { userId: string; username: string; avatar: string | null }
-export interface DeckChoice { commander: string; cards: string[] | null; deckId: string | null }
+export interface DeckChoice { commander: string; cards: string[] | null; deckId: string | null; tiers?: number[] | null /* Nov 5: each slot's copy tier, parallel to cards */ }
 export interface Rules { phaseSeconds: number; bankSeconds: number; respondSeconds: number; timeoutsToForfeit: number; mulliganSeconds?: number; respondMinSeconds?: number; attackMode?: 'armed' | 'window' }
 export const DEFAULT_RULES: Rules = { phaseSeconds: 120, bankSeconds: 60, respondSeconds: 12, timeoutsToForfeit: 3, respondMinSeconds: 2 };
 export interface Clock {
@@ -24,7 +24,7 @@ export type MatchMode = 'friend' | 'ranked' | 'unranked' | 'practice';
 export interface MatchRecord {
   id: string;
   mode?: MatchMode;       // Nov 5: friend (code), ranked / unranked (queue), practice (code, nothing paid or counted)
-  tiers?: Record<Seat, Record<string, number>>; // Nov 5: each player's upgraded cards (card id -> best tier owned), public to both
+  tiers?: Record<Seat, Record<string, number>>; // Nov 5: each player's Commander tier ('commander-<id>' -> 2..5), public to both; a card's tier rides on its copy in the state
   rating?: Record<Seat, { before: number; after: number }>; // Nov 5: a ranked match's rating change, once the store paid it out
   roomCode: string | null;
   players: Record<Seat, PlayerInfo>;
@@ -62,7 +62,7 @@ const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 /** A match's deck options for the engine from one player's choice. */
 function deckOpts(choice: DeckChoice, side: Side): any {
   const key = side === 'player' ? 'playerDeck' : 'opponentDeck';
-  if (choice.cards && choice.cards.length) return { [key]: choice.cards.slice() };
+  if (choice.cards && choice.cards.length) return { [key]: choice.cards.slice(), ...(choice.tiers && choice.tiers.length === choice.cards.length ? { [key + 'Tiers']: choice.tiers.slice() } : {}) };
   if (choice.deckId && STARTER_DECKS[choice.deckId]) return { [key + 'Id']: choice.deckId };
   return {};
 }

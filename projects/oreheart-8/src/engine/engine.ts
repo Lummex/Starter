@@ -51,7 +51,7 @@ const bonusOf = (s: any, p: Side, type: string) => {
 };
 export const sitesControlled = (s: any, p: Side) => s.sites.filter((x: any) => x.controller === p).length;
 
-function spawn(s: any, owner: Side, cardId: string, row: number, col: number, damage = 0, uid?: string) {
+function spawn(s: any, owner: Side, cardId: string, row: number, col: number, damage = 0, uid?: string, tier?: number) {
   const card = CARDS[cardId];
   const bh = bonusOf(s, owner, 'bonusHealth');
   const maxHealth = card.health + (bh ? bh.amount : 0);
@@ -60,10 +60,11 @@ function spawn(s: any, owner: Side, cardId: string, row: number, col: number, da
     upgrades: { attack: 0, health: 0 }, summonedThisTurn: false, hasMoved: false, hasAttacked: false, hasMined: false, minedMine: null as any, movedDistance: 0, movesLeft: 0, lockedUntil: 0, blinkUsed: false, shield: 0, bubble: false, ale: 0, poison: 0, drunk: 0, brewSave: false, brewTurn: 0, facing: owner === 'player' ? 'N' : 'S',
   };
   c.movesLeft = movesOf(card); // v2: a summoned unit has its points at once (Miners may move or mine the turn they are played, Haste units may act)
+  if (tier && tier > 1) (c as any).tier = tier; // Nov 5: the copy's upgrade tier stays on the unit (looks only)
   s.board.creatures.push(c);
   return c;
 }
-const makeCard = (s: any, cardId: string) => ({ uid: 'k' + s.nextUid++, cardId });
+const makeCard = (s: any, cardId: string, tier?: number) => (tier && tier > 1 ? { uid: 'k' + s.nextUid++, cardId, tier } : { uid: 'k' + s.nextUid++, cardId }); // Nov 5 (Ken): each copy's own upgrade tier rides with the card (looks only)
 
 // ---------------------------------------------------------------- costs
 /** Miner = basic Miner, Smith Miner or Crystal Eater. */
@@ -175,8 +176,8 @@ export function createMatch(opts: any = {}) {
     const pl = s.players[who];
     const given = setup && setup[who + 'Deck'];
     if (given) pl.deck = given.map((id: string) => makeCard(s, id));
-    else if (who === 'player' && opts.playerDeck && !opts.playerDeckId) { pl.deckId = null; pl.deck = shuffle(s, opts.playerDeck.map((id: string) => makeCard(s, id))); }
-    else if (who === 'opponent' && opts.opponentDeck && !opts.opponentDeckId) { pl.deckId = null; pl.deck = shuffle(s, opts.opponentDeck.map((id: string) => makeCard(s, id))); } // Nov 2 (PvP): the other player's own deck list
+    else if (who === 'player' && opts.playerDeck && !opts.playerDeckId) { pl.deckId = null; pl.deck = shuffle(s, opts.playerDeck.map((id: string, i: number) => makeCard(s, id, opts.playerDeckTiers && opts.playerDeckTiers[i]))); }
+    else if (who === 'opponent' && opts.opponentDeck && !opts.opponentDeckId) { pl.deckId = null; pl.deck = shuffle(s, opts.opponentDeck.map((id: string, i: number) => makeCard(s, id, opts.opponentDeckTiers && opts.opponentDeckTiers[i]))); } // Nov 2 (PvP): the other player's own deck list
     else {
       let id = who === 'player' ? opts.playerDeckId : opts.opponentDeckId;
       if (!id || !STARTER_DECKS[id]) { const mine = STARTER_DECK_LIST.filter((d) => d.faction === pl.faction); id = who === 'opponent' && !opts.testMode && !opts.setup ? mine[Math.floor(nextRand(s) * mine.length)].id : warbandOf(pl.faction); }
@@ -1076,7 +1077,7 @@ function finishPending(s: any, pend: any, ev: any[], cancelled: boolean) {
   if (pend.kind === 'summon') {
     if (cancelled) { s.players[actor].hand.push(pend.card); ev.push({ type: 'bounce', uid: pend.card.uid, cardId: pend.card.cardId, owner: actor, row: pend.row, col: pend.col }); }
     else {
-      const c = spawn(s, actor, pend.card.cardId, pend.row, pend.col, 0, pend.card.uid);
+      const c = spawn(s, actor, pend.card.cardId, pend.row, pend.col, 0, pend.card.uid, pend.card.tier);
       c.summonedThisTurn = true;
       ev.push({ type: 'summon', uid: c.uid, cardId: c.cardId, owner: actor, row: c.row, col: c.col });
     }
@@ -1383,7 +1384,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
       if (s.pvp) {
         // Nov 4 (Ken: "you just put your units out, boom, boom, boom"): against a person the unit lands at once; the other player
         // gets ONE Respond window for the whole Deploy phase when this player presses Done (see 'done'). Hold It then names a unit.
-        const c = spawn(s, who, card.id, l.row, l.col, 0, h.uid);
+        const c = spawn(s, who, card.id, l.row, l.col, 0, h.uid, h.tier);
         c.summonedThisTurn = true;
         ev.push({ type: 'summon', uid: c.uid, cardId: c.cardId, owner: who, row: c.row, col: c.col });
         (s.deployed ||= []).push({ uid: c.uid, cardId: c.cardId, row: c.row, col: c.col, card: h });

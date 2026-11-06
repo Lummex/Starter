@@ -446,9 +446,9 @@ function welcomeScreen(s: Status) {
 }
 
 async function refreshDecks() {
-  const { data, error } = await client().from('decks').select('id,name,commander,cards,updated_at').order('created_at', { ascending: true });
+  const { data, error } = await client().from('decks').select('id,name,commander,cards,card_tiers,updated_at').order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
-  net.decks = (data || []).map((d: any) => ({ id: d.id, name: d.name, commander: d.commander, cards: Array.isArray(d.cards) ? d.cards : [] } as SavedDeck));
+  net.decks = (data || []).map((d: any) => ({ id: d.id, name: d.name, commander: d.commander, cards: Array.isArray(d.cards) ? d.cards : [], tiers: Array.isArray(d.card_tiers) && Array.isArray(d.cards) && d.card_tiers.length === d.cards.length ? d.card_tiers.map((t: any) => Number(t) || 1) : undefined } as SavedDeck));
 }
 
 async function afterSignIn() {
@@ -485,7 +485,7 @@ async function proceed(s: Status) {
   net.offlineChosen = false;
   net.active = true;
   net.saveDeck = async (id, d) => {
-    await rpc('save_deck', { p_id: id ?? null, p_name: d.name, p_commander: d.commander || 'grubnak', p_cards: d.cards });
+    await rpc('save_deck', { p_id: id ?? null, p_name: d.name, p_commander: d.commander || 'grubnak', p_cards: d.cards, p_tiers: d.tiers && d.tiers.length === d.cards.length ? d.tiers : null });
     await refreshDecks();
   };
   net.removeDeck = async (id) => { await rpc('delete_deck', { p_id: id }); await refreshDecks(); };

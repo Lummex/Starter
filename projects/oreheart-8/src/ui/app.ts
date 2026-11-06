@@ -322,7 +322,7 @@ export class App {
         const respondable = st.pendingResponse && st.pendingResponse.responder === 'player' && e.player === 'opponent';
         if (pop && !respondable) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, null, e.player ?? e.owner); }
       } else if (e.type === 'respond') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, null, e.player ?? e.owner); } }
-      else if (e.type === 'summon') { if (pop) { L('reveal', { cardId: e.cardId, uid: e.uid }); if (this.dialogCard === e.cardId + e.owner) this.dialogCard = ''; else this.reveal(e.cardId, e, e.player ?? e.owner); } }
+      else if (e.type === 'summon') { if (pop) { L('reveal', { cardId: e.cardId, uid: e.uid }); if (this.dialogCard === e.cardId + e.owner) this.dialogCard = ''; else this.reveal(e.cardId, e, e.player ?? e.owner, this.instTier(this.unitByUid(e.uid) || { cardId: e.cardId }, e.owner)); } }
       else if (e.type === 'playCrystal') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, null, e.player ?? e.owner); } }
       else if (e.type === 'minerUpgrade') { if (pop) { L('reveal', { cardId: e.cardId }); this.reveal(e.cardId, e, e.player ?? e.owner); } }
       else if (e.type === 'spell') { L('effect', { cardId: e.cardId, visual: SPELL_VISUALS[e.cardId]?.id }); L('impact', { cardId: e.cardId }); }
@@ -933,7 +933,7 @@ export class App {
 
   showCard(cardId: string, creature?: any, hc?: any) {
     this.clearPops(); this.openHand(false, true);
-    const c = this.withTier(CARDS[cardId], creature && creature.owner === 'opponent' ? 'opponent' : 'player');
+    const c = this.withTierN(CARDS[cardId], this.instTier(creature || (hc && hc.uid ? hc : null) || { cardId }, creature && creature.owner === 'opponent' ? 'opponent' : 'player'));
     const rows: [string, string][] = [];
     rows.push(['Type', c.type === 'creature' ? `${FSYM(c.faction)} ${FACTIONS[c.faction].name} creature` : c.type === 'spell' ? ({ regular: 'Spell', instant: 'Instant', counter: 'Counterspell' } as any)[c.spellKind] : 'Crystal card']);
     rows.push(['Rarity', RARITY_WORD[c.rarity] || c.rarity]);
@@ -1160,6 +1160,10 @@ export class App {
     return Math.max(1, Math.min(5, Number(t) || 1));
   }
   withTier(c: any, owner: 'player' | 'opponent' = 'player'): any { if (!c) return c; const t = this.tierOf(c.id, owner); return t > 1 ? { ...c, tier: t } : c; }
+  /** Nov 5 (Ken: per copy): the tier of one copy (a hand card or unit carries `tier`); the id map is the fallback (Commander, mock) */
+  instTier(inst: any, owner: 'player' | 'opponent' = 'player'): number { const t = Number(inst && inst.tier) || 0; return t > 1 ? Math.min(5, t) : this.tierOf((inst && inst.cardId) || '', owner); }
+  withTierN(c: any, t: number): any { return c && t > 1 ? { ...c, tier: t } : c; }
+  unitByUid(uid: string): any { const st = this.game && this.game.state; return st && st.board ? st.board.creatures.find((x: any) => x.uid === uid) || null : null; }
   /** Nov 5: a Commander's tier in a match comes under its pack id ('commander-grubnak') */
   commanderTier(owner: 'player' | 'opponent'): number { const st = this.game.state; const id = st && st.players && st.players[owner] ? st.players[owner].commanderId : ''; return id ? this.tierOf('commander-' + id, owner) : 1; }
   /** Ken (Nov 5): "It should be impressive when someone drops a mythic out." The board darkens, the card slams in with lightning, KA-BOOM, its sound and
@@ -1194,20 +1198,25 @@ export class App {
     let stopViewer: (() => void) | null = null, closed = false;
     const close = () => { closed = true; stopViewer?.(); ov.remove(); document.removeEventListener('keydown', onKey, true); };
     // round 8b item 14: cards with a 3D model (Grubnak) show it in a viewer beside the card
-    if (withViewer && cardId === 'cmd:grubnak') {
-      void mountGrubnakViewer(ov).then((stop) => {
-        if (!stop) return;
-        if (closed) { stop(); return; }
-        stopViewer = stop; ov.classList.add('with-viewer');
-      });
-    }
-    else if (withViewer && !isCmd && c.type === 'creature') {
-      void mountCreatureViewer(ov, c).then((stop) => {
-        if (!stop) return;
-        if (closed) { stop(); return; }
-        stopViewer = stop; ov.classList.add('with-viewer');
-      });
-    }
+    const mountViewer = () => {
+      if (withViewer && cardId === 'cmd:grubnak') {
+        void mountGrubnakViewer(ov).then((stop) => {
+          if (!stop) return;
+          if (closed) { stop(); return; }
+          stopViewer = stop; ov.classList.add('with-viewer');
+        });
+      }
+      else if (withViewer && !isCmd && c.type === 'creature') {
+        void mountCreatureViewer(ov, c).then((stop) => {
+          if (!stop) return;
+          if (closed) { stop(); return; }
+          stopViewer = stop; ov.classList.add('with-viewer');
+        });
+      }
+    };
+    // Nov 5 (Ken): signed in, the Upgrade panel (copies, Combine, the five looks) stands where the 3D model was; offline keeps the model
+    if (withViewer && net.active) void import('../net/upgrade-panel').then((m) => { if (closed) return; const stop = m.mountInCloseUp(ov, cardId, face); if (stop) stopViewer = stop; else mountViewer(); }).catch(() => { if (!closed) mountViewer(); });
+    else mountViewer();
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
     ov.addEventListener('click', close);
     document.addEventListener('keydown', onKey, true);
@@ -1482,7 +1491,7 @@ export class App {
     r.view = null;
     try { this.view = createBoardView(r.board, this.low, this.arenaFaction || this.pickMatchArena()); } catch { this.view = null; } /* Oct 31: the picked faction's arena */
     if (!this.view) this.view = createFlatView(r.board);
-    (this.view as any).setTierLookup?.((id: string, owner: 'player' | 'opponent') => (id.startsWith('cmd:') ? this.commanderTier(owner) : this.tierOf(id, owner))); // Nov 5: a Mythic's unit (or Commander) keeps a glow
+    (this.view as any).setTierLookup?.((id: string, owner: 'player' | 'opponent', inst?: any) => (id.startsWith('cmd:') ? this.commanderTier(owner) : this.instTier(inst || { cardId: id }, owner))); // Nov 5: a Mythic's unit (or Commander) keeps a glow; per copy
     this.view.onViewChange = () => this.layoutSoon();
     for (let row = 1; row <= BH; row++) for (let col = 1; col <= BW; col++) {
       const c = h('div', { class: 'cell', 'data-row': row, 'data-col': col });
@@ -2769,10 +2778,10 @@ export class App {
     const w = Math.floor(Math.min(this.handPopWidth(), vw * 0.15, avail / ratio));
     return { w, cx: left + w / 2, cy: topY + (w * ratio) / 2 };
   }
-  reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player'): Promise<void> {
+  reveal(cardId: string, at?: { row: number; col: number } | null, side: 'player' | 'opponent' = 'player', tier = 0): Promise<void> {
     if ((this.test && !this.fxReal) || !this.r.board) return Promise.resolve();
     if (side === 'player') return Promise.resolve(); // round 11: only the opponent's played cards pop up
-    const c = this.withTier(CARDS[cardId], side);
+    const c = tier > 1 ? this.withTierN(CARDS[cardId], tier) : this.withTier(CARDS[cardId], side);
     if (!c) return Promise.resolve();
     let gone: () => void = () => {};
     const goneP = new Promise<void>((res) => { gone = res; });
@@ -3503,7 +3512,7 @@ export class App {
     if (hidden) return;
     let dealN = 0;
     for (const hc of shown) {
-      const c = this.withTier(CARDS[hc.cardId], 'player'); // Nov 5: an upgraded card shows its tier picture and stars in the hand too
+      const c = this.withTierN(CARDS[hc.cardId], this.instTier(hc, 'player')); // Nov 5: an upgraded copy shows its tier picture and stars in the hand too
       const cost = costOf(c);
       const el = h('button', { type: 'button', class: `hand-card ${c.type} f-${c.faction} ${affordable(c) ? '' : 'unaff'} ${armedUids.has(hc.uid) ? 'armed' : ''}`, 'data-tier': String(c.tier || 1), 'aria-label': c.name, 'data-uid': hc.uid, 'data-playable': String(playableUids.has(hc.uid) && affordable(c)), 'data-cost': String(cost), style: `--gc:${GLOW_COLOR[c.faction] || GLOW_COLOR.any}`, 'data-card': c.id, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) },
         ...faceKids(c, cost),
@@ -4042,7 +4051,7 @@ export class App {
       }
       else if (e.type === 'summon') {
         if (e.owner === 'player') audio.play('cardPlay'); /* Oct 31 (Brush): own cards only; the summon sound follows 0.35 s later */
-        if (this.netGame) { const tr = this.tierOf(e.cardId, e.owner); if (tr > 1) this.tierEntrance(e, tr); } // Nov 5: an upgraded card makes an entrance, a Mythic a big one
+        if (this.netGame) { const tr = this.instTier(this.unitByUid(e.uid) || { cardId: e.cardId }, e.owner); if (tr > 1) this.tierEntrance(e, tr); } // Nov 5: an upgraded copy makes an entrance, a Mythic a big one
       } else if (e.type === 'playCrystal') { if (e.player === 'player') audio.play('cardPlay'); }
       else if (e.type === 'minerUpgrade') {
         this.floatText(`+${e.attack ? '1 ATK ' : ''}+1 HP ✨`, 'heal', e.row, e.col);

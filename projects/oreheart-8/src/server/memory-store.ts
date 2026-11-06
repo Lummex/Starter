@@ -14,7 +14,7 @@ export class MemoryStore implements Store {
   views = new Map<string, Record<Seat, View>>();
   moves: MoveLog[] = [];
   finishedCalls: { matchId: string; summaries: Summaries }[] = [];
-  savedDecks = new Map<string, { commander: string; cards: string[] }>(); // key `${userId}/${deckId}`
+  savedDecks = new Map<string, { commander: string; cards: string[]; tiers?: number[] | null }>(); // key `${userId}/${deckId}`
   /** every view written, newest last (the mock server's "realtime") */
   viewLog: { matchId: string; userId: string; seq: number }[] = [];
   queue = new Map<string, QueueEntry>();

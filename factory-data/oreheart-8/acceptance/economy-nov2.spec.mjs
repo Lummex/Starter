@@ -337,10 +337,11 @@ test('AC681: the Collection shows each card at its best tier with a tier tag and
   await expect(rows.first()).toHaveClass(/keep/);
   const btn = panel.locator('.col-upg-btn');
   await expect(btn).toBeDisabled();
-  await rows.nth(1).locator('.col-upg-pick').check();
+  await rows.nth(1).locator('.col-upg-pick').click(); // Hold -> Upgrade (Ken, Nov 5: per copy)
   await expect(panel.locator('.col-upg-status')).toContainText('= 2: Enhanced!');
   await expect(btn).toBeEnabled();
   await btn.click();
+  await page.locator('[data-testid="upgrade-confirm"] .col-upg-ok').click(); // the confirm box first
   await expect.poll(() => rows.count()).toBe(3);
   await expect(rows.first()).toHaveAttribute('data-tier', '2');
   await expect(panel.locator('.col-upg-status')).toContainText('Worth 2');
@@ -693,6 +694,148 @@ test('AC674: zero start in the Deck Builder: with no cards of your own it says s
   expect(await page.evaluate(() => [...document.querySelectorAll('.db-list li')].map((li) => li.textContent).filter((t) => !/Shard|Geode|Cluster|Motherlode|Heart/i.test(t)))).toEqual([]);
   await page.getByTestId('db-empty-shop').click();
   await expect(page.locator('[data-screen=econ-shop]')).toBeVisible();
+});
+
+test('AC686: Deck Builder close-up, signed in (Ken, Nov 5): the Upgrade panel stands where the 3D model was: your copies, Combine, and the five looks (owned lit, the rest locked with the copies they take); a look click shows it large; Commanders too', async ({ page }) => {
+  await openEcon(page, 'shop'); // loads the economy module and its test hooks
+  await page.getByRole('button', { name: 'Back' }).click();
+  expect(await page.evaluate(() => window.oreheart.packs.setOwned({ 'goblin-grunt': 4, 'commander-grubnak': 2 }))).toBe(true);
+  for (const w of await page.locator('.overlay.welcome').all()) await w.evaluate((e) => e.remove());
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  const tile = page.locator('.db-tile[data-card="goblin-grunt"]');
+  await expect(tile).toBeVisible();
+  await tile.focus();
+  await page.keyboard.press('Enter');
+  const zoom = page.locator('.cardzoom');
+  const panel = zoom.locator('[data-testid="upgrade-panel"]');
+  await expect(panel).toBeVisible();
+  expect(await zoom.locator('.viewer3d').count()).toBe(0);
+  await expect(zoom).toHaveClass(/with-upg/);
+  const rows = panel.locator('.col-upg-row');
+  await expect.poll(() => rows.count()).toBe(4);
+  const looks = panel.locator('.upg-look');
+  await expect(looks).toHaveCount(5);
+  await expect(looks.nth(0)).toHaveClass(/lit/);
+  await expect(looks.nth(1)).toHaveClass(/locked/);
+  await expect(looks.nth(1).locator('.upg-look-need')).toHaveText('2 copies'); // the test page's Common steps
+  await expect(looks.nth(4).locator('.upg-look-name')).toHaveText('Mythic');
+  await looks.nth(4).click();
+  await expect(zoom).toHaveCount(1); // the look click did not close the close-up
+  expect(await zoom.locator('.cz-oh > .ohcard .oh-stars[data-tier="5"] i').count()).toBe(5);
+  await expect(looks.nth(4)).toHaveAttribute('aria-pressed', 'true');
+  // combine two copies: Enhanced, and its look lights up
+  await rows.nth(1).locator('.col-upg-pick').click(); // Hold -> Upgrade
+  await expect(panel.locator('.col-upg-status')).toContainText('= 2: Enhanced!');
+  await panel.locator('.col-upg-btn').click();
+  await page.locator('[data-testid="upgrade-confirm"] .col-upg-ok').click();
+  await expect.poll(() => rows.count()).toBe(3);
+  await expect(looks.nth(1)).toHaveClass(/lit/);
+  expect(await zoom.locator('.cz-oh > .ohcard .oh-stars[data-tier="2"] i').count()).toBe(2);
+  await page.keyboard.press('Escape');
+  await expect(zoom).toHaveCount(0);
+  // a Commander (double-click its portrait): two copies, the panel, the five looks
+  await page.locator('.db-cmdcard[data-cmd="grubnak"]').dblclick();
+  await expect(page.locator('.cardzoom [data-testid="upgrade-panel"]')).toBeVisible();
+  await expect.poll(() => page.locator('.cardzoom .col-upg-row').count()).toBe(2);
+  await expect(page.locator('.cardzoom .upg-look')).toHaveCount(5);
+  await page.keyboard.press('Escape');
+});
+
+test('AC687: offline (nobody signed in) the Deck Builder close-up has no Upgrade panel: the card and its 3D model as before', async ({ page }) => {
+  await page.goto('/?test=1');
+  for (const w of await page.locator('.overlay.welcome').all()) await w.evaluate((e) => e.remove());
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  const tile = page.locator('.db-tile[data-card]').first();
+  await expect(tile).toBeVisible();
+  await tile.focus();
+  await page.keyboard.press('Enter');
+  const zoom = page.locator('.cardzoom');
+  await expect(zoom).toBeVisible();
+  await page.waitForTimeout(800);
+  expect(await zoom.locator('[data-testid="upgrade-panel"]').count()).toBe(0);
+  expect(await zoom.evaluate((e) => e.classList.contains('with-upg'))).toBe(false);
+  await page.keyboard.press('Escape');
+});
+
+test('AC688: per-copy combine (Ken, Nov 5): one TARGET, Hold / Upgrade toggles on the other copies, "Upgrade to next level" picks the cheapest copies, "Combine with N copies" picks by number and tier; a confirm box says what goes and what stays, names the decks left short, and goes red when every copy would go', async ({ page }) => {
+  await openEcon(page, 'shop');
+  await page.getByRole('button', { name: 'Back' }).click();
+  expect(await page.evaluate(() => window.oreheart.packs.setOwned({ 'goblin-grunt': 6 }, [{ name: 'Junk Pile', cards: Array(4).fill('goblin-grunt'), commander: 'grubnak' }]))).toBe(true);
+  for (const w of await page.locator('.overlay.welcome').all()) await w.evaluate((e) => e.remove());
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  const tile = page.locator('.db-tile[data-card="goblin-grunt"]');
+  await tile.focus();
+  await page.keyboard.press('Enter');
+  const panel = page.locator('.cardzoom [data-testid="upgrade-panel"]');
+  await expect(panel).toBeVisible();
+  const rows = panel.locator('.col-upg-row');
+  await expect.poll(() => rows.count()).toBe(6);
+  await expect(rows.first().locator('.col-upg-keeptag')).toHaveText('TARGET');
+  await expect(rows.nth(1).locator('.col-upg-pick')).toHaveText('Hold');
+  await expect(panel.locator('.col-upg-btn')).toBeDisabled();
+  // one tap: the cheapest copies for the next tier (the test page's Common steps: Enhanced at worth 2)
+  const next = panel.locator('.col-upg-next');
+  await expect(next).toBeVisible();
+  await expect(next).toContainText('Upgrade to Enhanced (uses 1 copy)');
+  await next.click();
+  await expect(panel.locator('.col-upg-row.picked')).toHaveCount(1);
+  await expect(panel.locator('.col-upg-row.picked .col-upg-pick')).toHaveText('Upgrade');
+  await expect(panel.locator('.col-upg-status')).toContainText('= 2: Enhanced!');
+  await expect(panel.locator('.upg-look.reach')).toHaveAttribute('data-tier', '2');
+  // the confirm box: 1 copy goes, 5 stay, the deck of 4 is fine
+  await panel.locator('.col-upg-btn').click();
+  const box = page.locator('[data-testid="upgrade-confirm"]');
+  await expect(box).toBeVisible();
+  await expect(box).toContainText('combines 1 copy');
+  await expect(box).toContainText('5 copies left after');
+  expect(await box.locator('.col-upg-warn').count()).toBe(0);
+  expect(await box.locator('.col-upg-danger').count()).toBe(0);
+  await box.locator('.col-upg-ok').click();
+  await expect.poll(() => rows.count()).toBe(5);
+  await expect(rows.first()).toHaveAttribute('data-tier', '2');
+  // the quick pick: 4 plain copies by number; the box warns about the deck (only 1 left, Junk Pile uses 4) in red
+  await panel.locator('.col-upg-qn').fill('4');
+  await panel.locator('.col-upg-qgo').click();
+  await expect(panel.locator('.col-upg-row.picked')).toHaveCount(4);
+  await expect(panel.locator('.col-upg-status')).toContainText('= 6: Overcharged!');
+  await panel.locator('.col-upg-btn').click();
+  await expect(box).toBeVisible();
+  await expect(box.locator('.col-upg-warn')).toContainText('Only 1 left to play. Your deck Junk Pile uses 4. Are you sure?');
+  await expect(box.locator('.col-upg-danger')).toContainText('every copy');
+  await box.locator('.col-upg-cancel').click();
+  await expect(box).toHaveCount(0);
+  await expect.poll(() => rows.count()).toBe(5); // nothing was combined
+  await page.keyboard.press('Escape');
+});
+
+test('AC689: the Deck Builder knows which copy goes in (Ken, Nov 5): a card with an Enhanced copy shows "Enhanced ×1 · Original ×3" on its tile; in the deck list each copy is a chip, the best copy first, and a tap swaps a slot to another tier that has a spare copy', async ({ page }) => {
+  await openEcon(page, 'shop');
+  await page.getByRole('button', { name: 'Back' }).click();
+  expect(await page.evaluate(() => window.oreheart.packs.setOwned({ 'goblin-grunt': [2, 1, 1, 1], 'goblin-scrounger': 5 }))).toBe(true);
+  for (const w of await page.locator('.overlay.welcome').all()) await w.evaluate((e) => e.remove());
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  const tile = page.locator('.db-tile[data-card="goblin-grunt"]');
+  await expect(tile.locator('.db-tiersum')).toHaveText('Enhanced ×1 · Original ×3');
+  expect(await page.locator('.db-tile[data-card="goblin-scrounger"] .db-tiersum').count()).toBe(0); // all plain: no summary
+  // three copies into the deck (a double-click adds one)
+  for (let i = 0; i < 3; i++) { await tile.dblclick(); await page.waitForTimeout(350); }
+  const li = page.locator('.db-list li', { hasText: 'Snotskull Grunt' });
+  await expect(li.locator('.db-cnt')).toHaveText('3 ×');
+  const chips = li.locator('.db-tier');
+  await expect(chips).toHaveCount(3);
+  await expect(chips.nth(0)).toHaveAttribute('data-tier', '2'); // the best copy first
+  await expect(chips.nth(1)).toHaveAttribute('data-tier', '1');
+  expect(await page.evaluate(() => window.__dbTiers().filter((x) => x.id === 'goblin-grunt').map((x) => x.tier))).toEqual([2, 1, 1]);
+  // tap the Enhanced slot: it becomes a plain copy (a plain one is spare); tap again: back to Enhanced
+  await chips.nth(0).click();
+  await expect(li.locator('.db-tier').nth(0)).toHaveAttribute('data-tier', '1');
+  expect(await page.evaluate(() => window.__dbTiers().filter((x) => x.id === 'goblin-grunt').map((x) => x.tier))).toEqual([1, 1, 1]);
+  await li.locator('.db-tier').nth(0).click();
+  await expect(li.locator('.db-tier').nth(0)).toHaveAttribute('data-tier', '2');
+  // a plain card has no chips
+  const sc = page.locator('.db-tile[data-card="goblin-scrounger"]');
+  await sc.dblclick(); await page.waitForTimeout(350);
+  expect(await page.locator('.db-list li', { hasText: 'Goblin Miner' }).locator('.db-tier').count()).toBe(0);
 });
 
 // ---- Gauge's list (Nov 2)

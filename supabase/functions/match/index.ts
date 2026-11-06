@@ -43,9 +43,9 @@ class SupabaseStore {
   }
   async getSavedDeck(userId: string, deckId: string) {
     if (!/^[0-9a-f-]{36}$/i.test(deckId)) return null;
-    const { data, error } = await this.db.from('decks').select('commander,cards').eq('id', deckId).eq('user_id', userId).maybeSingle();
+    const { data, error } = await this.db.from('decks').select('commander,cards,card_tiers').eq('id', deckId).eq('user_id', userId).maybeSingle();
     if (error) throw new Error(error.message);
-    return data && Array.isArray(data.cards) ? { commander: data.commander, cards: data.cards } : null;
+    return data && Array.isArray(data.cards) ? { commander: data.commander, cards: data.cards, tiers: Array.isArray(data.card_tiers) ? data.card_tiers : null } : null;
   }
   async getMatch(id: string) {
     if (!/^[0-9a-f-]{36}$/i.test(id)) return null;

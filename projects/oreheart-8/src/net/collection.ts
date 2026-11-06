@@ -2,13 +2,13 @@
 // Filters by faction, rarity and owned. Crystal cards are free and unlimited for everyone.
 import { h, pictureOf as pictureOfCard, rarityKey, commanderPortrait } from '../ui/app';
 const pictureOf = (c: any) => (c && c.type === 'commander' && c.commanderId ? commanderPortrait(c.commanderId) : pictureOfCard(c)); // Nov 5: Commanders in the Collection
-import { ohCardEl, TIER_NAMES, hasUpgradeArt } from '../ui/cardfmt';
+import { ohCardEl, TIER_NAMES } from '../ui/cardfmt';
+import { upgradePanel } from './upgrade-panel';
 import { collectionCards, countLine } from './quest-summary';
 export { collectionCards, countLine };
-import { econShow, backBtn, coinChip, api, RARITIES, toast, tierOfWorth, worthOfTier, stepsFor, rarityLabel } from './economy';
+import { econShow, backBtn, coinChip, api, RARITIES, rarityLabel } from './economy';
 import type { UpgradeInfo, CardCopy } from './economy';
 
-const idem = () => 'up-' + (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
 
 const FACTION_LABEL: [string, string][] = [['all', 'All'], ['goblins', 'Goblins'], ['gnomes', 'Gnomes'], ['dwarves', 'Dwarves'], ['any', 'Neutral']];
 
@@ -82,55 +82,11 @@ function zoom(c: any, own: { n: number; best: number; upg: UpgradeInfo | null; o
   ov.addEventListener('click', (e) => { if (!(e.target as HTMLElement).closest('.col-upg')) close(); });
   document.addEventListener('keydown', onKey, true); // Escape closes it wherever the focus went (a disabled Combine button drops it)
   if (own) {
-    const steps = stepsFor(c.rarity, own.upg?.steps); // the steps for this card's rarity
-    const panel = h('div', { class: 'col-upg', 'data-testid': 'upgrade-panel', role: 'group', 'aria-label': 'Upgrade ' + c.name },
-      h('h2', {}, 'Upgrade'), h('p', { class: 'col-upg-sub' }, 'Combine copies of this card into one. Its look and stars go up; its numbers never change.'));
-    const list = h('div', { class: 'col-upg-list', role: 'list' });
-    const status = h('p', { class: 'col-upg-status', 'aria-live': 'polite' }, 'Loading your copies…');
-    const btn = h('button', { type: 'button', class: 'net-btn primary col-upg-btn', disabled: 'true' }, 'Combine') as HTMLButtonElement;
-    const preview = h('div', { class: 'col-upg-preview', 'aria-hidden': 'true' });
-    panel.append(list, status, h('div', { class: 'net-actions' }, btn), hasUpgradeArt(c.id) ? preview : h('p', { class: 'col-upg-note' }, 'This card\'s upgraded pictures are still being painted; its stars change now.'));
-    big.append(panel);
-    let copies: CardCopy[] = [];
-    let keep = '';
-    const picked = new Set<string>();
-    const show = () => {
-      list.replaceChildren(...copies.map((k) => {
-        const isKeep = k.id === keep;
-        const row = h('label', { class: 'col-upg-row' + (isKeep ? ' keep' : picked.has(k.id) ? ' picked' : ''), role: 'listitem', 'data-copy': k.id, 'data-tier': String(k.tier) },
-          h('input', { type: 'checkbox', class: 'col-upg-pick', 'aria-label': `combine this ${TIER_NAMES[k.tier]} copy`, disabled: isKeep ? 'true' : null, checked: picked.has(k.id) ? 'true' : null,
-            onchange: (e: Event) => { if ((e.target as HTMLInputElement).checked) picked.add(k.id); else picked.delete(k.id); show(); } }),
-          h('span', { class: 'col-upg-stars', 'data-tier': String(k.tier) }, '★'.repeat(k.tier)),
-          h('span', { class: 'col-upg-name' }, TIER_NAMES[k.tier] + (k.worth > 1 ? ` · worth ${k.worth}` : '')),
-          isKeep ? h('span', { class: 'col-upg-keeptag' }, 'KEEP') : h('button', { type: 'button', class: 'net-btn col-upg-keepbtn', onclick: (e: Event) => { e.preventDefault(); keep = k.id; picked.delete(k.id); show(); } }, 'Keep this one'));
-        return row;
-      }));
-      const t = copies.find((k) => k.id === keep);
-      const spent = copies.filter((k) => picked.has(k.id)).reduce((s, k) => s + k.worth, 0);
-      const after = (t?.worth || 1) + spent, tierAfter = tierOfWorth(after, steps), next = tierAfter < 5 ? worthOfTier(tierAfter + 1, steps) : null;
-      if (!t) status.textContent = 'Pick the copy to keep.';
-      else if (t.tier >= 5) status.textContent = 'This one is Mythic already: the top.';
-      else if (!picked.size) status.textContent = `Worth ${t.worth}. ${next ? `${TIER_NAMES[tierOfWorth(t.worth, steps) + 1]} at ${worthOfTier(tierOfWorth(t.worth, steps) + 1, steps)}.` : ''} Tick the copies to combine.`;
-      else status.textContent = `Worth ${t.worth} + ${spent} = ${after}: ${TIER_NAMES[tierAfter]}${tierAfter > t.tier ? '!' : ''}${next ? ` (${TIER_NAMES[tierAfter + 1]} at ${next})` : ''}`;
-      btn.disabled = !t || t.tier >= 5 || !picked.size;
-      preview.replaceChildren(t && tierAfter > t.tier ? ohCardEl({ ...c, tier: tierAfter }, pictureOf(c)) : h('span'));
-    };
-    const load = async () => {
-      try { copies = await api.myCardCopies(c.id); } catch (e: any) { status.textContent = 'Could not load your copies: ' + String(e?.message || e); return; }
-      copies.sort((a, b) => b.tier - a.tier || b.worth - a.worth);
-      keep = copies[0]?.id || ''; picked.clear(); show();
-    };
-    btn.addEventListener('click', async () => {
-      btn.disabled = true;
-      try {
-        const r = await api.upgradeCard(keep, [...picked], idem());
-        toast(r.tier_after > r.tier_before ? `${c.name} is now ${TIER_NAMES[r.tier_after]}!` : `${c.name}: worth ${r.worth_after} (${TIER_NAMES[r.tier_after]}), ${r.next_worth ? TIER_NAMES[r.tier_after + 1] + ' at ' + r.next_worth : 'the top'}`, '/art/packs/icons/free-pack.webp');
-        await load();
-        own.onChange(copies);
-        big.querySelector(':scope > .ohcard')?.replaceWith(ohCardEl({ ...c, tier: copies.length ? Math.max(...copies.map((x) => x.tier)) : 1 }, pictureOf(c)));
-      } catch (e: any) { status.textContent = String(e?.message || e); btn.disabled = false; }
-    });
-    void load();
+    // Nov 5: the panel is shared with the Deck Builder close-up (upgrade-panel.ts); a look click shows that tier large
+    const swap = (t: number) => big.querySelector(':scope > .ohcard')?.replaceWith(ohCardEl({ ...c, tier: t }, pictureOf(c)));
+    const panel = upgradePanel(c, { pic: pictureOf(c), steps: own.upg?.steps, onChange: (copies) => { own.onChange(copies); swap(panel.best()); }, onLook: swap });
+    big.append(panel.el);
+    void panel.load().then(() => swap(panel.best()));
   }
   document.body.append(ov);
   ov.focus();
