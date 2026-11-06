@@ -3476,73 +3476,73 @@
     "core": {
      "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-core.webp",
      "px": [
-      512,
-      512
+      540,
+      432
      ],
      "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-core-m.webp",
      "px_phone": [
-      320,
-      320
+      300,
+      240
      ]
     },
     "glow": {
      "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-glow.webp",
      "px": [
-      512,
-      512
+      429,
+      486
      ],
      "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-glow-m.webp",
      "px_phone": [
-      320,
-      320
+      265,
+      300
      ]
     },
     "particles": {
      "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-particles.webp",
      "px": [
-      512,
-      512
+      536,
+      464
      ],
      "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-particles-m.webp",
      "px_phone": [
-      320,
-      320
+      300,
+      260
      ]
     },
     "ring": {
      "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-ring.webp",
      "px": [
-      512,
-      512
+      540,
+      304
      ],
      "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-ring-m.webp",
      "px_phone": [
-      320,
-      320
+      300,
+      169
      ]
     },
     "debris": {
      "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-debris.webp",
      "px": [
-      512,
-      512
+      540,
+      474
      ],
      "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-debris-m.webp",
      "px_phone": [
-      320,
-      320
+      300,
+      264
      ]
     },
     "word": {
      "file": "art/spell-fx/sooey-hog-call/sooey-hog-call-word.webp",
      "px": [
-      512,
-      512
+      540,
+      403
      ],
      "file_phone": "art/spell-fx/sooey-hog-call/sooey-hog-call-word-m.webp",
      "px_phone": [
-      320,
-      320
+      300,
+      224
      ]
     }
    },
@@ -3984,73 +3984,73 @@
     "core": {
      "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-core.webp",
      "px": [
-      512,
-      512
+      401,
+      465
      ],
      "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-core-m.webp",
      "px_phone": [
-      320,
-      320
+      259,
+      300
      ]
     },
     "glow": {
      "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-glow.webp",
      "px": [
-      512,
-      512
+      329,
+      395
      ],
      "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-glow-m.webp",
      "px_phone": [
-      320,
-      320
+      250,
+      300
      ]
     },
     "particles": {
      "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-particles.webp",
      "px": [
-      512,
-      512
+      360,
+      355
      ],
      "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-particles-m.webp",
      "px_phone": [
-      320,
-      320
+      300,
+      296
      ]
     },
     "ring": {
      "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-ring.webp",
      "px": [
-      512,
-      512
+      436,
+      263
      ],
      "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-ring-m.webp",
      "px_phone": [
-      320,
-      320
+      300,
+      181
      ]
     },
     "debris": {
      "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-debris.webp",
      "px": [
-      512,
-      512
+      390,
+      440
      ],
      "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-debris-m.webp",
      "px_phone": [
-      320,
-      320
+      266,
+      300
      ]
     },
     "word": {
      "file": "art/spell-fx/stand-fast-lads/stand-fast-lads-word.webp",
      "px": [
-      512,
-      512
+      436,
+      470
      ],
      "file_phone": "art/spell-fx/stand-fast-lads/stand-fast-lads-word-m.webp",
      "px_phone": [
-      320,
-      320
+      278,
+      300
      ]
     }
    },
