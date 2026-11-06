@@ -5,7 +5,11 @@
 .dash{--ink:#eef1f7;--soft:#b9c1cf;--dim:#8a93a3;--steel1:#e9edf3;--steel2:#9aa4b3;--steel3:#4b5361;--ice:#7cc8ff;--violet:#a77bff;--green:#7fe07a;
   position:absolute;inset:0;overflow:hidden;color:var(--ink);font-family:"Alegreya Sans",Arial,sans-serif;font-size:clamp(11px,1.45vh,16px);background:#07070b url(/art/menu-front-oct29.webp) center/cover}
 .dash::before{content:"";position:absolute;inset:0;background:rgba(4,5,9,.66);backdrop-filter:blur(3px)}
-.dash>*{position:relative}
+/* Nov 6 (Ken: "a box going over the whole screen ... makes everything blurry"): the old menu's sparkle layers (.menu-screen::before/::after,
+   z-index 1) sat ON TOP of the dashboard's content and the blur rode with them. The dim+blur layer stays under everything; no sparkles here. */
+.dash.menu-screen::before,.dash::before{z-index:0;background-image:none;animation:none}
+.dash.menu-screen::after,.dash::after{display:none}
+.dash>*{position:relative;z-index:1}
 .dash .h{font-family:Cinzel,serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--steel1);text-shadow:0 2px 0 #000,0 0 12px rgba(160,190,255,.25)}
 .dash .panel{background:linear-gradient(180deg,rgba(28,31,44,.88),rgba(10,11,17,.9));border-radius:14px;position:relative;box-shadow:0 0 0 1px #0009,inset 0 0 0 1px rgba(255,255,255,.06),0 12px 40px rgba(0,0,0,.55);border:2px solid transparent;background-clip:padding-box}
 .dash .panel::before{content:"";position:absolute;inset:-2px;border-radius:15px;padding:2px;background:linear-gradient(160deg,#f4f6fa,#8d97a7 30%,#3c4350 55%,#c8cfda 80%,#6a7383);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
