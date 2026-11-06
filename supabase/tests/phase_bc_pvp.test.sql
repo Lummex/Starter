@@ -316,6 +316,21 @@ select public.pvp_queue_join(:PC, 'unranked', '{"userId": "c0000000-0000-4000-80
 select pg_temp.ok('queue: a player already in an active match is never paired', public.pvp_queue_pair(:PC) is null);
 update public.matches set status = 'finished', ended_at = now() where id = '22222222-0000-4000-8000-0000000000ee';
 select public.pvp_queue_leave(:PA); select public.pvp_queue_leave(:PC);
+-- wait times (Nov 5): pairings are recorded; the average needs three of them
+delete from public.pvp_pairings; -- the queue checks above made some; start clean here
+select pg_temp.ok('wait: no pairings yet, the average is null and the join says so when asked',
+  private.avg_wait('unranked') is null
+  and (select j ? 'avg_wait' and j -> 'avg_wait' = 'null'::jsonb and (j ->> 'pairings')::int = 0 from public.pvp_queue_join(:PA, 'unranked', '{"userId": "x"}', '{"commander": "grubnak"}', true) j)
+  and (select not (j ? 'avg_wait') from public.pvp_queue_join(:PA, 'unranked', '{"userId": "x"}', '{"commander": "grubnak"}', false) j));
+select public.pvp_queue_leave(:PA);
+insert into public.pvp_pairings (mode, waited_a, waited_b) values ('unranked', 60, 20), ('unranked', 100, 40), ('ranked', 10, 10);
+select pg_temp.ok('wait: two pairings are still too few', private.avg_wait('unranked') is null);
+insert into public.pvp_pairings (mode, waited_a, waited_b) values ('unranked', 60, 20);
+select pg_temp.ok('wait: a third makes an average (~50 s); ranked still has too few', private.avg_wait('unranked') = 50 and private.avg_wait('ranked') is null);
+select public.pvp_queue_join(:PA, 'unranked', '{"userId": "a"}', '{"commander": "grubnak"}');
+select public.pvp_queue_join(:PC, 'unranked', '{"userId": "c"}', '{"commander": "grubnak"}');
+create temp table qp9 as select public.pvp_queue_pair(:PC) as j;
+select pg_temp.ok('wait: a real pairing records both waits', (select j is not null from qp9) and (select count(*) from public.pvp_pairings where mode = 'unranked') = 4, (select coalesce(j::text, 'null') from qp9));
 -- a ranked match between A and B, A wins: Elo moves 16 each way (K 32, equal ratings)
 insert into public.matches (id, mode, player_a, player_b, state, seq, status, engine_version)
   values ('22222222-0000-4000-8000-0000000000cc', 'ranked', :PA, :PB, '{"turn": 7}', 40, 'active', 'test');

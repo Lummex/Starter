@@ -391,7 +391,17 @@ let roomTimer: any = null;
 let queueTimer: any = null;
 let lastRank: any = null;
 const rankText = (r: any) => `Ranked: ${r.rating} ${r.name}${r.place ? ` · #${r.place}` : ''} · season ${r.season}${r.games ? ` · ${r.wins}-${r.losses}` : ''}`;
-function stopQueuePoll() { if (queueTimer) { clearInterval(queueTimer); queueTimer = null; } }
+function stopQueuePoll() { if (queueTimer) { clearInterval(queueTimer); queueTimer = null; } if (waitTick) { clearInterval(waitTick); waitTick = null; } }
+let waitTick: any = null;
+const mmss = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
+/** Nov 5 (Ken: "a connection timer so you can see what the connection time is"): a clock counting up, kept locally (no requests), from a start moment */
+function waitTimer(el: El, startedAt: number, label = 'Searching') {
+  if (waitTick) clearInterval(waitTick);
+  const draw = () => { el.textContent = `${label}… ${mmss(Math.round((Date.now() - startedAt) / 1000))}`; };
+  draw();
+  waitTick = setInterval(draw, 1000);
+}
+const avgText = (avgWait: number | null | undefined, pairings: number | undefined) => (avgWait == null ? (pairings === undefined ? '' : 'Average wait: not enough players yet') : `Average wait right now: ~${mmss(avgWait)}`);
 /** flow.ts (and the mock start in test pages) hand over the App. */
 export function bindPvpApp(a: App) { app = a; }
 export const currentNetGame = () => current;
@@ -418,7 +428,7 @@ function screen(name: string, ...kids: (El | null)[]): El {
   return panel;
 }
 const alertEl = () => h('p', { class: 'net-alert', role: 'alert' });
-function stopRoomPoll() { if (roomTimer) { clearInterval(roomTimer); roomTimer = null; } }
+function stopRoomPoll() { if (roomTimer) { clearInterval(roomTimer); roomTimer = null; } if (waitTick) { clearInterval(waitTick); waitTick = null; } }
 
 /** Main-menu extras when signed in: "Play a friend", and "Back to your match" while one is active. */
 export function pvpMenu(el: El): void {
@@ -550,38 +560,47 @@ function showMake(practice = false) {
 function showQueue(mode: 'ranked' | 'unranked') {
   const p = picker(), err = alertEl();
   const waiting = h('p', { class: 'pvp-waiting', role: 'status', 'data-testid': 'pvp-queue-status' }, '');
+  const timer = h('p', { class: 'pvp-wait-timer', 'data-testid': 'pvp-wait-timer', hidden: true }, '');
+  const avg = h('p', { class: 'pvp-wait-avg', 'data-testid': 'pvp-wait-avg', 'aria-live': 'polite', hidden: true }, '');
   const info = h('p', { class: 'pvp-queue-info' }, mode === 'ranked'
     ? 'Ranked: you meet players near your rating. Win and it goes up, lose and it goes down; every quarter is a new season.'
     : 'Unranked: the next player who is looking, whatever their rank. Coins and quests count as usual.');
-  const go = nbtn('Find a match', () => { go.disabled = true; err.textContent = ''; void startQueue(mode, p.value(), waiting, err, go, cancel); }, 'primary pvp-go', { 'data-testid': 'pvp-queue-go' });
+  const go = nbtn('Find a match', () => { go.disabled = true; err.textContent = ''; void startQueue(mode, p.value(), waiting, err, go, cancel, timer, avg); }, 'primary pvp-go', { 'data-testid': 'pvp-queue-go' });
   const cancel = nbtn('Back', () => { stopQueuePoll(); void transport().call('leave', {}).catch(() => {}); app!.showMenu(); }, 'pvp-cancel', { 'data-testid': 'pvp-queue-cancel' });
   screen('queue', h('h1', {}, mode === 'ranked' ? 'Ranked match' : 'Unranked match'), info,
     lastRank && mode === 'ranked' ? h('p', { class: 'pvp-rank' }, rankText(lastRank)) : null,
-    p.el, waiting, err, h('div', { class: 'net-actions' }, go, cancel));
+    p.el, waiting, h('div', { class: 'pvp-wait-box' }, timer, avg), err, h('div', { class: 'net-actions' }, go, cancel));
 }
-async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string; deckId?: string; cards?: string[] }, waiting: El, err: El, go: El, cancel: El): Promise<{ ok: boolean; matchId?: string; error?: string }> {
+async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string; deckId?: string; cards?: string[] }, waiting: El, err: El, go: El, cancel: El, timer?: El, avg?: El): Promise<{ ok: boolean; matchId?: string; error?: string }> {
   stopQueuePoll();
   const body = { mode, commander: pick.commander, ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }) };
+  let polls = 0;
+  const showAvg = (x: any) => { if (avg && x && 'avgWait' in x) { avg.textContent = avgText(x.avgWait, x.pairings); avg.hidden = !avg.textContent; } };
   const dots = () => h('span', { class: 'pvp-dots', 'aria-hidden': 'true' }, h('i', {}, '.'), h('i', {}, '.'), h('i', {}, '.'));
   let r: any;
-  try { r = await transport().call('queue', body); } catch (e) { (go as HTMLButtonElement).disabled = false; err.textContent = friendlyError(e); return { ok: false, error: friendlyError(e) }; }
+  try { r = await transport().call('queue', { ...body, avg: true }); } catch (e) { (go as HTMLButtonElement).disabled = false; err.textContent = friendlyError(e); return { ok: false, error: friendlyError(e) }; }
   if (!r || !r.ok) { (go as HTMLButtonElement).disabled = false; err.textContent = friendlyError(r?.error || 'Could not join the queue'); return { ok: false, error: r?.error }; }
   if (r.matchId) { if (await openMatch(r.matchId, r.view)) return { ok: true, matchId: r.matchId }; err.textContent = `A match started, but the screen did not open${lastOpenError ? ': ' + lastOpenError : ''}.`; return { ok: false }; }
   waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent (rating ${r.rating})`, dots());
   (cancel as HTMLButtonElement).textContent = 'Cancel';
+  // the clock counts here, from when the server says the wait began; the average comes with the first answer and then every ~16 s (every 8th poll)
+  if (timer) { timer.hidden = false; waitTimer(timer, Date.parse(r.since) || Date.now()); }
+  showAvg(r);
   return await new Promise((resolve) => {
     const poll = async () => {
       if (!waiting.isConnected) { stopQueuePoll(); void transport().call('leave', {}).catch(() => {}); resolve({ ok: false, error: 'left' }); return; }
       try {
-        const x = await transport().call('queue', body);
+        polls++;
+        const x = await transport().call('queue', polls % 8 === 0 ? { ...body, avg: true } : body);
         if (!waiting.isConnected) return;
+        showAvg(x);
         if (x && x.ok && x.matchId) {
           stopQueuePoll();
           const opened = await openMatch(x.matchId, x.view);
           if (!opened && waiting.isConnected) { waiting.textContent = ''; err.textContent = `A match started, but the screen did not open${lastOpenError ? ': ' + lastOpenError : ''}. Go back to the menu and press "Back to your match".`; }
           resolve({ ok: opened, matchId: x.matchId });
         } else if (x && x.ok && x.waiting) {
-          waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent (rating ${x.rating}, ${x.waited}s${x.others ? `, ${x.others} waiting` : ''})`, dots());
+          waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent (rating ${x.rating}${x.others ? `, ${x.others} waiting` : ''})`, dots());
         } else if (x && !x.ok) { err.textContent = friendlyError(x.error); }
       } catch { /* keep polling */ }
     };
@@ -609,6 +628,8 @@ function showCode(code: string) {
   }, 'pvp-copy', { 'data-testid': 'pvp-copy' });
   const err = alertEl();
   const waiting = h('p', { class: 'pvp-waiting', role: 'status' }, 'Waiting for your friend', h('span', { class: 'pvp-dots', 'aria-hidden': 'true' }, h('i', {}, '.'), h('i', {}, '.'), h('i', {}, '.')));
+  const codeTimer = h('p', { class: 'pvp-wait-timer', 'data-testid': 'pvp-wait-timer' }, '');
+  waitTimer(codeTimer, Date.now(), 'Waiting');
   const cancel = nbtn('Cancel', async () => {
     stopRoomPoll();
     try { await transport().call('cancel', { code }); } catch { /* it expires by itself */ }
@@ -618,7 +639,7 @@ function showCode(code: string) {
     h('p', {}, 'Send these letters to your friend. The battle starts the moment they type them in.'),
     h('div', { class: 'pvp-code', 'data-code': code, 'aria-label': 'Room code ' + code.split('').join(' '), role: 'img' }, ...code.split('').map((ch, i) => h('span', { class: 'pvp-letter', style: `--i:${i}`, 'aria-hidden': 'true' }, ch))),
     h('div', { class: 'pvp-copy-row' }, copy, copyNote),
-    waiting, err,
+    waiting, codeTimer, err,
     h('div', { class: 'net-actions' }, cancel));
   const poll = async () => {
     if (!panel.isConnected) { stopRoomPoll(); return; }
@@ -730,7 +751,7 @@ export function pvpHooks() {
   return {
     create: (commander?: string, deckId?: string, practice?: boolean) => safe(() => makeCode(pick(commander, deckId), practice === true)),
     // Nov 5 (modes): the queue through the real screens (the poll runs until a match opens or the screen is left)
-    queue: (mode: 'ranked' | 'unranked', commander?: string, deckId?: string) => safe(() => { showQueue(mode); const w = document.querySelector('[data-testid="pvp-queue-status"]') as El, e = document.querySelector('[data-screen="pvp-queue"] .net-alert') as El, g = document.querySelector('[data-testid="pvp-queue-go"]') as El, c = document.querySelector('[data-testid="pvp-queue-cancel"]') as El; return startQueue(mode, pick(commander, deckId), w, e, g, c); }),
+    queue: (mode: 'ranked' | 'unranked', commander?: string, deckId?: string) => safe(() => { showQueue(mode); const w = document.querySelector('[data-testid="pvp-queue-status"]') as El, e = document.querySelector('[data-screen="pvp-queue"] .net-alert') as El, g = document.querySelector('[data-testid="pvp-queue-go"]') as El, c = document.querySelector('[data-testid="pvp-queue-cancel"]') as El, tm = document.querySelector('[data-testid="pvp-wait-timer"]') as El, av = document.querySelector('[data-testid="pvp-wait-avg"]') as El; return startQueue(mode, pick(commander, deckId), w, e, g, c, tm, av); }),
     leave: () => safe(() => { stopQueuePoll(); return transport().call('leave', {}); }),
     rank: () => safe(() => transport().call('rank', {})),
     tiers: () => (current ? clone(current.tiers) : null),

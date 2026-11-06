@@ -656,6 +656,57 @@ test('AC683: upgraded cards in a match: a Mythic in the hand shows its stars; dr
   await closeAll(a, b);
 });
 
+test('AC684: the connection clock and the average wait (Ken, Nov 5): while searching a timer counts up locally ("Searching… 0:02"), the average wait line shows ("not enough players yet" with no recent pairings, "~m:ss" once there are), the clock never sends a request of its own; a friend code shows the clock too', async ({ browser }) => {
+  test.setTimeout(120000);
+  const id = uniq();
+  const a = await openAs(browser, 'alice' + id);
+  await atMenu(a);
+  const pa = a.evaluate(() => window.oreheart.pvp.queue('unranked', 'grubnak', 'goblin-warband'));
+  const timer = a.locator('[data-testid="pvp-wait-timer"]');
+  await expect(timer).toBeVisible({ timeout: 15000 });
+  await expect(timer).toHaveText(/^Searching… 0:0\d$/);
+  await expect(a.locator('[data-testid="pvp-wait-avg"]')).toHaveText('Average wait: not enough players yet');
+  const t0 = await timer.textContent();
+  await a.waitForTimeout(2200);
+  const t1 = await timer.textContent();
+  expect(t1).not.toBe(t0);
+  expect(Number(t1.slice(-1)) - Number(t0.slice(-1))).toBeGreaterThanOrEqual(2);
+  // the clock ticks without network: the act log has only the queue polls (one every 2 s, not every second)
+  const calls = await a.evaluate(() => performance.getEntriesByType('resource').filter((e) => /\/match\b/.test(e.name)).length);
+  expect(calls, 'the menu makes a couple of calls (my_match, rank), then one queue poll every 2 s: never one a second').toBeLessThan(9);
+  await a.evaluate(() => window.oreheart.pvp.leave());
+  await pa.catch(() => null);
+  await closeAll(a);
+  // three quick pairings, then a searcher sees a real average
+  const names = [];
+  for (let i = 0; i < 3; i++) {
+    const x = await openAs(browser, 'x' + i + id), y = await openAs(browser, 'y' + i + id);
+    await atMenu(x); await atMenu(y);
+    const px = x.evaluate(() => window.oreheart.pvp.queue('unranked', 'grubnak', 'goblin-warband'));
+    await expect(x.locator('[data-testid="pvp-wait-timer"]')).toBeVisible({ timeout: 10000 });
+    const ry = await y.evaluate(() => window.oreheart.pvp.queue('unranked', 'borgo', 'dwarf-warband'));
+    expect(ry && ry.ok && ry.matchId, JSON.stringify(ry)).toBeTruthy();
+    await px;
+    names.push(x, y);
+  }
+  await closeAll(...names);
+  const z = await openAs(browser, 'z' + id);
+  await atMenu(z);
+  const pz = z.evaluate(() => window.oreheart.pvp.queue('ranked', 'grubnak', 'goblin-warband'));
+  await expect(z.locator('[data-testid="pvp-wait-avg"]')).toHaveText('Average wait: not enough players yet', { timeout: 10000 }); // ranked has none
+  await z.evaluate(() => window.oreheart.pvp.leave());
+  await pz.catch(() => null);
+  const pz2 = z.evaluate(() => window.oreheart.pvp.queue('unranked', 'grubnak', 'goblin-warband'));
+  await expect(z.locator('[data-testid="pvp-wait-avg"]')).toHaveText(/^Average wait right now: ~\d+:\d\d$/, { timeout: 10000 }); // unranked has three
+  await z.evaluate(() => window.oreheart.pvp.leave());
+  await pz2.catch(() => null);
+  // a friend code shows the clock while waiting
+  const made = await hook(z, 'create', 'grubnak', 'goblin-warband');
+  expect(made && made.ok).toBe(true);
+  await expect(z.locator('[data-testid="pvp-wait-timer"]')).toHaveText(/^Waiting… 0:0\d$/, { timeout: 10000 });
+  await closeAll(z);
+});
+
 test('AC677: a card dropped from the hand spawns its REAL model at once (models load with the hand), and a model still on its way is a shimmer, never a pawn', async ({ browser }) => {
   test.setTimeout(120000);
   const { a, b } = await pair(browser);

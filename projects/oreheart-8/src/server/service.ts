@@ -39,7 +39,8 @@ export interface Store {
   newId(): string;
   random(): number; // [0,1) from a secure source
   // Nov 5 (modes): the ranked / unranked queue and the season ratings
-  queueJoin(user: PlayerInfo, mode: 'ranked' | 'unranked', deck: DeckChoice, now: number): Promise<{ rating: number; since: number; others: number }>;
+  /** wantAvg: also the average wait of recent pairings in this mode (seconds; null when fewer than 3 in the last 30 min) */
+  queueJoin(user: PlayerInfo, mode: 'ranked' | 'unranked', deck: DeckChoice, now: number, wantAvg?: boolean): Promise<{ rating: number; since: number; others: number; avgWait?: number | null; pairings?: number }>;
   /** pairs this player with the longest-waiting fit; both leave the queue in the same step; null when nobody fits */
   queuePair(userId: string, now: number): Promise<{ mode: 'ranked' | 'unranked'; myRating: number; other: QueueEntry } | null>;
   queueLeave(userId: string): Promise<void>;
@@ -194,10 +195,12 @@ export class PvpService {
     const deck = await this.deckFor(user, body);
     const pd = deckProblem(deck);
     if (pd) fail(pd);
-    const q = await this.store.queueJoin(user, mode!, deck, now);
+    const wantAvg = body?.avg === true; // Nov 5 (Ken: the average wait): asked for now and then, not on every poll
+    const q = await this.store.queueJoin(user, mode!, deck, now, wantAvg);
+    const avg = wantAvg ? { avgWait: q.avgWait ?? null, pairings: q.pairings ?? 0 } : {};
     const pair = await this.store.queuePair(user.userId, now);
-    if (!pair) return { ok: true, waiting: true, mode, rating: q.rating, since: new Date(q.since).toISOString(), waited: Math.max(0, Math.round((now - q.since) / 1000)), others: q.others };
-    if (await this.store.activeMatchFor(pair.other.user.userId)) return { ok: true, waiting: true, mode, rating: q.rating, since: new Date(q.since).toISOString(), waited: 0, others: 0 };
+    if (!pair) return { ok: true, waiting: true, mode, rating: q.rating, since: new Date(q.since).toISOString(), waited: Math.max(0, Math.round((now - q.since) / 1000)), others: q.others, ...avg };
+    if (await this.store.activeMatchFor(pair.other.user.userId)) return { ok: true, waiting: true, mode, rating: q.rating, since: new Date(q.since).toISOString(), waited: 0, others: 0, ...avg };
     const pa = deckProblem(pair.other.deck), pb = deckProblem(deck);
     if (pa || pb) fail(pa || pb!);
     const id = this.store.newId();

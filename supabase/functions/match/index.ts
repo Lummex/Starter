@@ -90,10 +90,11 @@ class SupabaseStore {
     return ra && rb ? { rating: { a: { before: Number(ra.before), after: Number(ra.after) }, b: { before: Number(rb.before), after: Number(rb.after) } } } : true;
   }
   // Nov 5 (modes): the queue and the ratings live in the database (pvp_queue_* and pvp_rank_of are service-role doors)
-  async queueJoin(user: any, mode: 'ranked' | 'unranked', deck: any, _now?: number) {
-    const { data, error } = await this.db.rpc('pvp_queue_join', { p_user: user.userId, p_mode: mode, p_player: user, p_deck: deck });
+  async queueJoin(user: any, mode: 'ranked' | 'unranked', deck: any, _now?: number, wantAvg = false) {
+    const { data, error } = await this.db.rpc('pvp_queue_join', { p_user: user.userId, p_mode: mode, p_player: user, p_deck: deck, p_want_avg: wantAvg });
     if (error) throw new Error(error.message);
-    return { rating: Number(data?.rating) || 1000, since: Date.parse(data?.since) || Date.now(), others: Number(data?.others) || 0 };
+    return { rating: Number(data?.rating) || 1000, since: Date.parse(data?.since) || Date.now(), others: Number(data?.others) || 0,
+      avgWait: data && data.avg_wait != null ? Number(data.avg_wait) : null, pairings: Number(data?.pairings) || 0 };
   }
   async queuePair(userId: string, _now?: number) {
     const { data, error } = await this.db.rpc('pvp_queue_pair', { p_user: userId });

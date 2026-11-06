@@ -19,6 +19,7 @@ export class MemoryStore implements Store {
   viewLog: { matchId: string; userId: string; seq: number }[] = [];
   queue = new Map<string, QueueEntry>();
   tiers = new Map<string, Record<string, number>>(); // user -> card id -> tier (the mock's /debug/tier sets it)
+  pairings: { mode: string; waitedA: number; waitedB: number; at: number }[] = []; // Nov 5: for the average wait
   ratings = new Map<string, RankInfo>();
   private ids = 0;
   constructor(public rng: () => number = Math.random) {}
@@ -70,12 +71,15 @@ export class MemoryStore implements Store {
     if (!r) { r = { season: season(), rating: 1000, name: 'Ore', games: 0, wins: 0, losses: 0, peak: 1000 }; this.ratings.set(userId, r); }
     return r;
   }
-  async queueJoin(user: PlayerInfo, mode: 'ranked' | 'unranked', deck: DeckChoice, now: number) {
+  async queueJoin(user: PlayerInfo, mode: 'ranked' | 'unranked', deck: DeckChoice, now: number, wantAvg = false) {
     const cur = this.queue.get(user.userId);
     const e: QueueEntry = { user: clone(user), deck: clone(deck), mode, rating: this.rankRow(user.userId).rating, since: cur && cur.mode === mode ? cur.since : now };
     this.queue.set(user.userId, e);
     let others = 0; for (const q of this.queue.values()) if (q.mode === mode && q.user.userId !== user.userId) others++;
-    return { rating: e.rating, since: e.since, others };
+    if (!wantAvg) return { rating: e.rating, since: e.since, others };
+    const recent = this.pairings.filter((p) => p.mode === mode && now - p.at < 30 * 60 * 1000).slice(-20);
+    const avgWait = recent.length >= 3 ? Math.round(recent.reduce((s, p) => s + (p.waitedA + p.waitedB) / 2, 0) / recent.length) : null;
+    return { rating: e.rating, since: e.since, others, avgWait, pairings: recent.length };
   }
   async queuePair(userId: string, now: number) {
     const me = this.queue.get(userId);
@@ -90,6 +94,7 @@ export class MemoryStore implements Store {
     }
     if (!best) return null;
     this.queue.delete(userId); this.queue.delete(best.user.userId);
+    this.pairings.push({ mode: me.mode, waitedA: Math.round((now - best.since) / 1000), waitedB: Math.round((now - me.since) / 1000), at: now });
     return { mode: me.mode, myRating: me.rating, other: clone(best) };
   }
   async queueLeave(userId: string) { this.queue.delete(userId); }
