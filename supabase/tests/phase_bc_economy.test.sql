@@ -50,15 +50,16 @@ begin
   exception when others then err := sqlerrm; end;
   perform pg_temp.ok('odds that add up to 10000 are accepted', err is null, coalesce(err, ''));
 end $$;
-select pg_temp.ok('4 default packs, each 11 cards (3 cheap Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better), 100 coins, 50 a day',
-  (select count(*) from public.pack_types where active and price_coins = 100 and max_per_day = 50) = 4
+select pg_temp.ok('4 packs defined, ONE active (Oreheart; Ken, Nov 6: the faction packs are off), each 11 cards (3 cheap Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better), 100 coins, 50 a day',
+  (select count(*) from public.pack_types where active and price_coins = 100 and max_per_day = 50) = 1 and (select count(*) from public.pack_types where price_coins = 100 and max_per_day = 50) = 4
+  and (select array_agg(id order by id) from public.pack_types where not active) = array['dwarf', 'gnome', 'goblin']
   and (select count(*) from (select pack_type, sum(count) n from public.pack_slots group by pack_type having sum(count) = 11) x) = 4
   and (select bool_and(odds = '{"Rare": 10000}'::jsonb) from public.pack_slots where slot_no = 3)
   and (select bool_and(odds = '{"Rare": 7800, "Ultra Rare": 2000, "Collector": 200}'::jsonb) from public.pack_slots where slot_no = 4));
 
 -- ========== 3. shop_info ==========
-select pg_temp.ok('shop_info: 4 packs, coins 500, no free packs, nothing opened today, odds sum 10000 per slot',
-  (select jsonb_array_length(j -> 'packs') = 4 and (j ->> 'coins')::int = 500 and (j ->> 'free_packs')::int = 0
+select pg_temp.ok('shop_info: 1 pack (Oreheart), coins 500, no free packs, nothing opened today, odds sum 10000 per slot',
+  (select jsonb_array_length(j -> 'packs') = 1 and (j ->> 'coins')::int = 500 and (j ->> 'free_packs')::int = 0
           and (select bool_and((p ->> 'opened_today')::int = 0 and jsonb_array_length(p -> 'slots') = 5 and p -> 'slots' -> 0 ->> 'pool' = 'miners' and (p -> 'slots' -> 0 ->> 'count')::int = 3 and p -> 'slots' -> 3 -> 'odds' = '{"Rare": 10000}'::jsonb) from jsonb_array_elements(j -> 'packs') p)
           and (select bool_and((select sum((v #>> '{}')::int) from jsonb_each(s -> 'odds') e(k, v)) = 10000)
                from jsonb_array_elements(j -> 'packs') p, jsonb_array_elements(p -> 'slots') s)
@@ -133,6 +134,7 @@ select pg_temp.ok('150 coins: exactly one opening, 50 coins left, no cards from 
   and (select count(*) from public.card_instances where owner_id = :P2 and origin = 'pack') = 11);
 
 -- ========== 7. Daily limit, inactive pack, free packs ==========
+update public.pack_types set active = true where id = 'goblin'; -- Nov 6: off by default; on for the faction-pack checks below
 update public.pack_types set max_per_day = 1 where id = 'goblin';
 select pg_temp.works('daily limit: first Junkpile pack of the day opens', :P1, 'aal1', $q$ select public.open_pack('goblin', 'k1-gggggggg-0001', false) $q$);
 select pg_temp.refused('daily limit: the second is refused when max_per_day = 1', :P1, 'aal1',
@@ -145,7 +147,7 @@ update public.pack_types set active = false where id = 'dwarf';
 select pg_temp.refused('inactive pack is not for sale', :P1, 'aal1', $q$ select public.open_pack('dwarf', 'k1-dddddddd-0001', false) $q$, 'not for sale');
 select pg_temp.ok('inactive pack is hidden from the shop',
   (select jsonb_array_length(j -> 'packs') from pg_temp.json_as(:P1, 'aal1', 'select public.shop_info()') j) = 3);
-update public.pack_types set active = true where id = 'dwarf';
+update public.pack_types set active = false where id = 'dwarf'; -- back to the Nov 6 state
 select pg_temp.refused('unknown pack is refused', :P1, 'aal1', $q$ select public.open_pack('mystery', 'k1-mmmmmmmm-0001', false) $q$, 'not for sale');
 
 update public.wallets set free_packs = 1 where user_id = :P2;

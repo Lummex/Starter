@@ -1,7 +1,12 @@
 /* The Main Dashboard, design D (Brush, Nov 5; Ken: "That is what I want"). The shared D kit: silver-edged dark glass panels,
    Cinzel titles and buttons, Alegreya Sans text, no gold, Ken's front picture dimmed. Sizes follow the viewport (the mockup
    was 1920x1080); below 900px wide the phone-landscape layout: Play, six small tiles, one tabbed side panel. */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Alegreya+Sans:wght@400;500;700;800&display=swap');
+/* Nov 6: the D fonts are self-hosted (offline play, and the 'font is self-hosted' rule), latin subsets from Google Fonts */
+@font-face{font-family:Cinzel;font-style:normal;font-weight:400 900;font-display:swap;src:url(/assets/external/fonts/cinzel-latin-400-900.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Alegreya Sans";font-style:normal;font-weight:400;font-display:swap;src:url(/assets/external/fonts/alegreya-sans-latin-400.woff2) format('woff2')}
+@font-face{font-family:"Alegreya Sans";font-style:normal;font-weight:500;font-display:swap;src:url(/assets/external/fonts/alegreya-sans-latin-500.woff2) format('woff2')}
+@font-face{font-family:"Alegreya Sans";font-style:normal;font-weight:700;font-display:swap;src:url(/assets/external/fonts/alegreya-sans-latin-700.woff2) format('woff2')}
+@font-face{font-family:"Alegreya Sans";font-style:normal;font-weight:800;font-display:swap;src:url(/assets/external/fonts/alegreya-sans-latin-800.woff2) format('woff2')}
 .dash{--ink:#eef1f7;--soft:#b9c1cf;--dim:#8a93a3;--steel1:#e9edf3;--steel2:#9aa4b3;--steel3:#4b5361;--ice:#7cc8ff;--violet:#a77bff;--green:#7fe07a;
   position:absolute;inset:0;overflow:hidden;color:var(--ink);font-family:"Alegreya Sans",Arial,sans-serif;font-size:clamp(11px,1.45vh,16px);background:#07070b url(/art/menu-front-oct29.webp) center/cover}
 .dash::before{content:"";position:absolute;inset:0;background:rgba(4,5,9,.66);backdrop-filter:blur(3px)}
@@ -316,3 +321,67 @@
 .dash.skin[data-screen="settings"] .skin-body{display:flex;flex-direction:column;align-items:center}
 .dash.skin[data-screen="settings"] .skin-body>h1{display:none}
 @media (max-width:900px){.dash.skin .hdr{top:4.8em;height:2.6em;left:.7em;right:.7em}.dash.skin .hdr .ttl{font-size:1.5em}.dash.skin .hdr .info{display:none}.dash.skin .skin-body{left:.7em;right:.7em;top:8em;bottom:.7em;padding:.6em .7em}}
+
+/* Settings, design D (Ken, Nov 6): rail + sections of rows; PC shows every section, a phone one at a time */
+.dash.settings-d{display:block;overflow:hidden}
+.dash.settings-d .hdr{position:absolute;left:1.5em;right:1.5em;top:6.6em;height:3.2em;display:flex;align-items:center;gap:1.2em;z-index:4}
+.dash.settings-d .hdr .ttl{font-size:2.1em}.dash.settings-d .hdr .info{font-size:1em;color:var(--soft)}
+.dash.settings-d .back-btn{height:2.6em;font-size:.95em;padding:0 1em;font-family:Cinzel,serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.dash.settings-d.offline .top{display:none}.dash.settings-d.offline .hdr{top:5.2em}.dash.settings-d.offline .main{top:9em}
+.dash.settings-d .main{position:absolute;left:1.5em;right:1.5em;top:10.4em;bottom:1.5em;display:grid;grid-template-columns:minmax(14em,17%) 1fr;gap:1.4em}
+.dash.settings-d .rail{display:flex;flex-direction:column;padding:.8em;gap:.2em}
+.dash.settings-d .rt{display:flex;flex-direction:column;gap:.1em;padding:.7em .9em;border:0;border-left:3px solid transparent;border-radius:8px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.dash.settings-d .rt b{font-size:1.25em}.dash.settings-d .rt span{font-size:.85em;color:var(--dim)}
+.dash.settings-d .rt[aria-current=true]{border-left-color:var(--ice);background:rgba(124,200,255,.08)}.dash.settings-d .rt[aria-current=true] b{color:#fff}
+.dash.settings-d .rt:hover b{color:#fff}
+.dash.settings-d .rail .sep{height:1px;margin:.6em .4em;background:#2c323d}.dash.settings-d .rail .grow{flex:1}
+.dash.settings-d .rail .sbtn{margin:.3em 0;height:2.8em;font-family:Cinzel,serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:.9em}
+.dash.settings-d .rail .play{height:3.4em;display:flex;align-items:center;justify-content:center;gap:.5em;font-family:Cinzel,serif;font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:1.1em;background:linear-gradient(180deg,#3a5a8c,#1b2a46);color:#fff}
+.dash.settings-d .rail .play img{width:1.4em;height:1.4em}
+.dash.settings-d .rail .note{margin:.4em 0 0;font-size:.8em;color:var(--dim);text-align:center}
+.dash.settings-d .cols{display:grid;grid-template-columns:1fr 1fr;gap:1.4em;min-height:0;overflow:auto;scrollbar-color:#8d97ab #12141c;padding-right:.2em}
+.dash.settings-d .col{display:flex;flex-direction:column;gap:1.4em;min-width:0}
+.dash.settings-d .sec{padding:.9em 1.2em 1em;display:flex;flex-direction:column}
+.dash.settings-d .sec .ptitle{display:flex;align-items:center;gap:.6em;margin:0 0 .4em;font-size:1.35em}.dash.settings-d .sec .ptitle .more{margin-left:auto;font-size:.7em;letter-spacing:0;text-transform:none;font-family:"Alegreya Sans",Arial,sans-serif;color:var(--ice);background:none;border:0;cursor:pointer;font-weight:700}
+.dash.settings-d .set{display:flex;align-items:center;gap:1.2em;padding:.6em 0;border-top:1px solid #20242e}
+.dash.settings-d .set .lbl{display:flex;flex-direction:column;flex:0 0 38%;font-size:1.1em;font-weight:700;color:var(--ink)}.dash.settings-d .set .lbl small{font-size:.78em;font-weight:400;color:var(--dim)}
+.dash.settings-d .set .ctl{flex:1;display:flex;align-items:center;justify-content:flex-end;gap:.6em;min-width:0}
+.dash.settings-d .vol{display:flex;align-items:center;gap:.9em;width:100%}.dash.settings-d .vol input{flex:1;height:26px;accent-color:var(--ice)}.dash.settings-d .vol .pct{width:3.2em;text-align:right;font-variant-numeric:tabular-nums}
+.dash.settings-d .muted .vol{opacity:.55}
+.dash.settings-d .tog{position:relative;width:3.4em;height:1.8em;border-radius:1em;border:0;background:#2a2f3b;box-shadow:inset 0 0 0 1px #0009;cursor:pointer;flex:none;padding:0}
+.dash.settings-d .tog i{position:absolute;top:.2em;left:.2em;width:1.4em;height:1.4em;border-radius:50%;background:#dfe6f2;transition:left .15s}
+.dash.settings-d .tog.on{background:linear-gradient(180deg,#3f6fb5,#2b4f8a)}.dash.settings-d .tog.on i{left:1.8em;background:#fff}
+.dash.settings-d .tog.soon{opacity:.45;cursor:default}
+.dash.settings-d .seg{display:flex;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 1px #3c4350}
+.dash.settings-d .seg button{min-width:5em;padding:.45em 1em;border:0;background:#161a24;color:var(--soft);font-family:Cinzel,serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:.8em;cursor:pointer}
+.dash.settings-d .seg button[aria-checked=true]{background:linear-gradient(180deg,#3f6fb5,#2b4f8a);color:#fff}
+.dash.settings-d .display-mode,.dash.settings-d .flow-mode{color:var(--ink);font-family:inherit;gap:.8em}.dash.settings-d .display-mode legend{display:none}.dash.settings-d .dm-opt input{accent-color:var(--ice)}
+.dash.settings-d .fs-btn,.dash.settings-d .set .sbtn{height:2.4em;padding:0 1em;font-family:Cinzel,serif;font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-size:.85em;white-space:nowrap}
+.dash.settings-d .fs-na{margin:0;color:var(--dim)}
+.dash.settings-d .fx-wrap{display:flex;flex-direction:column;gap:.8em;padding:.4em 0}.dash.settings-d .fx-wrap .fx-panel{background:rgba(0,0,0,.3);border-radius:10px;padding:.6em .9em}.dash.settings-d .fx-wrap .fx-panel h2{font-family:Cinzel,serif;font-size:1em;margin:.2em 0 .4em;color:var(--ink)}
+.dash.settings-d .fx-wrap .fx-row{display:flex;align-items:center;gap:.8em;color:var(--soft);font-family:inherit}.dash.settings-d .fx-wrap .fx-row label{flex:0 0 40%}.dash.settings-d .fx-wrap .fx-row input{flex:1}
+.dash.settings-d .offline-panel{background:rgba(0,0,0,.3);border-radius:10px;padding:.6em .9em;margin-top:.6em}.dash.settings-d .offline-panel h2{font-family:Cinzel,serif;font-size:1em;margin:.2em 0 .3em;color:var(--ink)}.dash.settings-d .offline-panel p{margin:0 0 .4em;color:var(--soft)}
+.dash.settings-d .links{display:flex;flex-wrap:wrap;gap:.3em 1.2em;padding:.7em 0 .2em;border-top:1px solid #20242e}.dash.settings-d .links .lnk{background:none;border:0;padding:0;color:var(--ice);font:inherit;cursor:pointer}.dash.settings-d .links .lnk::after{content:" ›"}.dash.settings-d .links .signout{margin-left:auto;color:var(--soft)}
+.dash.settings-d .chips{display:flex;flex-wrap:wrap;gap:.4em;justify-content:flex-end}.dash.settings-d .ch{padding:.35em .9em;border-radius:8px;background:#161a24;box-shadow:inset 0 0 0 1px #3c4350;color:var(--soft)}.dash.settings-d .ch.on{background:linear-gradient(180deg,#3f6fb5,#2b4f8a);color:#fff}.dash.settings-d .chips.soon .ch{opacity:.55}
+.dash.settings-d .muted{color:var(--dim)}
+@media (max-width:900px){.dash.settings-d .hdr{top:4.8em;height:2.6em;left:.7em;right:.7em}.dash.settings-d .hdr .ttl{font-size:1.5em}.dash.settings-d .hdr .info{display:none}.dash.settings-d .main{left:.7em;right:.7em;top:8em;bottom:.7em;grid-template-columns:30% 1fr;gap:.7em}.dash.settings-d.offline .main{top:6.6em}.dash.settings-d.offline .hdr{top:3.6em}
+  .dash.settings-d .cols{display:block}.dash.settings-d .col{display:contents}.dash.settings-d .sec{display:none}.dash.settings-d .sec[data-cur]{display:flex}.dash.settings-d .rail{padding:.4em;gap:0;overflow:auto;scrollbar-color:#8d97ab #12141c}.dash.settings-d .rt{padding:.4em .6em}.dash.settings-d .rt span{display:none}.dash.settings-d .rail .sbtn{display:none}.dash.settings-d .rail .note{display:none}.dash.settings-d .rail .play{height:2.6em;font-size:.9em}
+  .dash.settings-d .set{gap:.6em;padding:.4em 0}.dash.settings-d .set .lbl{flex-basis:44%;font-size:1em}.dash.settings-d .set .lbl small{font-size:.8em}}
+
+/* Settings D: fixes after the first look (Nov 6) */
+.dash.settings-d{font-size:clamp(12px,1.45vh,16px)}
+.dash.settings-d .fx-wrap[hidden]{display:none}
+.dash.settings-d .hdr .back-btn{position:static;margin:0}
+.dash.settings-d input[type=range]{height:26px;background:transparent;-webkit-appearance:none;appearance:none}
+.dash.settings-d input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:linear-gradient(90deg,#7cc8ff,#bfe3ff);box-shadow:inset 0 0 0 1px #0b1220}
+.dash.settings-d input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:linear-gradient(90deg,#7cc8ff,#bfe3ff);box-shadow:inset 0 0 0 1px #0b1220}
+.dash.settings-d input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;margin-top:-6px;transform:none;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#dfe6f2 55%,#9aa4b3);box-shadow:0 0 0 2px #0b1220,0 0 10px #7cc8ff}
+.dash.settings-d input[type=range]::-moz-range-thumb{width:18px;height:18px;transform:none;border:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#dfe6f2 55%,#9aa4b3);box-shadow:0 0 0 2px #0b1220,0 0 10px #7cc8ff}
+.dash.settings-d input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
+
+/* the older sheets set Alegreya SC on body text and (with !important) on every .btn; the D kit wins inside the Settings screen */
+html body #app .dash.settings-d,html body #app .dash.settings-d :where(span,small,p,label,b,div,legend,input){font-family:"Alegreya Sans",Arial,sans-serif}
+html body #app .dash.settings-d .h,html body #app .dash.settings-d .btn,html body #app .dash.settings-d .sbtn,html body #app .dash.settings-d .seg button,html body #app .dash.settings-d .rt b,html body #app .dash.settings-d .ptitle{font-family:Cinzel,serif!important}
+html body #app .dash.settings-d .btn.back-btn{display:flex;align-items:center;height:2.6em;min-height:0;min-width:0;padding:0 1em;font-size:.95em;letter-spacing:.06em;text-transform:uppercase;border-radius:12px}
+
+html body #app .dash.settings-d :where(span,small,p,label,b:not(.h),legend,input,.lbl){font-family:"Alegreya Sans",Arial,sans-serif!important}

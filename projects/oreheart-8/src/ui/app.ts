@@ -11,6 +11,7 @@ import { SPELL_VISUALS } from '../content/spell-visuals';
 import { Tutorial, tutorialGame, tutorialOrders } from './tutorial';
 import { STANCES } from '../ai/stances';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters, maxDecks } from './decks';
+import { showSettingsD } from './settings-d';
 import { net } from '../net/state';
 import { rankOfRating, ladderCharm } from '../content/ladder';
 import { brewActions, flowShardCount, deckProblems, previewAttack, STARTER_DECK_LIST, STARTER_DECKS, warbandOf } from '../engine';
@@ -632,6 +633,11 @@ export class App {
   }
 
   showSettings() {
+    // Nov 6 (Ken: "the settings menu. To look like the modern menus"): the D tabbed screen, online and offline
+    showSettingsD(this); // (a static import: the screen must be there the moment Settings is pressed)
+  }
+  /** the older Settings list (kept for reference; nothing calls it) */
+  showSettingsOld() {
     this.clear();
     const settingsMain = h('main', { class: 'screen center', 'data-screen': 'settings' },
       h('h1', { class: 'section cinzel' }, 'Settings'),

@@ -68,10 +68,7 @@ const STUB = {
   free_packs: 1,
   pretend: false, // a test page pretending to be signed in (packs.setOwned): the stand-in data stays in use
   packs: [
-    stubPack('standard', 'Oreheart Pack', 'Every army, every crystal. Shake well before opening.', null),
-    stubPack('goblin', 'Junkpile Pack', 'Goblin cards and neutral finds. Smells faintly of victory (and old socks).', 'goblins'),
-    stubPack('gnome', 'Gizmo Pack', 'Gnome cards and neutral finds. Some assembly required.', 'gnomes'),
-    stubPack('dwarf', 'Deepforge Pack', 'Dwarf cards and neutral finds. Forged, not stirred.', 'dwarves'),
+    stubPack('standard', 'Oreheart Pack', 'Every army, every crystal. Shake well before opening.', null), // Ken (Nov 6): Oreheart packs only (the faction packs are switched off in pack_types)
   ] as PackInfo[],
   owned: {} as Record<string, number>,
   copies: {} as Record<string, CardCopy[]>, // test page: each owned card's copies with tiers

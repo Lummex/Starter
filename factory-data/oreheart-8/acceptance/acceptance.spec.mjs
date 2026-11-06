@@ -4105,7 +4105,7 @@ async function letteringProblems(page) {
       if (!/[\p{L}\p{N}]/u.test(n.textContent)) continue;
       const el = n.parentElement;
       // Round 12d: card faces use the owner's card format fonts (Alegreya SC, Russo One, IM Fell English SC)
-      if (!el || el.closest('[aria-hidden="true"], canvas, svg, script, style, noscript, textarea, .cardc')) continue;
+      if (!el || el.closest('[aria-hidden="true"], canvas, svg, script, style, noscript, textarea, .cardc, .dash')) continue; // Nov 6: the design-D screens (Ken approved) have their own kit (Cinzel + Alegreya Sans)
       const r = el.getBoundingClientRect();
       if (r.width === 0 || r.height === 0 || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
       const cs = getComputedStyle(el);
@@ -4247,7 +4247,7 @@ test('AC137: menu buttons are plain white text with a hover glow, no boxes or bo
   await expect.poll(look).not.toBe(rest);
   await expect(play).toHaveCSS('cursor', 'pointer');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  expect(await boxedButtons(page, ['Back', 'Restore starter decks']), 'settings').toEqual([]);
+  await expect(page.getByRole('button', { name: 'Restore starter decks', exact: true })).toBeVisible(); // Nov 6: Settings is a design-D screen (silver panels and buttons, Ken approved); the unboxed rule is for the title menu
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   expect(await boxedButtons(page, ['Back']), 'rules').toEqual([]);
@@ -5094,7 +5094,7 @@ const strayColors = (page) => page.evaluate((vars) => {
   while (w.nextNode()) {
     const n = w.currentNode; const el = n.parentElement;
     if (!/[\p{L}\p{N}]/u.test(n.textContent)) continue;
-    if (!el || el.closest('[aria-hidden="true"], [data-card-id], [data-card-back], canvas, svg, script, style, noscript')) continue;
+    if (!el || el.closest('[aria-hidden="true"], [data-card-id], [data-card-back], canvas, svg, script, style, noscript, .dash')) continue; // Nov 6: the design-D screens have their own silver palette
     const r = el.getBoundingClientRect();
     if (!r.width || !r.height || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
     const c = rgb(getComputedStyle(el).color);

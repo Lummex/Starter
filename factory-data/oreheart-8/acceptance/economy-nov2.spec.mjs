@@ -114,7 +114,7 @@ test('AC643: "Flip all" and the packs.flipAll() hook turn every card; skip() jum
   await expect.poll(async () => (await packState(page)).flipped, { timeout: 5000 }).toBe(11);
   expect((await packState(page)).phase).toBe('done');
   // skip from idle
-  await page.evaluate(() => window.oreheart.packs.open('dwarf'));
+  await page.evaluate(() => window.oreheart.packs.open('standard'));
   await expect.poll(async () => (await packState(page)).phase).toBe('idle');
   await page.evaluate(() => window.oreheart.packs.skip());
   expect((await packState(page)).phase).toBe('cards');
@@ -230,11 +230,11 @@ test('AC649: rip and flip sounds are small synthesized files (each under 100 KB)
   for (const f of fs.readdirSync(pk).filter((x) => x.endsWith('.webp'))) expect(fs.statSync(path.join(pk, f)).size, f).toBeLessThan(400 * 1024);
 });
 
-test('AC650: the Shop shows the four kinds of pack (Oreheart, Junkpile, Gizmo, Deepforge) as pills, one kind at a time as four bundles with its painted pack, the single pack at 100 with "opened today", and the odds in plain words; Back closes it', async ({ page }) => {
+test('AC650: the Shop sells the one Oreheart pack (Ken, Nov 6: no Junkpile, Gizmo or Deepforge; no kind pills) as four bundles with its painted pack, the single pack at 100 with "opened today", and the odds in plain words; Back closes it', async ({ page }) => {
   await openEcon(page, 'shop');
   const kinds = page.locator('.shop-kinds .net-race');
-  await expect(kinds).toHaveCount(4);
-  await expect(kinds).toHaveText(['Oreheart Pack', 'Junkpile Pack', 'Gizmo Pack', 'Deepforge Pack']);
+  await expect(kinds).toHaveCount(1);
+  await expect(page.locator('.shop-kinds')).toBeHidden(); // one kind: no pills (they return by themselves if an admin turns a second kind on)
   const tiles = page.locator('.shop-bundle');
   await expect(tiles).toHaveCount(4);
   const artOf = async () => tiles.first().locator('img.pko-sealed').getAttribute('src');
@@ -242,11 +242,6 @@ test('AC650: the Shop shows the four kinds of pack (Oreheart, Junkpile, Gizmo, D
   await expect(tiles.first().locator('.shop-price')).toContainText('100');
   await expect(tiles.first().locator('.shop-promise')).toHaveText(/^\d+ opened today$/);
   await expect(page.locator('.shop-odds')).toHaveText('11 cards: 3 cheap Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 78%, Ultra Rare 20%, Legendary 2%');
-  for (const [name, art] of [['Junkpile Pack', 'goblin'], ['Gizmo Pack', 'gnome'], ['Deepforge Pack', 'dwarf']]) {
-    await kinds.filter({ hasText: name }).click();
-    expect(await artOf()).toBe(`/art/packs/pack-${art}.webp`);
-    await expect(tiles).toHaveCount(4);
-  }
   await expect(page.getByTestId('coin-chip').first()).toContainText('500');
   await expect(tiles.first().locator('.shop-free'), 'the free pack ribbon').toHaveText('FREE');
   await page.getByRole('button', { name: 'Back' }).click();
@@ -255,25 +250,25 @@ test('AC650: the Shop shows the four kinds of pack (Oreheart, Junkpile, Gizmo, D
 
 test('AC651: buying in the Shop plays the opening for that pack (the free pack first, then 100 coins); Done returns to the Shop; with too few coins the button reads "Need 100 coins" with a quest hint', async ({ page }) => {
   await openEcon(page, 'shop');
-  await page.locator('.shop-pack[data-pack="goblin"] .shop-buy').click();
-  await expect(page.locator('[data-screen="econ-pack"] .pko-stage')).toHaveAttribute('data-pack-art', 'goblin');
+  await page.locator('.shop-bundle[data-size="1"] .shop-buy').click();
+  await expect(page.locator('[data-screen="econ-pack"] .pko-stage')).toHaveAttribute('data-pack-art', 'general');
   await page.evaluate(() => { window.oreheart.packs.skip(); window.oreheart.packs.skip(); });
   expect(await page.evaluate(() => window.oreheart.packs.coins())).toEqual({ coins: 500, free_packs: 0 });
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.locator('[data-screen="econ-shop"]')).toBeVisible();
   for (let i = 0; i < 5; i++) { // 500 coins (zero start, Nov 4) = five 100-coin packs
-    await page.locator('.shop-pack[data-pack="standard"] .shop-buy').click();
+    await page.locator('.shop-bundle[data-size="1"] .shop-buy').click();
     await expect(page.locator('[data-screen="econ-pack"]')).toBeVisible();
     await page.evaluate(() => { window.oreheart.packs.skip(); window.oreheart.packs.skip(); });
     if (i < 4) await expect(page.getByRole('button', { name: /^Open another \(100\)$/ })).toBeVisible();
     await page.getByRole('button', { name: 'Done', exact: true }).click();
   }
   expect((await page.evaluate(() => window.oreheart.packs.coins())).coins).toBe(0);
-  const buy = page.locator('.shop-pack[data-pack="standard"] .shop-buy');
+  const buy = page.locator('.shop-bundle[data-size="1"] .shop-buy');
   await expect(buy).toBeDisabled();
   await expect(buy).toHaveText('Need 100 coins');
-  await expect(page.locator('.shop-pack[data-pack="standard"] .shop-hint')).toHaveText('Finish quests to earn coins');
-  await expect(page.locator('.shop-pack[data-pack="standard"] .shop-today')).toHaveText('5 opened today');
+  await expect(page.locator('.shop-bundle[data-size="1"] .shop-hint')).toHaveText('Finish quests to earn coins');
+  await expect(page.locator('.shop-bundle[data-size="1"] .shop-promise')).toHaveText('6 opened today'); // the free pack and the five bought ones
 });
 
 test('AC652: the Collection shows every card with "×N" for owned ones, unowned ones greyed with a lock, the counts line, and the faction / rarity / owned filters', async ({ page }) => {
@@ -525,13 +520,13 @@ test('AC657: a new player has 500 coins and owns no cards (zero start, Ken Nov 4
   await expect(page.locator('.col-count')).toHaveText(/^You own 0 cards/);
 });
 
-test('AC658: shop_info lists the 4 active packs, each slot\'s odds summing to exactly 100%; the Shop screen shows them', async ({ page }) => {
+test('AC658: shop_info lists the one active pack (Oreheart; Ken, Nov 6: the faction packs are switched off), each slot\'s odds summing to exactly 100%; the Shop screen shows its four bundles', async ({ page }) => {
   needDb();
   const u = await makeUser();
   const c = await loginApi(u);
   const { data, error } = await c.rpc('shop_info');
   expect(error, error && error.message).toBeNull();
-  expect(data.packs.map((p) => p.id).sort()).toEqual(['dwarf', 'gnome', 'goblin', 'standard']);
+  expect(data.packs.map((p) => p.id).sort()).toEqual(['standard']);
   for (const p of data.packs) {
     expect(p.slots.reduce((n, s) => n + s.count, 0)).toBe(11);
     for (const s of p.slots) expect(Object.values(s.odds).reduce((a, b) => a + b, 0), `${p.id} slot ${s.slot_no}`).toBe(10000);
@@ -557,7 +552,7 @@ test('AC659: opening a pack costs 100 coins and adds exactly 11 card instances; 
   // through the game screens
   await gameToMenu(page, u);
   await page.getByRole('group', { name: 'Coins and packs' }).getByRole('button', { name: 'Shop' }).click();
-  await page.locator('.shop-pack[data-pack="goblin"] .shop-buy').click();
+  await page.locator('.shop-pack[data-pack="standard"] .shop-buy').click();
   await expect(page.locator('[data-screen="econ-pack"]')).toBeVisible({ timeout: 15000 });
   const st = await page.evaluate(() => window.oreheart.packs.state());
   expect(st.cards).toHaveLength(11);
@@ -571,8 +566,8 @@ test('AC660: the same idem key twice is one opening and one charge', async () =>
   const u = await makeUser();
   const c = await loginApi(u);
   const k = key();
-  const a = await c.rpc('open_pack', { p_pack_type: 'gnome', p_idem_key: k, p_use_free: false });
-  const b = await c.rpc('open_pack', { p_pack_type: 'gnome', p_idem_key: k, p_use_free: false });
+  const a = await c.rpc('open_pack', { p_pack_type: 'standard', p_idem_key: k, p_use_free: false });
+  const b = await c.rpc('open_pack', { p_pack_type: 'standard', p_idem_key: k, p_use_free: false });
   expect(a.error).toBeNull(); expect(b.error).toBeNull();
   expect(b.data.opening_id).toBe(a.data.opening_id);
   expect(b.data.cards).toEqual(a.data.cards);

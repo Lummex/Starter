@@ -323,7 +323,7 @@ function showSetPassword() {
 }
 
 // ------------------------------------------------------------------ after sign-in
-async function signOut() {
+export async function signOut() {
   if (checkTimer) { clearInterval(checkTimer); checkTimer = null; }
   net.active = false; net.offlineChosen = false; net.decks = []; net.ageGroup = null; status = null; setMatureAllowed(false);
   try { await client().auth.signOut(); } catch { /* ignore */ }
@@ -375,7 +375,7 @@ function showDoc(doc: LegalDoc, back: () => void) {
 }
 const showEula = (back: () => void) => showDoc(eula, back);
 /** The three "read it" buttons used on the Agree screen and in Profile. */
-const docButtons = (back: () => void) => [nbtn('User agreement', () => showDoc(eula, back)), nbtn('Privacy Policy', () => showDoc(privacy, back)), nbtn('Code of Conduct', () => showDoc(conduct, back))];
+export const docButtons = (back: () => void) => [nbtn('User agreement', () => showDoc(eula, back)), nbtn('Privacy Policy', () => showDoc(privacy, back)), nbtn('Code of Conduct', () => showDoc(conduct, back))];
 
 /** Asked after sign-in when the player has not agreed to the current version (older accounts, or a new text). */
 function eulaGate(s: Status) {

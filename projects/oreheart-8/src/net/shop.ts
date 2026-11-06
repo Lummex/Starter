@@ -58,7 +58,8 @@ function render(parts: Parts, info: ShopInfo) {
   if ((st.free || 0) > 0) rows.push(stashRow(pack, st.free || 0, parts, true));
   parts.stash.replaceChildren(h('h2', {}, 'My Packs'), ...(rows.length ? rows : [h('p', { class: 'net-note shop-stash-empty' }, 'Nothing sealed yet. Packs you buy wait here until you open them.')]));
   parts.stash.dataset.count = String(rows.reduce((s, r) => s + (Number(r.dataset.n) || 0), 0));
-  // the kind of pack
+  // the kind of pack (Ken, Nov 6: Oreheart packs only; the pills only show when an admin turns a second kind on)
+  parts.kinds.hidden = packs.length < 2; parts.kinds.style.display = packs.length < 2 ? 'none' : '';
   parts.kinds.replaceChildren(...packs.map((p) => h('button', { type: 'button', class: 'net-race', 'data-v': p.id, 'aria-pressed': String(p.id === state.kind), onclick: () => { state.kind = p.id; render(parts, lastShop() || info); } }, p.name)));
   // the bundles of that kind: 1, 6, 24 (the big one in the middle), 99 (the chest)
   const bundles = (info.bundles && info.bundles.length ? info.bundles : [{ size: 1, bonus: 0, promises: {} }]).slice().sort((a, b) => a.size - b.size);
