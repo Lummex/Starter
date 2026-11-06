@@ -355,3 +355,6 @@
 - Nov 5: Supabase SQL editor: never double-click the snippet title to rename (it wiped the editor and dropped the snippet). Name the statement in its first comment line; set text via window.monaco editor.setValue + one typed newline so it saves.
 - Nov 5: a self-rebuilding list detaches the clicked button before the click bubbles; stop propagation at the panel, not the overlay.
 - Nov 5: per-copy tiers: the id map (view.tiers) carries only the Commander; card tiers ride on the engine card instances (deck -> hand -> unit). The mock /debug/tier sets both.
+
+- Nov 6: the deploy workflow runs the SQL suite on a real local Supabase; luck-based checks must count only the certain slots and normalise random state first. psql \set lines take no trailing comment. New SQL checks go above the results table.
+- Nov 6: the Dashboard (src/net/dashboard.ts) replaces the menu when net.active and the page is not ?pvp=mock; the mock pages keep the old menu for their checks. The ladder arithmetic lives in src/content/ladder.ts and private.rank_of.

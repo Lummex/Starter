@@ -100,3 +100,41 @@ Ken's Mythic test card: a new TEST SQL editor tab (snippet f8bc8a02, first line 
 Checks: vitest 324, SQL 515/515 (new: deck tiers, forced combine + repair, copies per tier), browser AC686-AC689 + AC681/AC674/AC656 pass, per-copy match test in pvp-modes. Looked at PC (800x600) and phone landscape (844x390): the panel stacks and scrolls on the phone.
 
 Next: the pack bundles / My Packs / multi-open job with Ken's final shop design (1 / 6 / 24 / 99, bonus packs, per-pack price, Best Value, chest, 24-pack Overcharged+ guarantee, 99-pack tier-4 + unowned Legendary + chest card back, 40-pack bad-luck Legendary). One preview when done.
+
+## Pack bundles, My Packs, the chest (Nov 5-6, 24f6f52c..36b9f641)
+
+Anvil-online: pack bundles / My Packs / open-several / guarantees / bad-luck shield / treasure chest done on pvp-nov2 (24f6f52c + 916578d6). TEST deploy #29 (after #28 tripped on a flaky old check), preview https://oreheart-8-ksggwehrp-lummex.vercel.app (916578d6). TEST only, nothing live.
+
+What Ken sees in the Shop:
+- Pick the kind of pack (Oreheart, Junkpile, Gizmo, Deepforge) with pills; below it four bundles: 1 pack (100), 6 packs (600), 24 packs (2,400, "+3 FREE", 27 in all, the big tile in the middle) and the 99 treasure chest (9,900, "+16 FREE", 115 in all, "BEST VALUE", Brush's chest with its seam light pulsing). Each tile shows the price per pack (100 / 100 / ~89 / ~86) and its guarantee in words. Every number is an admin setting (pack_bundles, pack_bundle_promises, pack_pity_limit, pack_bundles_per_day, shop_badges). "Most Popular" is off until Ken turns it on.
+- The 1-pack still opens at once with the rip. Bigger bundles go to My Packs at the top of the shop: "Oreheart Pack ×27 sealed", with "Open one" (the normal rip; "Open another (26 left)" keeps going through the stash) and a slider for several ("Open 12"): one big rip of the stack, then every card in a grid, rarest first, with the Rare-or-better and upgraded cards lit, tags for NEW / UPGRADED / GUARANTEED / BAD-LUCK SHIELD, and a summary line ("27 packs, 297 cards: 1 Legendary, 5 Ultra Rare, 28 Rare, 2 upgraded, 9 new. Guarantee kept: 1 extra."). Tap any card to see it big. The free quest pack sits in My Packs too.
+- The 99 chest opens as a chest: the seam light pulses and the chest shakes, the latch and the hinge creak (Brush's chest-open.ogg), the lid flies back, the open chest with the packs shows, then the cards.
+- Guarantees are kept on the LAST pack of a bundle, only when luck fell short (natural drops count): the 24 brings one upgraded card at Overcharged or better; the 99 brings one Radiant-tier card, one Legendary the player did not own yet, and the chest card back (recorded on the account; the real card-back picture shows in the grid). Topped-up cards are real instances with origin "reward" and the bundle id, so the ledger and history trace them.
+- Bad-luck shield: 40 packs in a row without a Legendary and the 40th carries one (its Rare-or-better card becomes a Legendary, tagged). Counted across every pack (singles, bundles, free), reset when any Legendary drops. The shop says it in words and shows where the player stands ("You are at 12").
+- Odds unchanged and shown; no timers, no scarcity. The daily limit on single packs stays; bundles have their own per-day cap (20).
+
+Server: buy_packs (pays once, ledger row, the bundle row with promises), open_stash (opens up to 120 from the oldest bundle first, then free packs; idempotent key per call, one pack_openings row per pack), open_pack now deals through the same private.deal_pack so the shield counts it. shop_info carries bundles, stash, pity and badges.
+
+Checks: SQL 533/533 (bundles, stash, idempotency, promises on the last pack, the 99 chest's three promises, the shield at 39→40), vitest 324, browser AC650 (new shop), AC690-AC692 (+ the older pack checks). Looked at PC 800x600 and phone landscape 844x390 (two columns there).
+
+Open: the stand-in test page deals a Legendary every third pack by design, so its chest grids look richer than the real server's. "Most Popular" badge waits for data. Ken's Mythic statement and the coin statement still wait for his Run in the TEST SQL editor.
+
+Next: the Main Dashboard (design D) with the 10-step ladder for Ranked, then the regions job.
+
+## Main Dashboard D and the 10-step ladder (Nov 6, 207a2e98)
+
+Anvil-online: Main Dashboard (design D) + the 10-step Ranked ladder done on pvp-nov2 (207a2e98). TEST deploy #30, preview https://oreheart-8-jaxmljgcj-lummex.vercel.app. TEST only, nothing live.
+
+What Ken sees, signed in:
+- The main menu is the Dashboard: top bar (avatar, name, rank charm and step, coins with +, free / sealed packs, server light, gear), the logo, then three columns. Left: YOUR RANK (charm, step and division, rating, place on the server, wins and losses this season, progress bar to the next division, the ten charms with yours lit, "Season ends in 12d 06h") and DAILY QUESTS (the three quests with bars and rewards, the streak dots "Free pack in N days", Reroll link). Middle: the PLAY tile (Ranked / Unranked / Friend / Computer chips, the line under it follows the mode, FIND A MATCH) and six picture tiles: Deck Builder (N decks), Collection (owned / all), Shop (free or sealed packs waiting), Rankings, Quests (done of 3 today), Settings. Right: WHAT'S NEW with Patch notes / Events / News tabs from the new news table, and UPCOMING EVENTS with Join / Remind me shown but disabled ("soon").
+- Phone landscape: Play with its chips, six small tiles, one side panel with Quests / Patch notes / Events / News tabs and the rank line on top. Checked at 844x390: three columns, nothing overflowing.
+- Rankings: the top ten of the season with charms, ratings and W-L, your own row pinned (violet), the ladder with each step's share of players, the season countdown, and "Season rewards: coming soon". ‹ Dashboard goes back.
+- Offline / vs-computer keeps today's menu. The mock PvP test pages keep it too (their checks click the old buttons); the real signed-in flow gets the Dashboard.
+
+The ladder (Forge's call, Ken can switch back): Ranked uses ONE number, the Elo rating; the step is read off it with admin thresholds (setting ranked_ladder): Stone <700, Copper, Iron, Silver, Sapphire (1000, where everyone starts), Emerald, Ruby, Amethyst, Diamond, Oreheart 1500+, each with divisions III / II / I (thirds of the 100 points) except Oreheart. The server (pvp_rank_of, my_rank, leaderboard), the queue screen and the ranked end screen all say the new names (e.g. "Sapphire III"); the mock server uses the same arithmetic. The old 5-name list (Scrap/Ore/Crystal/Gem/Mythic) is gone from Ranked; the offline rank-config points stay for vs-computer.
+
+What's New source: table news_posts (kind patch / event / news, title, subtitle, body as sections or lines, event date, action, active, sort), read by news_feed(), written by admin_news_set(...) with an audit row (the Studio admin page can call it next). Seeded with the real recent patch (Nov 5 test-server work and the Nov 1 live patch), one welcome note and two placeholder events.
+
+Checks: SQL 541/541 (ladder names, my_rank fields, leaderboard, news feed, admin writes + audit, players cannot read the table), vitest 324, browser AC693 (dashboard) + AC694 (rankings + phone) + the menu/shop neighbours (AC650/656/667/674/681/686/688/690/691). Two old flaky SQL checks made deterministic (the quest streak row, the forced-Mythic pack).
+
+Next: the 11-screen restyle in the D kit (lobby / rankings / match end / profile first), then regions.
