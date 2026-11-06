@@ -54,3 +54,31 @@ Also: base star now reads silver (#c9d1dc) and the tier colours follow Ken's lis
 Art size: Brush's 240 pictures are 53 MB at 1024x1536; the game copies are 33 MB at 560x840 (the card art size the game already uses; the pop-out is at most about 420 px wide on a PC), quality 82. Nothing left out: 60 cards x 4 tiers = 240 files. The originals stay in art/card-upgrades-samples.
 Checks: SQL 495/495; vitest 324 (tiers on the match: 1 new); AC683 two browsers (Mythic in hand: 5 stars; the drop: entrance on both screens with the name, gone within 1.5 s, next play open the same instant, halo on the unit on both screens); AC679-682, AC680/681, AC675/678 re-run.
 Still open (for Ken): a leaderboard; Studio admin pages for the new settings and events; per-copy tiers in a match (today the best owned tier shows for every copy).
+
+## Packs v2, Commanders in packs, Legendary, simultaneous mulligans (Nov 5, 6c3794db)
+
+Anvil-online: pack job done on pvp-nov2 (daa67e8a + 6c3794db). TEST deploy #25, preview https://oreheart-8-1v0il2grm-lummex.vercel.app (bundle index-BKX30Pc6.js). TEST only, nothing live.
+
+What Ken sees:
+- Packs are 11 cards: 3 cheap Miners, 4 Common, 2 Uncommon, 1 sure Rare, 1 Rare-or-better (Rare 85%, Ultra Rare 13%, Legendary 2%). Every count is an admin setting (pack_miners, pack_commons, pack_uncommons, pack_rare_sure, pack_rares). The shop text says exactly that.
+- "Cheap low-end Miners" = the five cost-1 Gatherers/Smiths: Goblin Scrounger, Goblin Smith-Miner, Gnome Prospector, Gnome Smith-Miner, Dwarf Smith-Miner (setting pack_miner_ids, editable).
+- Crystals drop in packs at their rarity and count as owned; Commanders (Grubnak, Knobbin, Borgo) drop at Rare and every player owns all three from the start (new and existing TEST accounts). Extra copies feed their upgrades; the best tier shows in a match.
+- Meteor Strike is now top rarity. Ken's rarity batch is in (Iron Scarab, Mangewolf Rider, Oathbound Overwatch to Ultra Rare; Bowler Brawler, Gearward Sentinel, Ironwall Shieldbeard to Rare; Goblin Chef, Skullflinger, Stormcaller Savant, Hexslinger Apprentice, Grudge Hurler, Marksmen Gunner, Ironjaw Big Back, Riot Shield Bearer, Field Bandage to Uncommon). Same in the game data and the TEST catalog.
+- "Collector" reads "Legendary" everywhere a player sees it (keys unchanged). The upgrade tier called Legendary is one constant (TIER4_LABEL) to swap when Ken picks the new name.
+- Holo shine is off on tier pictures (Brush's note).
+- PvP mulligans happen at the same time: both pick at once; the first to confirm sees "Waiting for opponent…"; vs-computer unchanged.
+- Starter decks follow the copy cap (Ken's call): gnome decks keep 3 Gearward Sentinels, later copies became Aegis Tinkerer in place, still 60 cards. Byte-identical to Anvil's factory/issue-8 (0a92a4af), AI goldens re-recorded the same way.
+
+Full-set time (300 simulated players, playset 4/4/3/3/3): before (8-card packs, 60-card set) one of everything ≈370 packs median, a full playset ≈950. After (11 cards, 68-card set incl. 5 crystals + 3 Commanders) ≈650 / ≈1,600. More cards per pack but a bigger set and the 3 Miner slots mostly repeat.
+
+Hiccup: TEST deploy #24 failed at the engine-bundle step (a shared file imported UI code with CSS into the server bundle); fixed in 6c3794db (src/content/card-labels.ts), deploy #25 green. Lesson added to team-lessons.md.
+
+Checks: SQL 504/504, vitest 324, browser AC640-645/650/652/671/675/680-685 pass (AC675's earlier "mock did not start" was that same bundle break, not the test).
+
+Still open:
+- Ken's 1,000,000 TEST coins: statement sits in the TEST SQL editor tab (Chrome 629701232); Ken presses Run.
+- Commander tier pictures: wire cmd-grubnak/sproingle/borgo folders to commander-* when Brush finishes (only originals so far).
+- Tier name for the 4th upgrade tier (Forge's "Radiant"?).
+- Later: leaderboard, Studio admin pages, per-copy tiers in match.
+
+Next: starting the Deck Builder upgrade panel job (replace the 3D panel with the upgrade panel + 5-look preview row when signed in).

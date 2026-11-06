@@ -348,3 +348,6 @@
 - Match tiers: `m.tiers[seat]` from `store.tiersOf(user, cards)` (rpc pvp_tiers_of), `view.tiers.me/them`; the app's `tierOf(cardId, owner)` / `withTier(c, owner)`; `tierEntrance(e, tier)` (CSS .tier-entrance in style.css); the scene's `setTierLookup` adds `tier-halo` for tiers 4-5; test hook `window.oreheart.unitTiers()`. Mock: `/debug/tier?matchId&user&card&tier`.
 - Steps by rarity: `private.steps_of(rarity)`, `worth_of_tier(tier, rarity)`, `tier_of_worth(worth, rarity)`; client `stepsFor(rarity, steps)`, `worthOfTier`, `tierOfWorth(worth, steps)`; the test page uses Common [1,3,5,10] (STUB_STEPS).
 - Ports: a mock left running on 4310 makes the rig test the OLD server quietly (the new one dies with EADDRINUSE in /tmp/mock.log). Check /tmp/mock.log's first line (engine sha) after every run; kill with Get-NetTCPConnection + Stop-Process, taskkill from Git Bash did not.
+
+- Nov 5: the server engine bundle must stay UI-free. quest-summary.ts importing ui/cardfmt (CSS) broke deploy #24 and the local mock. Shared label/Commander helpers live in src/content/card-labels.ts. Run tools/bundle-engine.mjs before pushing anything under src/net or src/engine.
+- Nov 5: when two branches must match a data file byte for byte, compare blob hashes (git hash-object), not just counts: my first trim swapped the first copies, Anvil the last ones.
