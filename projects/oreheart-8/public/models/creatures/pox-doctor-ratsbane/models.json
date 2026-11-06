@@ -1,0 +1,18 @@
+{
+ "generated": "2026-11-06",
+ "from": "Clay, Meshy run 11 (models/new-cards-nov5, slim: 8k triangles, 1024 JPEG, meshopt), Clay id pox-doctor-ratsbane",
+ "actions": {
+  "idle": 0,
+  "walk": 0,
+  "attack": 0,
+  "hit": 0,
+  "defeat": 0
+ },
+ "rigged": true,
+ "bodyType": "biped",
+ "parts": [],
+ "notes": "Nov 6: no clips of its own yet; every role comes from the shared animation pack (biped-pack-v6). Spring may add custom clips and Ken may pick slots in the Studio.",
+ "fileSizes": {
+  "char.glb": 1311540
+ }
+}

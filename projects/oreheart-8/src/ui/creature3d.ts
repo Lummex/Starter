@@ -146,6 +146,35 @@ const PARTS: Record<string, PartCfg[]> = {
   'shieldbeard': [{ name: 'medic-pack', file: 'medic-pack.glb', bone: ['Spine02'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'Spine02', pos: [2.392, 13.129, -18.358], rot: [-154.103, -0.121, 171.756], scale: [25.761, 25.761, 25.761] } }, { name: 'shoulder-shield', file: 'shoulder-shield.glb', bone: ['RightArm'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightArm', pos: [0.448, 1.281, 4.02], rot: [-21.37, 15.38, -166.37], scale: [16.825, 16.825, 16.825] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'spark-gnome': [{ name: 'staff', file: 'staff.glb', bone: ['RightHand'], len: 0.4, grip: 0.5, rot: [0, 0, 0], look: { bone: 'RightHand', pos: [-2.63, 8.57, 0.056], rot: [-128.277, -22.025, 141.36], scale: [41, 51.25, 41] } }], // Oct 30: Ken's Studio placement (Ledger), part from Clay
   'the-great-steam-golem': [],
+  // Nov 6: the new cards (Clay, Meshy run 11); no props yet (Clay's second run), shared-pack clips
+  'mama-grubsnout': [],
+  'pox-doctor-ratsbane': [],
+  'snot-sergeant-gurk': [],
+  'fizzwick-fuse-lighter': [],
+  'junk-catapult-crew': [],
+  'grease-gremlin': [],
+  'bogwater-brewer': [],
+  'bang-snap-imp': [],
+  'sludge-lobber': [],
+  'wispmother-tallulah': [],
+  'jinxmaster-wobblewick': [],
+  'hexfuse-battery-golem': [],
+  'rune-scribe-nimbletoe': [],
+  'lens-grinder-lorelei': [],
+  'hexbolt-tinker': [],
+  'spark-caddy': [],
+  'hex-cadet': [],
+  'ratchet-runt': [],
+  'engineer-cogsworth': [],
+  'forgemaster-hildegrim': [],
+  'shieldwall-sergeant-brasha': [],
+  'master-smith-durga': [],
+  'grumble-drummer': [],
+  'mule-wrangler-nessa': [],
+  'stonebreaker-miner': [],
+  'shield-cadet': [],
+  'pebble-tosser': [],
+  'hammerhand-apprentice': [],
 };
 export const hasCreature3dSlug = (id: string) => id in PARTS;
 
