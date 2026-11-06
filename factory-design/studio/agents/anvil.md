@@ -374,3 +374,11 @@
 - Mock-menu pages (`?pvp=mock`) have no Dashboard, so a check cannot see the Dashboard's server pill there; the queue offer must read the NEWEST poll answer (the first one predates the other player).
 - Regions: one database (East US); a region = its own queue + the edge the function runs at + the live counts; US Central pins to us-east-1. Old `pvp_queue_join` overloads stay in the database; `admin_set_setting` still lacks branches for shop_badges / pack_bundles / pack_bundle_promises / ranked_ladder.
 - At the pvp-nov2 / factory/issue-8 merge (Anvil-game, Nov 6): upgraded Commanders wear a tier aura on the board (src/ui/commander-aura.ts, settings src/content/cmd-aura.json on factory/issue-8). BoardView gets setCommanderTier(side, tier) (1 Original .. 5 Mythic). On the online side, once the match state is known (new match, net game start) call (this.view as any).setCommanderTier?.('player', this.commanderTier('player')) and the same for 'opponent'; TIER_NAMES / Radiant labels already match.
+
+## Learned, Nov 6 (Anvil-online, the new-cards merge + Commander copies; report anvil-online-nov6-new-cards-pvp.md)
+- A merge of two long branches type-checked clean straight away: every conflict was "both sides added a field". Check the type errors against BOTH parents before blaming the merge (four were there before).
+- A module-level `localStorage` read (audio.ts) broke a unit test only after the merge, because a new import chain (menus -> audio) reached it in node: guard with `typeof localStorage !== 'undefined'`.
+- The catalog generator (make-cards-sql.mjs) had drifted from the newest migration (crystals ARE in packs since packs v2): re-read the latest pool rules before regenerating, and let the generator write settings `card_ids` too so deck checks never fall behind cards.json.
+- Adding to a pool setting (pack_miner_ids) breaks the SQL check that lists its members: grep the tests for every setting a migration touches BEFORE the deploy run, each failed run costs ~5 minutes and a Chrome trip.
+- GitHub's job page for a long SQL suite is too big for find/get_page_text (267k tokens): read it with javascript_tool (`document.body.innerText`, filter FAIL/ERROR lines, slice the tail).
+- The built game is 295.6 MB after the merge (tier art 35 MB on the pvp side, models 168 MB): measure `dist` after every merge and say the number.
