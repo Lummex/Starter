@@ -362,3 +362,5 @@
 - Nov 6: restyling a screen the checks drive: keep every data-testid and the clicked classes, wrap in the new shell, never duplicate an id in a side column (strict-mode locator errors). AC679 (an under-600 ms timing check) can flake when vitest runs right before it; rerun alone.
 
 - Nov 6: restyle sets 2+3 done as a D "skin" (dashSkin in src/net/dashboard.ts) around the check-driven screens; inner layouts untouched. Preview oreheart-8-7i1gpofva. Full inner rebuilds would need one screen per preview with the checks updated alongside.
+
+- Nov 6: design-D rebuilds done for Settings, Shop, Collection, Quests, Choose Your Commander (plus the blur fix, Oreheart packs only, self-hosted D fonts). Lessons in studio/team-lessons.md (old sheets vs D kit, patch anchors). Still to do: the Deck Builder rebuild, then regions (patch saved on the machine: scratchpad regions-wip.patch).

@@ -170,3 +170,27 @@ What is NOT yet the mockup: the inner layouts (the mockup's four-column Deck Bui
 Checks: AC650 / 656 / 667 / 674 / 681 / 686 / 689 / 690 / 691 (shop, collection, deck builder, upgrades) and AC693 / 694 (dashboard, rankings) pass; vitest 324. Looked at Shop, Deck Builder and Settings with the shell on PC.
 
 Next: regions (server picker with ping and live counts, per-region queues, the fallback after 45 s), unless Forge wants the full inner rebuilds first.
+
+## The design-D rebuilds (Nov 6)
+
+Anvil-online, Nov 6: the design-D inner rebuilds on pvp-nov2 (TEST only, nothing live).
+
+Previews, in order (each carries the ones before it):
+- Blur box fix: https://oreheart-8-donw3y7kp-lummex.vercel.app (a7d9f562). The old menu's sparkle layers sat above the dashboard with the blur riding on them; now under it.
+- Settings (tabbed D screen, online and offline) + Oreheart packs only (client): https://oreheart-8-gtdegbtnv-lummex.vercel.app (3d9ae54f). D fonts self-hosted.
+- Shop (offer row, strip, My Packs column) + the packs data on TEST (deploy #32): https://oreheart-8-g4lpqd9ny-lummex.vercel.app (4cfe1774).
+- Collection + Daily Quests: https://oreheart-8-l7is5i90z-lummex.vercel.app (f9bc35f2).
+- Choose Your Commander (online and offline) + "Most popular" off: https://oreheart-8-6dchhagdm-lummex.vercel.app (10580422; TEST deploy carries shop_badges.most_popular = null).
+
+What each screen is now (signed in; the Settings and Commander screens offline too):
+- Settings: rail (Sound, Display, Gameplay, Account, Language), silver sections of rows with every real control and its old saved setting; Restore defaults; Save changes; "coming soon" where no feature exists yet (Mute in background, Change password, rankings / friend toggles, other languages).
+- Shop: Single Pack, Pack Bundle, Warband Bundle (centred, largest, no "Most popular" until an admin turns shop_badges.most_popular on), Treasure Chest "Best value"; the count line, price, per-pack, the guarantee box; What's in a pack strip; My Packs with the unopened count, odds + bad-luck shield, next free pack streak, best pulls (coming soon), opened-today bar. Only the Oreheart pack: the three faction packs are off in pack_types (sealed ones converted).
+- Collection: Completion + Upgraded cards (left), All cards with Faction / Rarity / Type / Owned filters and search (middle), Combine copies with the tapped card and its upgrade panel (right).
+- Quests: three quest cards with tag, bar, reward, Reroll; "N free rerolls left", "New quests in ..."; Weekly as coming soon; Free pack streak as seven day cards; Open your free pack.
+- Choose Your Commander: the three cards side by side (portrait, faction, Health, upgrade-look tag, name, title, ability, blurb, the five looks lit by what you own, deck count); right: Game mode + Difficulty, Deck for <Commander> (Remove / Copy / + New Deck / Edit deck, scrolls), Locked Commanders (Queen Skreeka, Old Grumblebeard; Madame Sprocket stays out, she is in reserve), START (named Fight! for the checks and keyboard). Online the top bar; offline Back to the title menu.
+
+For Ledger / the Menu Builder (Forge asked): the Commander screen no longer uses the owner-layout zones cTitle / cCards / cDecks / cStart / cBack (src/content/owner-layout.json, left as it was). The editor needs either a "commander-D" layout (cards column | right column of panels) or to mark those zones as retired. The Deck Builder is NOT rebuilt yet; its layout data is still live.
+
+Checks: every selector the checks drive is unchanged; four old look-rules were rewritten for the D screens and say so in their titles: AC135 (one font) / AC137 (unboxed buttons) / AC167 (all-white text) skip the D screens; AC206 (chosen hides the others) / AC462 (arrows) / AC460 (no panel behind the cards) / AC463 (deck under the modes) now describe the D Commander layout. Everything else green: AC72/73/122/138/144/145/146/157/171/207/208/338/461/464, AC650-669/681/688/690-694, vitest 324+. SQL suite runs in each TEST deploy (green since #32; the last deploy for 10580422 is the badges-off change).
+
+Next in Forge's order: the Deck Builder rebuild (keep the old layout data under _discontinued and list what the Menu Builder needs), then regions (code saved: scratchpad regions-wip.patch + regions-wip/ on this machine; its unit tests were green, the browser check needs the window.oreheart.pvp.region hook wired).
