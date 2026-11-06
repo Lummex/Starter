@@ -442,6 +442,8 @@ select pg_temp.refused('upgrade_card: a Mythic takes no more', :P2, 'aal1',
   format($q$ select public.upgrade_card(%L, array[%L]::uuid[], 'u-rat-9-aaaaaaaa') $q$, (select id from rats where n = 1), (select id from rats where n = 6)), 'already Mythic');
 
 -- Nov 5 (Ken): per-copy tiers in decks; a combine that leaves a deck short needs force and repairs the deck's tiers
+-- a pack may have dropped an upgraded Grunt by luck: every Grunt starts plain here, so the counts below are exact
+update public.card_instances set tier = 1, worth = 1 where owner_id = :P2 and card_id = 'goblin-grunt';
 select private.card_grant(:P2, 'goblin-grunt', 5, 'admin_grant', 'test-tiers', null);
 create temp table gr as select id, row_number() over (order by created_at, id) as n from public.card_instances where owner_id = :P2 and card_id = 'goblin-grunt' and status = 'owned' and origin_ref = 'test-tiers';
 create temp table gr0 as select count(*) as c from public.card_instances where owner_id = :P2 and card_id = 'goblin-grunt' and status = 'owned';
@@ -472,6 +474,72 @@ select pg_temp.works('save_deck without tiers still works (every slot plain)', :
   format($q$ select public.save_deck(%L, 'Tier deck', 'grubnak', array['goblin-grunt','goblin-grunt']) $q$, (select id from public.decks where user_id = :P2 and name = 'Tier deck')));
 select pg_temp.ok('a save without tiers stores plain tiers', (select card_tiers = '{1,1}'::smallint[] from public.decks where user_id = :P2 and name = 'Tier deck'), 'plain');
 delete from public.decks where user_id = :P2 and name = 'Tier deck';
+
+-- ========== Nov 5 (Ken): pack bundles, My Packs, opening several, bundle guarantees, the bad-luck shield ==========
+select private.ledger_apply(:P2, 20000, 'admin_grant', 'test-bundle-coins', 'test-bundle-coins-aaaaaaaa', null);
+create temp table w0 as select coins from public.wallets where user_id = :P2;
+select pg_temp.ok('shop_info: the four bundles (1, 6, 24 +3, 99 +16), the stash, the shield and the badges',
+  (select jsonb_array_length(j -> 'bundles') = 4 and (j -> 'bundles' -> 2 ->> 'size')::int = 24 and (j -> 'bundles' -> 2 ->> 'bonus')::int = 3
+          and (j -> 'bundles' -> 3 ->> 'bonus')::int = 16 and (j -> 'bundles' -> 3 -> 'promises' ->> 'card_back') = 'chest'
+          and (j -> 'pity' ->> 'limit')::int = 40 and (j -> 'badges' ->> 'best_value')::int = 99 and j -> 'stash' -> 'packs' = '{}'::jsonb
+   from pg_temp.json_as(:P2, 'aal1', 'select public.shop_info()') j),
+  (select j::text from pg_temp.json_as(:P2, 'aal1', 'select public.shop_info()') j));
+select pg_temp.refused('buy_packs: a size that is not on sale is refused', :P2, 'aal1', $q$ select public.buy_packs('standard', 7, 'bd-aaaaaaaa-0001') $q$, 'not for sale');
+create temp table b1 as select pg_temp.json_as(:P2, 'aal1', $q$ select public.buy_packs('standard', 24, 'bd-aaaaaaaa-0001') $q$) as j;
+select pg_temp.ok('buy_packs: the 24-bundle costs 2,400, gives 27 sealed packs to My Packs, carries its promise',
+  (select (j ->> 'price_paid')::int = 2400 and (j ->> 'packs')::int = 27 and (j ->> 'bonus')::int = 3 and (j -> 'stash' -> 'packs' ->> 'standard')::int = 27
+          and (j -> 'promises' ->> 'upgraded_min_tier')::int = 3 and (j ->> 'coins_after')::int = (select coins - 2400 from w0) and (j ->> 'repeat')::boolean = false from b1), (select j::text from b1));
+select pg_temp.ok('buy_packs: one pack_purchase ledger row of -2400, the bundle row, coins_spent up',
+  (select count(*) from public.transactions t where t.user_id = :P2 and t.reason = 'pack_purchase' and t.delta = -2400) = 1
+  and (select packs_left = 27 and packs_total = 27 and price_paid = 2400 and source = 'shop' from public.pack_bundles where idem_key = 'bd-aaaaaaaa-0001'));
+select pg_temp.ok('buy_packs: the same key again spends nothing twice',
+  (select (j ->> 'repeat')::boolean and (j ->> 'coins_after')::int = (select coins - 2400 from w0) from pg_temp.json_as(:P2, 'aal1', $q$ select public.buy_packs('standard', 24, 'bd-aaaaaaaa-0001') $q$) j)
+  and (select count(*) from public.pack_bundles where user_id = :P2) = 1);
+create temp table s1 as select pg_temp.json_as(:P2, 'aal1', $q$ select public.open_stash('standard', 2, 'os-aaaaaaaa-0001') $q$) as j;
+select pg_temp.ok('open_stash: two packs opened from the bundle, 11 cards each, nothing paid, 25 left',
+  (select (j ->> 'opened')::int = 2 and jsonb_array_length(j -> 'openings') = 2 and jsonb_array_length(j -> 'openings' -> 0 -> 'cards') = 11
+          and (j -> 'openings' -> 0 ->> 'price_paid')::int = 0 and (j -> 'stash' -> 'packs' ->> 'standard')::int = 25 and (j ->> 'coins_after')::int = (select coins - 2400 from w0) from s1), (select j::text from s1));
+select pg_temp.ok('open_stash: two pack_openings rows on the bundle (keys :1 and :2), 22 card instances with origin pack',
+  (select count(*) from public.pack_openings o where o.user_id = :P2 and o.idem_key in ('os-aaaaaaaa-0001:1', 'os-aaaaaaaa-0001:2') and o.bundle_id = (select id from public.pack_bundles where idem_key = 'bd-aaaaaaaa-0001')) = 2
+  and (select count(*) from public.card_instances ci where ci.owner_id = :P2 and ci.origin = 'pack' and ci.origin_ref in (select o.id::text from public.pack_openings o where o.user_id = :P2 and o.idem_key like 'os-aaaaaaaa-0001:%')) = 22);
+select pg_temp.ok('open_stash: the same key again gives the very same two openings and opens nothing more',
+  (select (j ->> 'repeat')::boolean and (j ->> 'opened')::int = 2 and j -> 'openings' -> 0 ->> 'opening_id' = (select j -> 'openings' -> 0 ->> 'opening_id' from s1)
+   from pg_temp.json_as(:P2, 'aal1', $q$ select public.open_stash('standard', 2, 'os-aaaaaaaa-0001') $q$) j)
+  and (select packs_left from public.pack_bundles where idem_key = 'bd-aaaaaaaa-0001') = 25);
+create temp table s2 as select pg_temp.json_as(:P2, 'aal1', $q$ select public.open_stash('standard', 50, 'os-aaaaaaaa-0002') $q$) as j;
+select pg_temp.ok('open_stash: asking for 50 opens the 25 that are left; the bundle is empty',
+  (select (j ->> 'opened')::int = 25 and coalesce(j -> 'stash' -> 'packs' ->> 'standard', '0')::int = 0 from s2)
+  and (select packs_left from public.pack_bundles where idem_key = 'bd-aaaaaaaa-0001') = 0, (select j ->> 'opened' from s2));
+select pg_temp.ok('the 24-bundle promise: an upgraded card at Overcharged or better came out of its packs, by luck or by a top-up on the last pack',
+  (select coalesce((b.progress ->> 'best_tier')::int, 1) >= 3 from public.pack_bundles b where b.idem_key = 'bd-aaaaaaaa-0001')
+  and ((select coalesce((b.result -> 'extras') @> '[{"guarantee": "upgraded"}]'::jsonb, false) from public.pack_bundles b where b.idem_key = 'bd-aaaaaaaa-0001')
+       or (select bool_or((c ->> 'tier')::int >= 3) from s2, jsonb_array_elements(s2.j -> 'openings') o, jsonb_array_elements(o -> 'cards') c)
+       or (select bool_or((c ->> 'tier')::int >= 3) from s1, jsonb_array_elements(s1.j -> 'openings') o, jsonb_array_elements(o -> 'cards') c)),
+  (select b.progress::text || ' ' || coalesce(b.result::text, '') from public.pack_bundles b where b.idem_key = 'bd-aaaaaaaa-0001'));
+select pg_temp.ok('a topped-up card is a real instance with origin reward and ref bundle:<id>',
+  (select (b.result -> 'extras') @> '[{"guarantee": "upgraded"}]'::jsonb from public.pack_bundles b where b.idem_key = 'bd-aaaaaaaa-0001') is not true
+  or (select count(*) from public.card_instances ci where ci.owner_id = :P2 and ci.origin = 'reward' and ci.origin_ref = 'bundle:' || (select id::text from public.pack_bundles where idem_key = 'bd-aaaaaaaa-0001') and ci.tier >= 3) >= 1);
+select pg_temp.refused('open_stash: nothing sealed left is refused', :P2, 'aal1', $q$ select public.open_stash('standard', 1, 'os-aaaaaaaa-0003') $q$, 'No sealed packs');
+-- the bad-luck shield: 39 packs without a Legendary, the 40th has one
+update public.player_stats set packs_since_legendary = 39 where user_id = :P2;
+create temp table pity1 as select pg_temp.json_as(:P2, 'aal1', $q$ select public.open_pack('standard', 'pity-aaaaaaaa-0001', false) $q$) as j;
+select pg_temp.ok('bad-luck shield: the 40th pack carries a Legendary (marked pity) and the counter is back to 0',
+  (select (j ->> 'pity')::boolean and (select bool_or(c ->> 'rarity' = 'Collector' and (c ->> 'pity')::boolean) from jsonb_array_elements(j -> 'cards') c) from pity1)
+  and (select packs_since_legendary from public.player_stats where user_id = :P2) = 0, (select j::text from pity1));
+select pg_temp.ok('bad-luck shield: a pack without a Legendary counts up (or a lucky one resets)',
+  (select not (j ->> 'pity')::boolean from pg_temp.json_as(:P2, 'aal1', $q$ select public.open_pack('standard', 'pity-aaaaaaaa-0002', false) $q$) j)
+  and (select packs_since_legendary from public.player_stats where user_id = :P2) in (0, 1));
+-- the 99 chest: its last pack keeps every promise
+create temp table b99 as select pg_temp.json_as(:P2, 'aal1', $q$ select public.buy_packs('standard', 99, 'bd-aaaaaaaa-0099') $q$) as j;
+select pg_temp.ok('buy_packs: the 99 chest costs 9,900 and gives 115 packs', (select (j ->> 'price_paid')::int = 9900 and (j ->> 'packs')::int = 115 from b99), (select j::text from b99));
+create temp table s99a as select pg_temp.json_as(:P2, 'aal1', $q$ select public.open_stash('standard', 120, 'os-aaaaaaaa-0099') $q$) as j;
+select pg_temp.ok('open_stash: all 115 chest packs open in one call (1,265 cards)', (select (j ->> 'opened')::int = 115 from s99a), (select j ->> 'opened' from s99a));
+select pg_temp.ok('the chest promises: a Radiant-tier card, a Legendary the player did not own, and the chest card back',
+  (select coalesce((b.progress ->> 'best_tier')::int, 1) >= 4 and (b.progress ->> 'new_legendary')::boolean and (b.result -> 'extras') @> '[{"guarantee": "card_back", "item": "chest"}]'::jsonb from public.pack_bundles b where b.idem_key = 'bd-aaaaaaaa-0099')
+  and exists (select 1 from public.player_cosmetics c where c.user_id = :P2 and c.kind = 'card_back' and c.item = 'chest')
+  and (select j -> 'card_backs' = '["chest"]'::jsonb from pg_temp.json_as(:P2, 'aal1', 'select public.shop_info()') j),
+  (select b.progress::text || ' ' || coalesce(b.result::text, '') from public.pack_bundles b where b.idem_key = 'bd-aaaaaaaa-0099'));
+select pg_temp.refused('pack_bundles: players cannot read the table directly', :P2, 'aal1', 'select * from public.pack_bundles', 'permission denied');
 select pg_temp.ok('six upgrade events stored (four Shiv Rat, two Goblin Grunt)', (select count(*) from public.upgrade_events where user_id = :P2) = 6);
 select pg_temp.refused('upgrade_events: players cannot touch the table', :P2, 'aal1', format($q$ delete from public.upgrade_events where user_id = %L $q$, :P2), 'permission denied');
 select pg_temp.refused('settings: upgrade_steps needs four whole numbers per rarity', :A1, 'aal2',

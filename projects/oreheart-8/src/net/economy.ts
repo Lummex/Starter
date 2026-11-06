@@ -18,8 +18,13 @@ type El = HTMLElement;
 // ------------------------------------------------------------------ shapes (contract part 1)
 export interface PackSlot { slot_no: number; count: number; odds: Record<string, number>; pool?: 'any' | 'miners' }
 export interface PackInfo { id: string; name: string; blurb: string; price_coins: number; faction: string | null; art: string | null; max_per_day: number; opened_today: number; slots: PackSlot[] }
-export interface ShopInfo { packs: PackInfo[]; coins: number; free_packs: number }
-export interface PulledCard { card_id: string; rarity: string; is_new: boolean; tier?: number }
+/** Nov 5 (Ken): a bundle for sale (size bought, bonus packs free, the promises its last pack keeps) */
+export interface BundleInfo { size: number; bonus: number; promises: Record<string, any> }
+export interface StashInfo { packs: Record<string, number>; free: number }
+export interface ShopInfo { packs: PackInfo[]; coins: number; free_packs: number; bundles?: BundleInfo[]; stash?: StashInfo; pity?: { limit: number; since: number }; badges?: Record<string, any>; card_backs?: string[] }
+export interface PulledCard { card_id: string; rarity: string; is_new: boolean; tier?: number; pity?: boolean; guarantee?: string; item?: string }
+export interface BuyResult { bundle_id: string; pack_type: string; size: number; bonus: number; packs: number; price_paid: number; promises: Record<string, any>; coins_after: number; stash: StashInfo; repeat: boolean }
+export interface StashResult { openings: OpenResult[]; opened: number; coins_after: number; free_packs_after: number; stash: StashInfo; repeat: boolean }
 /** Upgraded cards (Nov 5): thresholds = copies for tiers 2..5; cards = per card id its best tier, owned copies and upgraded copies. */
 export interface UpgradeInfo { steps: Record<string, number[]>; drop_bp: Record<string, number>; drop_tiers: Record<string, number>; cards: Record<string, { best: number; owned: number; upgraded: number; by_tier?: number[] /* Nov 5: copies per tier 1..5 */ }> }
 export interface CardCopy { id: string; tier: number; worth: number; since: string }
@@ -31,7 +36,7 @@ export const stepsFor = (rarity: string, steps: Record<string, number[]> = DEFAU
 /** worth needed for a tier: 1 + the steps so far */
 export const worthOfTier = (tier: number, steps: number[]) => (tier <= 1 ? 1 : 1 + steps.slice(0, Math.min(4, tier - 1)).reduce((a, b) => a + b, 0));
 export const tierOfWorth = (worth: number, steps: number[]) => { for (let t = 5; t >= 2; t--) if (worth >= worthOfTier(t, steps)) return t; return 1; };
-export interface OpenResult { opening_id: string; pack_type: string; price_paid: number; free: boolean; cards: PulledCard[]; coins_after: number; free_packs_after: number; odds: PackSlot[] }
+export interface OpenResult { opening_id: string; pack_type: string; price_paid: number; free: boolean; cards: PulledCard[]; coins_after: number; free_packs_after: number; odds: PackSlot[]; extras?: PulledCard[]; pity?: boolean; bundle_id?: string | null }
 export interface Quest { id: string; quest_id: string; name: string; text: string; tier: 'easy' | 'medium' | 'hard'; reward: number; progress: number; target: number; done: boolean; expires_on: string }
 export interface QuestsInfo { quests: Quest[]; reroll_left: number; streak_days: number; free_packs: number; today: string }
 
@@ -65,6 +70,11 @@ const STUB = {
   ] as PackInfo[],
   owned: {} as Record<string, number>,
   copies: {} as Record<string, CardCopy[]>, // test page: each owned card's copies with tiers
+  // Nov 5 (Ken): bundles and My Packs on the test page (the real ones are settings and rows on the server)
+  bundles: [{ size: 1, bonus: 0, promises: {} }, { size: 6, bonus: 0, promises: {} }, { size: 24, bonus: 3, promises: { upgraded_min_tier: 3 } }, { size: 99, bonus: 16, promises: { upgraded_min_tier: 4, legendary_unowned: true, card_back: 'chest' } }] as BundleInfo[],
+  stashBundles: [] as { id: string; type: string; left: number; promises: Record<string, any>; best: number; newLeg: boolean }[],
+  pitySince: 0, pityLimit: 40,
+  cardBacks: [] as string[],
   opens: 0,
   rerolled: false,
   quests: null as QuestsInfo | null,
@@ -87,6 +97,7 @@ function stubInit() {
   ] };
 }
 const pickOf = (pool: any[], n: number) => pool[Math.floor(Math.random() * pool.length) % Math.max(1, n)];
+const stubStash = (): StashInfo => { const packs: Record<string, number> = {}; for (const b of STUB.stashBundles) if (b.left > 0) packs[b.type] = (packs[b.type] || 0) + b.left; return { packs, free: STUB.free_packs }; };
 let stubUid = 0;
 const STUB_STEPS: Record<string, number[]> = { ...DEFAULT_STEPS, Common: [1, 3, 5, 10] }; // the test page keeps Commons quick to combine (the real numbers come from the server)
 const stubSteps = (id: string) => stepsFor((cardFor(id) || {}).rarity || 'Common', STUB_STEPS);
@@ -108,6 +119,9 @@ function stubRoll(pack: PackInfo, force?: string): PulledCard[] {
   // the rare-or-better slot walks Rare -> Ultra Rare -> Collector on a test page, so every glow can be seen
   add(force && RARITIES.includes(force) ? force : ['Rare', 'Ultra Rare', 'Collector'][STUB.opens % 3]);
   if (forcedTier) { out[0].tier = forcedTier; const cp = STUB.copies[out[0].card_id]; if (cp && cp.length) cp[cp.length - 1].tier = forcedTier; } // the forced upgraded drop sits first
+  // the bad-luck shield (Ken, Nov 5): the pityLimit-th pack without a Legendary gets one in its last slot
+  if (!out.some((c) => c.rarity === 'Collector') && STUB.pitySince + 1 >= STUB.pityLimit) { const p = of('Collector'); const c = pickOf(p, p.length); out[out.length - 1] = { card_id: c.id, rarity: c.rarity, is_new: !seen[c.id], tier: 1, pity: true }; stubCopy(c.id, 1); }
+  STUB.pitySince = out.some((c) => c.rarity === 'Collector') ? 0 : STUB.pitySince + 1;
   return out;
 }
 
@@ -121,7 +135,7 @@ async function retryOnce<T>(fn: () => Promise<T>): Promise<T> {
 }
 export const api = {
   async shopInfo(): Promise<ShopInfo> {
-    if (stubMode()) { stubInit(); return JSON.parse(JSON.stringify({ packs: STUB.packs, coins: STUB.coins, free_packs: STUB.free_packs })); }
+    if (stubMode()) { stubInit(); return JSON.parse(JSON.stringify({ packs: STUB.packs, coins: STUB.coins, free_packs: STUB.free_packs, bundles: STUB.bundles, stash: stubStash(), pity: { limit: STUB.pityLimit, since: STUB.pitySince }, badges: { best_value: 99, most_popular: null }, card_backs: STUB.cardBacks })); }
     return await rpc<ShopInfo>('shop_info');
   },
   async openPack(packType: string, idemKey: string, useFree: boolean, force?: string): Promise<OpenResult> {
@@ -137,6 +151,54 @@ export const api = {
       return { opening_id: 'stub-' + STUB.opens, pack_type: pack.id, price_paid: free ? 0 : pack.price_coins, free, cards, coins_after: STUB.coins, free_packs_after: STUB.free_packs, odds: pack.slots };
     }
     return await retryOnce(() => rpc<OpenResult>('open_pack', { p_pack_type: packType, p_idem_key: idemKey, p_use_free: useFree }));
+  },
+  /** Nov 5 (Ken): buy a bundle; the packs go to My Packs */
+  async buyPacks(packType: string, size: number, idemKey: string): Promise<BuyResult> {
+    if (stubMode()) {
+      stubInit();
+      const pack = STUB.packs.find((p) => p.id === packType) || STUB.packs[0];
+      const b = STUB.bundles.find((x) => x.size === size);
+      if (!b) throw new Error('That bundle is not for sale.');
+      const price = pack.price_coins * b.size;
+      if (STUB.coins < price) throw new Error('not enough coins');
+      STUB.coins -= price;
+      const id = 'stub-b' + (++stubUid);
+      STUB.stashBundles.push({ id, type: pack.id, left: b.size + b.bonus, promises: { ...b.promises }, best: 1, newLeg: false });
+      return { bundle_id: id, pack_type: pack.id, size: b.size, bonus: b.bonus, packs: b.size + b.bonus, price_paid: price, promises: { ...b.promises }, coins_after: STUB.coins, stash: stubStash(), repeat: false };
+    }
+    return await retryOnce(() => rpc<BuyResult>('buy_packs', { p_pack_type: packType, p_size: size, p_idem_key: idemKey }));
+  },
+  /** Nov 5 (Ken): open up to `count` sealed packs of one kind from My Packs (oldest bundle first, then the free quest packs) */
+  async openStash(packType: string, count: number, idemKey: string): Promise<StashResult> {
+    if (stubMode()) {
+      stubInit();
+      const pack = STUB.packs.find((p) => p.id === packType) || STUB.packs[0];
+      const openings: OpenResult[] = [];
+      for (let i = 0; i < Math.min(120, Math.max(1, count)); i++) {
+        const b = STUB.stashBundles.find((x) => x.type === pack.id && x.left > 0);
+        let free = false;
+        if (!b) { if (STUB.free_packs < 1) break; STUB.free_packs -= 1; free = true; }
+        const cards = stubRoll(pack);
+        STUB.opens += 1; pack.opened_today += 1;
+        for (const c of cards) STUB.owned[c.card_id] = (STUB.owned[c.card_id] || 0) + 1;
+        const extras: PulledCard[] = [];
+        if (b) {
+          b.left -= 1;
+          b.best = Math.max(b.best, ...cards.map((c) => c.tier || 1)); if (cards.some((c) => c.rarity === 'Collector' && c.is_new)) b.newLeg = true;
+          if (b.left === 0) {
+            const want = Number(b.promises.upgraded_min_tier) || 0;
+            const pool = ([...Object.values(CARDS as any)] as any[]).filter((c) => c && !c.disabled && (c.type === 'creature' || c.type === 'spell') && (!pack.faction || c.faction === pack.faction || c.faction === 'any'));
+            if (want > b.best) { const c = pickOf(pool, pool.length); extras.push({ card_id: c.id, rarity: c.rarity, is_new: !STUB.owned[c.id], tier: want, guarantee: 'upgraded' }); STUB.owned[c.id] = (STUB.owned[c.id] || 0) + 1; stubCopy(c.id, want); b.best = want; }
+            if (b.promises.legendary_unowned && !b.newLeg) { const legs = pool.filter((c) => c.rarity === 'Collector'); const un = legs.filter((c) => !STUB.owned[c.id]); const c = pickOf(un.length ? un : legs, (un.length ? un : legs).length); if (c) { extras.push({ card_id: c.id, rarity: 'Collector', is_new: !STUB.owned[c.id], tier: 1, guarantee: 'legendary' }); STUB.owned[c.id] = (STUB.owned[c.id] || 0) + 1; stubCopy(c.id, 1); b.newLeg = true; } }
+            if (b.promises.card_back) { if (!STUB.cardBacks.includes(String(b.promises.card_back))) STUB.cardBacks.push(String(b.promises.card_back)); extras.push({ card_id: '', rarity: '', is_new: false, guarantee: 'card_back', item: String(b.promises.card_back) }); }
+          }
+        }
+        openings.push({ opening_id: 'stub-' + STUB.opens, pack_type: pack.id, price_paid: 0, free, cards, coins_after: STUB.coins, free_packs_after: STUB.free_packs, odds: pack.slots, extras, pity: cards.some((c) => c.pity), bundle_id: b ? b.id : null });
+      }
+      if (!openings.length) throw new Error('No sealed packs of that kind in My Packs.');
+      return { openings, opened: openings.length, coins_after: STUB.coins, free_packs_after: STUB.free_packs, stash: stubStash(), repeat: false };
+    }
+    return await retryOnce(() => rpc<StashResult>('open_stash', { p_pack_type: packType, p_count: count, p_idem_key: idemKey }));
   },
   async myCollection(): Promise<Record<string, number>> {
     if (stubMode()) { stubInit(); return { ...STUB.owned }; }
@@ -316,6 +378,44 @@ export async function buyPack(pack: PackInfo, onErr?: (msg: string) => void, for
   });
 }
 
+/** Nov 5 (Ken): buy a bundle of 6, 24 or 99; the packs wait in My Packs. */
+export async function buyBundle(pack: PackInfo, size: number, onErr?: (msg: string) => void): Promise<void> {
+  const key = (globalThis.crypto && 'randomUUID' in crypto) ? crypto.randomUUID() : 'k' + Date.now() + Math.random().toString(36).slice(2);
+  let res: BuyResult;
+  try { res = await api.buyPacks(pack.id, size, key); } catch (e: any) {
+    const m = String(e?.message || e);
+    const msg = /not enough coins|insufficient|below zero/i.test(m) ? `You need ${(pack.price_coins * size).toLocaleString('en-US')} coins for that bundle. Finish quests to earn coins!` : /enough of those|per day|daily|limit/i.test(m) ? 'That bundle is sold out for today. The goblins are restocking.' : m;
+    if (onErr) onErr(msg); else toast(msg);
+    return;
+  }
+  setCoins(res.coins_after);
+  if (shopCache) { shopCache.coins = res.coins_after; shopCache.stash = res.stash; }
+  toast(`${res.packs} ${res.packs === 1 ? 'pack is' : 'packs are'} waiting in My Packs${res.bonus ? ` (${res.bonus} free)` : ''}.`, '/art/packs/icons/free-pack.webp');
+  void import('./shop').then((m) => m.showShop());
+}
+/** Nov 5 (Ken): open `n` sealed packs from My Packs: one gets the rip; several get the big rip and the grid. */
+export async function openStash(pack: PackInfo, n: number, onErr?: (msg: string) => void): Promise<void> {
+  const key = (globalThis.crypto && 'randomUUID' in crypto) ? crypto.randomUUID() : 'k' + Date.now() + Math.random().toString(36).slice(2);
+  let res: StashResult;
+  try { res = await api.openStash(pack.id, n, key); } catch (e: any) { const m = String(e?.message || e); if (onErr) onErr(m); else toast(m); return; }
+  setCoins(res.coins_after, res.free_packs_after);
+  if (shopCache) { shopCache.coins = res.coins_after; shopCache.free_packs = res.free_packs_after; shopCache.stash = res.stash; const p = shopCache.packs.find((x) => x.id === pack.id); if (p) p.opened_today += res.opened; }
+  void refreshOwned();
+  const left = () => (shopCache && shopCache.stash ? (Number(shopCache.stash.packs[pack.id]) || 0) + (shopCache.stash.free || 0) : 0);
+  const mod = await import('./packopen');
+  if (res.openings.length === 1 && n === 1) {
+    mod.showPackOpening({
+      pack, result: res.openings[0],
+      canAgain: () => left() > 0 || (coins ?? 0) >= pack.price_coins,
+      againLabel: () => (left() > 0 ? `Open another (${left()} left)` : `Open another (${pack.price_coins})`),
+      onAgain: () => { if (left() > 0) void openStash(pack, 1, onErr); else void buyPack(pack, onErr); },
+      onDone: () => { void import('./shop').then((m) => m.showShop()); },
+    });
+    return;
+  }
+  mod.showMultiOpening({ pack, openings: res.openings, onDone: () => { void import('./shop').then((m) => m.showShop()); } });
+}
+
 // ------------------------------------------------------------------ main menu
 /** Main-menu extras when signed in: coin chip + Shop / Collection / Quests buttons. */
 export function economyMenu(el: El): void {
@@ -370,6 +470,8 @@ if (isTestPage() && typeof window !== 'undefined') {
     screen: (kind: EconScreen) => openScreen(kind),
     summarize: (events: any[], state: any, side = 'player') => capSummary(summarize(events, state, side)),
     coins: () => ({ coins, free_packs: freePacks }),
+    /** stand-in only: more coins for the checks (the real wallet moves only through the ledger) */
+    giveCoins: (n: number) => { if (!stubMode()) return false; STUB.coins += Math.max(0, Math.floor(n)); setCoins(STUB.coins); return true; },
     /** the deck builder's copy limit for a card (signed in: capped by the copies owned) */
     deckLimit: (id: string) => ({ limit: deckLimit(id), owned: ownedOf(id), copyLimit: copyLimit(id) }),
     /** test pages: pretend to be signed in with exactly these owned counts (zero start checks) */

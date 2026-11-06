@@ -230,20 +230,25 @@ test('AC649: rip and flip sounds are small synthesized files (each under 100 KB)
   for (const f of fs.readdirSync(pk).filter((x) => x.endsWith('.webp'))) expect(fs.statSync(path.join(pk, f)).size, f).toBeLessThan(400 * 1024);
 });
 
-test('AC650: the Shop shows the four packs (Oreheart, Junkpile, Gizmo, Deepforge) with their painted pack, price 100, "opened today" and the odds in plain words; Back closes it', async ({ page }) => {
+test('AC650: the Shop shows the four kinds of pack (Oreheart, Junkpile, Gizmo, Deepforge) as pills, one kind at a time as four bundles with its painted pack, the single pack at 100 with "opened today", and the odds in plain words; Back closes it', async ({ page }) => {
   await openEcon(page, 'shop');
-  const packs = page.locator('.shop-pack');
-  await expect(packs).toHaveCount(4);
-  await expect(packs.locator('h2')).toHaveText(['Oreheart Pack', 'Junkpile Pack', 'Gizmo Pack', 'Deepforge Pack']);
-  const arts = await packs.locator('img.pko-sealed').evaluateAll((els) => els.map((i) => i.getAttribute('src')));
-  expect(arts).toEqual(['/art/packs/pack-general.webp', '/art/packs/pack-goblin.webp', '/art/packs/pack-gnome.webp', '/art/packs/pack-dwarf.webp']);
-  for (let i = 0; i < 4; i++) {
-    await expect(packs.nth(i).locator('.shop-price')).toContainText('100');
-    await expect(packs.nth(i).locator('.shop-today')).toHaveText(/^\d+ opened today$/);
-    await expect(packs.nth(i).locator('.shop-odds')).toHaveText('11 cards: 3 cheap Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 78%, Ultra Rare 20%, Legendary 2%');
+  const kinds = page.locator('.shop-kinds .net-race');
+  await expect(kinds).toHaveCount(4);
+  await expect(kinds).toHaveText(['Oreheart Pack', 'Junkpile Pack', 'Gizmo Pack', 'Deepforge Pack']);
+  const tiles = page.locator('.shop-bundle');
+  await expect(tiles).toHaveCount(4);
+  const artOf = async () => tiles.first().locator('img.pko-sealed').getAttribute('src');
+  expect(await artOf()).toBe('/art/packs/pack-general.webp');
+  await expect(tiles.first().locator('.shop-price')).toContainText('100');
+  await expect(tiles.first().locator('.shop-promise')).toHaveText(/^\d+ opened today$/);
+  await expect(page.locator('.shop-odds')).toHaveText('11 cards: 3 cheap Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 78%, Ultra Rare 20%, Legendary 2%');
+  for (const [name, art] of [['Junkpile Pack', 'goblin'], ['Gizmo Pack', 'gnome'], ['Deepforge Pack', 'dwarf']]) {
+    await kinds.filter({ hasText: name }).click();
+    expect(await artOf()).toBe(`/art/packs/pack-${art}.webp`);
+    await expect(tiles).toHaveCount(4);
   }
   await expect(page.getByTestId('coin-chip').first()).toContainText('500');
-  await expect(packs.first().locator('.shop-free'), 'the free pack ribbon').toHaveText('FREE');
+  await expect(tiles.first().locator('.shop-free'), 'the free pack ribbon').toHaveText('FREE');
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.locator('.econ-screen')).toHaveCount(0);
 });
@@ -836,6 +841,104 @@ test('AC689: the Deck Builder knows which copy goes in (Ken, Nov 5): a card with
   const sc = page.locator('.db-tile[data-card="goblin-scrounger"]');
   await sc.dblclick(); await page.waitForTimeout(350);
   expect(await page.locator('.db-list li', { hasText: 'Goblin Miner' }).locator('.db-tier').count()).toBe(0);
+});
+
+test('AC690: the shop sells bundles (Ken, Nov 5): 1, 6, 24 (+3 free, the big one) and the 99 chest (+16 free, Best Value), a price per pack on each, the guarantees and the bad-luck shield in words; buying the 24 puts 27 sealed packs in My Packs', async ({ page }) => {
+  await openEcon(page, 'shop');
+  const tiles = page.locator('.shop-bundle');
+  await expect(tiles).toHaveCount(4);
+  expect(await tiles.evaluateAll((els) => els.map((e) => e.dataset.size))).toEqual(['1', '6', '24', '99']);
+  expect(await tiles.evaluateAll((els) => els.map((e) => e.dataset.packs))).toEqual(['1', '6', '27', '115']);
+  await expect(tiles.nth(2)).toHaveClass(/shop-big/);
+  await expect(tiles.nth(2).locator('[data-testid="bundle-bonus"]')).toHaveText('+3 FREE');
+  await expect(tiles.nth(3).locator('[data-testid="bundle-bonus"]')).toHaveText('+16 FREE');
+  await expect(tiles.nth(3).locator('[data-testid="best-value"]')).toHaveText('BEST VALUE');
+  await expect(tiles.nth(3)).toHaveClass(/shop-bundle-chest/);
+  expect(await tiles.locator('[data-testid="per-pack"]').evaluateAll((els) => els.map((e) => e.textContent))).toEqual(['100 per pack', '100 per pack', '~89 per pack', '~86 per pack']);
+  await expect(tiles.nth(2).locator('[data-testid="bundle-promise"]')).toContainText('one upgraded card at Overcharged or better');
+  await expect(tiles.nth(3).locator('[data-testid="bundle-promise"]')).toContainText("one upgraded card at Radiant or better, one Legendary you don't own yet, the chest card back");
+  await expect(page.getByTestId('shop-shield')).toContainText('40 packs in a row without a Legendary, and the 40th brings one');
+  await expect(page.locator('.shop-odds')).toContainText('Rare 78%');
+  // 500 coins: only the single pack is affordable; the stand-in player gets coins for the 24
+  await expect(tiles.nth(2).locator('.shop-buy')).toBeDisabled();
+  await expect(page.locator('.shop-stash-row[data-free="true"]')).toHaveAttribute('data-n', '1'); // the stand-in's free quest pack waits in My Packs
+  expect(await page.locator('.shop-stash-row[data-pack="standard"]:not([data-free])').count()).toBe(0);
+  await page.evaluate(() => window.oreheart.packs.giveCoins(5000));
+  await page.evaluate(() => window.oreheart.packs.screen('shop'));
+  await expect(page.locator('[data-screen="econ-shop"]')).toBeVisible();
+  const buy24 = page.locator('.shop-bundle[data-size="24"] .shop-buy');
+  await expect(buy24).toHaveText('Buy 27 packs for 2,400');
+  await buy24.click();
+  const row = page.locator('.shop-stash-row[data-pack="standard"]:not([data-free])');
+  await expect(row).toBeVisible({ timeout: 10000 });
+  await expect(row).toHaveAttribute('data-n', '27');
+  await expect(row).toContainText('27 sealed');
+  expect((await page.evaluate(() => window.oreheart.packs.coins())).coins).toBe(5500 - 2400);
+});
+
+test('AC691: My Packs opens one at a time with the rip (then "Open another (N left)" takes the next sealed one), or several with the slider: one big rip, every card in a grid rarest first with the Rare-or-better and upgraded ones lit, and a summary', async ({ page }) => {
+  await openEcon(page, 'shop');
+  await page.evaluate(() => window.oreheart.packs.giveCoins(5000));
+  await page.evaluate(() => window.oreheart.packs.screen('shop'));
+  await expect(page.locator('.shop-bundle[data-size="6"] .shop-buy')).toBeEnabled();
+  await page.locator('.shop-bundle[data-size="6"] .shop-buy').click();
+  const row = page.locator('.shop-stash-row[data-pack="standard"]:not([data-free])');
+  await expect(row).toHaveAttribute('data-n', '6', { timeout: 10000 });
+  // one at a time: the normal rip scene
+  await row.locator('.shop-open-one').click();
+  await expect(page.getByTestId('pack-scene')).toBeVisible();
+  await page.evaluate(() => window.oreheart.packs.skip());
+  await page.evaluate(() => window.oreheart.packs.flipAll());
+  await expect.poll(async () => (await packState(page)).phase, { timeout: 8000 }).toBe('done');
+  const again = page.locator('.pko-again');
+  await expect(again).toHaveText('Open another (6 left)'); // 5 sealed from the bundle plus the free quest pack
+  await again.click();
+  await expect.poll(async () => (await packState(page)).phase, { timeout: 8000 }).toBe('idle');
+  await page.locator('.pko-leave').click();
+  await expect(page.locator('[data-screen="econ-shop"]')).toBeVisible();
+  await expect(row).toHaveAttribute('data-n', '4');
+  // several at once: the slider, then the stack rip and the grid
+  const slider = row.locator('.shop-slider');
+  await expect(slider).toHaveAttribute('max', '4');
+  await slider.fill('3');
+  await expect(row.locator('.shop-open-n')).toHaveText('Open 3');
+  await row.locator('.shop-open-n').click();
+  const multi = page.getByTestId('multi-scene');
+  await expect(multi).toBeVisible();
+  await expect(multi).toHaveAttribute('data-count', '3');
+  await page.evaluate(() => window.__ohMulti.skip());
+  await expect.poll(() => page.evaluate(() => window.__ohMulti.state().phase)).toBe('done');
+  const cards = multi.locator('.pkm-card');
+  await expect(cards).toHaveCount(33);
+  const ranks = await cards.evaluateAll((els) => els.map((e) => ({ r: e.dataset.rarity, t: Number(e.dataset.tier) })));
+  const order = { collector: 4, 'ultra-rare': 3, rare: 2, uncommon: 1, common: 0 };
+  for (let i = 1; i < ranks.length; i++) expect(order[ranks[i].r] * 10 + ranks[i].t).toBeLessThanOrEqual(order[ranks[i - 1].r] * 10 + ranks[i - 1].t);
+  expect(await multi.locator('.pkm-card.pko-r-rare.pkm-hi').count()).toBeGreaterThan(0);
+  await expect(page.getByTestId('multi-summary')).toContainText('3 packs, 33 cards');
+  await page.locator('.pko-done').click();
+  await expect(page.locator('[data-screen="econ-shop"]')).toBeVisible();
+  await expect(row).toHaveAttribute('data-n', '1');
+});
+
+test('AC692: the 24-bundle keeps its promise: after its last pack the grid holds an Overcharged-or-better card (lit, tagged UPGRADED or GUARANTEED) and the summary says so', async ({ page }) => {
+  await openEcon(page, 'shop');
+  await page.evaluate(() => window.oreheart.packs.giveCoins(5000));
+  await page.evaluate(() => window.oreheart.packs.screen('shop'));
+  await expect(page.locator('.shop-bundle[data-size="24"] .shop-buy')).toBeEnabled();
+  await page.locator('.shop-bundle[data-size="24"] .shop-buy').click();
+  const row = page.locator('.shop-stash-row[data-pack="standard"]:not([data-free])');
+  await expect(row).toHaveAttribute('data-n', '27', { timeout: 10000 });
+  await row.locator('.shop-slider').fill('27');
+  await row.locator('.shop-open-n').click();
+  const multi = page.getByTestId('multi-scene');
+  await expect(multi).toHaveAttribute('data-count', '27');
+  await page.evaluate(() => window.__ohMulti.skip());
+  await expect.poll(() => page.evaluate(() => window.__ohMulti.state().phase)).toBe('done');
+  const best = await multi.locator('.pkm-card[data-tier]').evaluateAll((els) => Math.max(...els.map((e) => Number(e.dataset.tier) || 1)));
+  expect(best).toBeGreaterThanOrEqual(3);
+  const top = multi.locator('.pkm-card').first();
+  await expect(top).toHaveClass(/pkm-hi/);
+  expect(await page.evaluate(() => window.oreheart.packs.coins().coins)).toBe(5500 - 2400);
 });
 
 // ---- Gauge's list (Nov 2)

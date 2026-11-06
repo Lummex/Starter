@@ -348,3 +348,4 @@ export function showPackOpening(o: Opts) {
   if (isTestPage()) (window as any).__ohPack = { state: () => current?.state() ?? { phase: 'idle', flipped: 0, cards: [] }, flipAll: () => current?.flipAll(), skip: () => current?.skip(), rip: () => current?.rip() };
   return current;
 }
+export { showMultiOpening } from './packopen-multi';
