@@ -1,5 +1,5 @@
 {
- "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet). Oct 25: owner asked for all remaining gnome and dwarf models, character only (no accessories yet); Gemsinger Miner and Anvilsworn Miner already exist and are not remade; Overclocked Aethervein waits for a redrawn sheet. Oct 28: owner OK'd re-running Meshy for two models only, WITH a skeleton: anvilsworn-miner-rig (Anvilsworn Miner, card dwarf-smith-miner; old Stonebreaker Miner model had 0 bones) and borgo-rig (Thane Borgo Gravelgrim, cmd-borgo; old model had 0 bones). New ids so the old models are kept. Oct 29: Ken approved the Overclocked Aethervein robot sheet (redo, ChatGPT Oct 28) with the note \"He doesn't need the shield drawn\": job overclocked-conduit, character only, no shield. Nov 5-6 (Clay): new cards, BODIES ONLY first (Forge: Ken's Oct 30 order, all units, sheets by Sketch from Brush card art). Bipeds rig-only (\"actions\": {}), non-humanoids (piglets, mule, wisps) rig:false for Spring. Props are staged in \"nov5_props_round2\" and get moved into each job's \"parts\" for a second run only if credits allow. Nov 6 (Clay): round 2 = the 44 props moved into their jobs' \"parts\" (bodies already made, so the script makes only the missing parts).",
+ "note": "Owner-approved Model Editor sheets (A-pose + gear, Oct 24). Run ONCE per model; never regenerate unless the owner asks. Owner notes: goblin-slinger = skull mace only, no bag; grubnaks-big-boss-troll = character only, no items. goblin-bomber (Bare Knuckle Lunatic) = character only, no accessories (owner OK'd building from current sheet). Oct 25: owner asked for all remaining gnome and dwarf models, character only (no accessories yet); Gemsinger Miner and Anvilsworn Miner already exist and are not remade; Overclocked Aethervein waits for a redrawn sheet. Oct 28: owner OK'd re-running Meshy for two models only, WITH a skeleton: anvilsworn-miner-rig (Anvilsworn Miner, card dwarf-smith-miner; old Stonebreaker Miner model had 0 bones) and borgo-rig (Thane Borgo Gravelgrim, cmd-borgo; old model had 0 bones). New ids so the old models are kept. Oct 29: Ken approved the Overclocked Aethervein robot sheet (redo, ChatGPT Oct 28) with the note \"He doesn't need the shield drawn\": job overclocked-conduit, character only, no shield. Nov 5-6 (Clay): new cards, BODIES ONLY first (Forge: Ken's Oct 30 order, all units, sheets by Sketch from Brush card art). Bipeds rig-only (\"actions\": {}), non-humanoids (piglets, mule, wisps) rig:false for Spring. Props are staged in \"nov5_props_round2\" and get moved into each job's \"parts\" for a second run only if credits allow. Nov 6 (Clay): round 2 = the 44 props moved into their jobs' \"parts\" (bodies already made, so the script makes only the missing parts). Nov 6 (Clay): a part may NOT be called \"rig\": the script stores the character's rigging task under that key, so a \"rig\" part came back as a copy of the rigged character (no credits spent). Renamed to backpack-tanks / backpack-scope; their rig.glb files are unused.",
  "jobs": [
   {
    "id": "blastrat-sapper",
@@ -1566,7 +1566,7 @@
      "nov5-lens-grinder-lorelei--lens-side.jpg",
      "nov5-lens-grinder-lorelei--lens-back.jpg"
     ],
-    "rig": [
+    "backpack-scope": [
      "nov5-lens-grinder-lorelei--rig-front.jpg",
      "nov5-lens-grinder-lorelei--rig-side.jpg",
      "nov5-lens-grinder-lorelei--rig-back.jpg"
@@ -1661,7 +1661,7 @@
      "nov5-pox-doctor-ratsbane--lance-side.jpg",
      "nov5-pox-doctor-ratsbane--lance-back.jpg"
     ],
-    "rig": [
+    "backpack-tanks": [
      "nov5-pox-doctor-ratsbane--rig-front.jpg",
      "nov5-pox-doctor-ratsbane--rig-side.jpg",
      "nov5-pox-doctor-ratsbane--rig-back.jpg"
