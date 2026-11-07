@@ -1,4 +1,4 @@
-# Oreheart launch checklist: PvP + the new menus (prepared Nov 7 by Anvil-online)
+﻿# Oreheart launch checklist: PvP + the new menus (prepared Nov 7 by Anvil-online)
 
 Ken, Nov 7: "No, we'll wait and get the new menus. All together. I'd also like to launch the PvP."
 
@@ -48,6 +48,7 @@ Supabase → project **oreheart** → **Authentication**:
    - `SITE_URL` = `https://oreheart.cards`.
 
 ### 5. Decide the real-money shop (KEN, a decision, see Part 4)
+**DECIDED (Ken, Nov 7): shop ON at launch.** Do step 6; skip step 10.4. Ken: "The real money shop can launch ... We can still test it and stuff, so just roll it."
 - **OFF at launch (recommended):** skip step 6. On launch day you switch it off in the back counter (step 10.4).
 - **ON at launch:** do step 6 too.
 
@@ -56,7 +57,7 @@ Stripe Dashboard, **live mode** (the toggle top right says Live; NOT the sandbox
 1. **Developers → API keys → Create restricted key** → name `oreheart-live` → permissions: **Checkout Sessions: Write**, **Customers: Write**, everything else None → **Create**.
 2. Supabase → **oreheart** → **Edge Functions → Secrets** → add `STRIPE_SECRET_KEY` = that `rk_live_…` key.
 3. Stripe live → **Developers → Webhooks → Add destination**:
-   - URL `https://<oreheart ref>.supabase.co/functions/v1/stripe-webhook`;
+   - URL `https://zzqyzlerjyjzutbzdsgk.supabase.co/functions/v1/stripe-webhook`;
    - events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `charge.refunded`, `charge.dispute.created` → **Add**.
 4. On that endpoint → **Signing secret → Reveal** → Supabase → **oreheart** → **Edge Functions → Secrets** → add `STRIPE_WEBHOOK_SECRET` = that `whsec_…`.
 5. Stripe live → **Settings → Payment methods**: leave Cards on (Apple Pay / Google Pay / Link as you like).
@@ -64,7 +65,7 @@ Stripe Dashboard, **live mode** (the toggle top right says Live; NOT the sandbox
 
 ### 7. Vercel production settings (KEN, 5 minutes, skip if done)
 Vercel → project **oreheart-8** → **Settings → Environment Variables**. Tick **Production** only for these, with the **oreheart** (real) values:
-1. `VITE_SUPABASE_URL` = `https://<oreheart ref>.supabase.co`
+1. `VITE_SUPABASE_URL` = `https://zzqyzlerjyjzutbzdsgk.supabase.co`
 2. `VITE_SUPABASE_PUBLISHABLE_KEY` = oreheart → Project Settings → **API Keys** → the **publishable** key (public by design; NEVER the secret one)
 3. `VITE_OREHEART_ENV` = `production`
 4. `VITE_TURNSTILE_SITE_KEY` = the Turnstile **site** key (Production and Preview)
@@ -74,8 +75,8 @@ The **Preview** column keeps the TEST values. If a value lands in the wrong colu
 
 ## Part 2: Launch day
 
-### 8. Put the database in place (TEAM starts it, KEN approves)
-1. TEAM: GitHub → Actions → **Supabase — deploy** → Use workflow from `pvp-nov2`, branch `pvp-nov2`, target **production**, DEPLOY.
+### 8. Put the database in place (TEAM fills the form, KEN starts it and approves)
+1. TEAM fills the form in its own tab: GitHub → Actions → **Supabase — deploy** → Use workflow from `pvp-nov2`, branch `pvp-nov2`, target **production**, DEPLOY. KEN clicks the green **Run workflow** (Nov 7: the safety check lets only Ken start a production deploy).
    It first runs every check on a throwaway copy, then waits.
 2. KEN: open the run Forge sends you → **Review deployments** → tick `supabase-production` → **Approve and deploy**.
 3. TEAM: checks the run is green (all migrations, the `match`, `send-outbox`, `stripe-checkout` and `stripe-webhook` functions).
@@ -88,12 +89,24 @@ update public.settings set value = '"production"' where key = 'server_kind';
 Never run this in oreheart-test.
 
 ### 10. First things in the real database (KEN, 10 minutes)
-1. **Email schedule** (sends the parent emails): Supabase → **oreheart** → **SQL Editor**, with your ref and the project's **secret** key (Project Settings → API Keys → secret; type it here only):
+1. **Email schedule** (sends the parent emails). DONE Nov 7 by Ken, with **Vault** (the SQL Editor refuses `alter database ... set`: permission denied).
+   Supabase → **oreheart** → **SQL Editor**. Ken types the project's **secret** key here only (Project Settings → API Keys → secret), never in chat:
    ```sql
-   alter database postgres set app.settings.send_outbox_url = 'https://<oreheart ref>.supabase.co/functions/v1/send-outbox';
-   alter database postgres set app.settings.send_outbox_key = '<secret key>';
+   select vault.create_secret('https://zzqyzlerjyjzutbzdsgk.supabase.co/functions/v1/send-outbox', 'send_outbox_url');
+   select vault.create_secret('<secret key>', 'send_outbox_key');
+   create extension if not exists pg_cron;
+   create extension if not exists pg_net with schema extensions;
+   select cron.schedule('send-outbox', '* * * * *', $job$
+     select net.http_post(
+       url := (select decrypted_secret from vault.decrypted_secrets where name = 'send_outbox_url'),
+       headers := jsonb_build_object('Content-Type', 'application/json',
+         'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'send_outbox_key'),
+         'apikey', (select decrypted_secret from vault.decrypted_secrets where name = 'send_outbox_key')),
+       body := '{}'::jsonb);
+   $job$);
    ```
-   Then tell Forge "outbox set". TEAM re-runs the deploy once, so the minute-by-minute schedule is created.
+   Check it runs: Supabase → **Integrations → Cron** → `send-outbox` → **History** shows "succeeded" each minute.
+   A new key later: `select vault.update_secret((select id from vault.secrets where name = 'send_outbox_key'), '<new secret key>');`
 2. **Your admin account**:
    - In the game (oreheart.cards after step 11), Create account with your ADMIN email (not your player one) and confirm it.
    - SQL Editor:
