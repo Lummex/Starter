@@ -92,7 +92,7 @@ function slotChips(slots: PackInfo['slots']): El[] {
   const label = (r: string) => RARITY_LABEL[r] || r;
   const pct = (bp: number) => { const v = Math.round(bp) / 100; return (Number.isInteger(v) ? String(v) : v.toFixed(1)) + '%'; };
   return ss.map((sl) => {
-    if (sl.pool === 'miners') return h('div', { class: 'slot', 'data-r': 'miners' }, h('span', { class: 'n' }, String(sl.count)), h('div', {}, h('b', {}, 'Miners'), h('span', {}, 'in every pack')));
+    if (sl.pool === 'miners') return h('div', { class: 'slot', 'data-r': 'miners' }, h('span', { class: 'n' }, String(sl.count)), h('div', {}, h('b', {}, 'Standard Miners'), h('span', {}, 'in every pack')));
     const rs = Object.keys(sl.odds || {}).filter((r) => (sl.odds[r] || 0) > 0).sort((x, y) => (sl.odds[y] || 0) - (sl.odds[x] || 0));
     if (rs.length <= 1) return h('div', { class: 'slot', 'data-r': rs[0] || '' }, h('span', { class: 'n' }, String(sl.count)), h('div', {}, h('b', {}, rs[0] ? label(rs[0]) : 'Card'), h('span', {}, rs[0] === 'Rare' ? 'always' : 'any army')));
     return h('div', { class: 'slot', 'data-r': rs[0] }, h('span', { class: 'n' }, String(sl.count)), h('div', {}, h('b', {}, `${label(rs[0])} or better`), h('span', {}, rs.slice(1).map((r) => `${pct(sl.odds[r])} ${label(r)}`).join(' \u00b7 '))));

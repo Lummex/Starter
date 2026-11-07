@@ -241,7 +241,7 @@ test('AC650: the Shop sells the one Oreheart pack (Ken, Nov 6: no Junkpile, Gizm
   expect(await artOf()).toBe('/art/packs/pack-general.webp');
   await expect(tiles.first().locator('.shop-price')).toContainText('100');
   await expect(tiles.first().locator('.shop-promise')).toHaveText(/^\d+ opened today$/);
-  await expect(page.locator('.shop-odds')).toHaveText('11 cards: 3 Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 78%, Ultra Rare 20%, Legendary 2%');
+  await expect(page.locator('.shop-odds')).toHaveText('11 cards: 3 Standard Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 78%, Ultra Rare 20%, Legendary 2%');
   await expect(page.getByTestId('coin-chip').first()).toContainText('500');
   await expect(tiles.first().locator('.shop-free'), 'the free pack ribbon').toHaveText('FREE');
   await page.getByRole('button', { name: 'Back' }).click();
