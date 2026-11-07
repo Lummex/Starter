@@ -183,3 +183,23 @@ html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-empty{grid-column:1/-
   html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-dtext{display:none!important}
   html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-save{height:2.8em!important;font-size:1em!important}
 }
+
+/* Nov 7 (Ken): + / − on every tile, greyed when nothing can go in, the copies left, the name field at the top of the deck column */
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile .db-tface{position:relative}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile .db-tacts{position:absolute!important;left:50%!important;bottom:.35em!important;transform:translateX(-50%)!important;z-index:23!important;display:flex!important;gap:.3em!important;opacity:.0;transition:opacity .12s ease!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile:hover .db-tacts,html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile:focus-within .db-tacts,html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile.sel .db-tacts{opacity:1!important}
+@media (hover:none){html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile .db-tacts{opacity:1!important}}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile .db-tacts button{width:2em!important;height:2em!important;min-height:0!important;padding:0!important;display:grid!important;place-items:center!important;border-radius:50%!important;font:800 1.05em/1 Arial,sans-serif!important;color:#fff!important;background:linear-gradient(#5b6478,#1d2130)!important;border:1px solid #cfd6e4!important;box-shadow:0 2px 6px #000c!important;cursor:pointer!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile .db-tacts button.db-tplus{background:linear-gradient(#3f8f57,#14381f)!important;border-color:#9fe3b3!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile .db-tacts button:disabled{opacity:.35!important;cursor:not-allowed!important;filter:grayscale(1)!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile .db-tacts button[hidden]{display:none!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile.out .db-tface{opacity:.42!important;filter:grayscale(.9)!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile.out .db-owned{filter:grayscale(1) brightness(.8)!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-tile .db-tiersum[hidden]{display:none!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-namerow{display:flex!important;align-items:center!important;gap:.5em!important;flex:none!important;padding:.15em .1em!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-namerow .f-label{flex:none!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-namein{flex:1 1 auto!important;min-width:0!important;font:700 1.05em/1.2 Cinzel,Georgia,serif!important;color:#f3f6fa!important;background:rgba(0,0,0,.35)!important;border:1px solid #5a6475!important;border-radius:6px!important;padding:.3em .5em!important;letter-spacing:.02em!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-namein:hover{border-color:#aab2bf!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-namein:focus{outline:none!important;border-color:#e4e9f0!important;box-shadow:0 0 0 2px rgba(207,214,228,.35)!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-namein[readonly]{border-color:transparent!important;background:transparent!important}
+html body:not(#_a):not(#_b):not(#_c) #app .dash.deck-d .db-namepen{flex:none!important;color:#aab2bf!important;font-size:1.1em!important;margin-left:-1.9em!important;pointer-events:none!important}

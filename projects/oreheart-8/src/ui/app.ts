@@ -917,7 +917,7 @@ export class App {
           const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
           const deckId = pick ? '' : deckSel.slice(8);
           try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, mode, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
-          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, mode, rivalId: rv.id, aiStyle: rv.style, ...(pick ? { playerDeck: pick.cards.slice() } : { playerDeckId: deckId }) });
+          this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, mode, rivalId: rv.id, aiStyle: rv.style, ...(pick ? { playerDeck: pick.cards.slice(), deckName: pick.name } : { playerDeckId: deckId }) });
     };
     // Nov 6 (design D, Ken approved): START is the Fight! button (its name stays Fight! for the checks and the keyboard)
     const start = btn('Start', 'primary fight-btn panel play', startFn, { 'aria-label': 'Fight!' });
@@ -1267,7 +1267,8 @@ export class App {
     setTimeout(() => ov.remove(), quiet ? Math.min(ms, 700) : ms);
   }
   /** Deck builder close-up: the card fills the screen top to bottom; no Close button, no scrollbar; click anywhere or Esc dismisses. */
-  closeUp(cardId: string, withViewer = false) {
+  /** opts.deck (Nov 7, the Deck Builder): per-tier copies and "Put in deck" on the tier ladder; opts.view3d: the 3D model even signed in */
+  closeUp(cardId: string, withViewer = false, opts: { deck?: any; view3d?: boolean } = {}) {
     const isCmd = cardId.startsWith('cmd:');
     const c = isCmd ? ({ name: COMMANDERS[cardId.slice(4)].name, id: cardId, type: 'commander', faction: 'any' } as any) : CARDS[cardId];
     const face = isCmd ? h('div', { class: 'cz-img oh-cmd', role: 'img', 'aria-label': c.name, 'data-card-id': cardId }, ohCardEl(commanderCard(COMMANDERS[cardId.slice(4)]), commanderPortrait(cardId.slice(4)))) : h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, c.type === 'crystal' ? 0 : c.cost));
@@ -1292,7 +1293,7 @@ export class App {
       }
     };
     // Nov 5 (Ken): signed in, the Upgrade panel (copies, Combine, the five looks) stands where the 3D model was; offline keeps the model
-    if (withViewer && net.active) void import('../net/upgrade-panel').then((m) => { if (closed) return; const stop = m.mountInCloseUp(ov, cardId, face); if (stop) stopViewer = stop; else mountViewer(); }).catch(() => { if (!closed) mountViewer(); });
+    if (withViewer && net.active && !opts.view3d) void import('../net/upgrade-panel').then((m) => { if (closed) return; const stop = m.mountInCloseUp(ov, cardId, face, { deck: opts.deck, view3d: !isCmd && c.type === 'creature' ? () => { close(); this.closeUp(cardId, true, { ...opts, view3d: true }); } : undefined }); if (stop) stopViewer = stop; else mountViewer(); }).catch(() => { if (!closed) mountViewer(); });
     else mountViewer();
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
     ov.addEventListener('click', close);
@@ -1323,7 +1324,16 @@ export class App {
     this.showMatch();
     this.update(this.game.state, []);
     this.syncCommanderTiers();
+    { const f = this.game.state.players.player.faction; const st = STARTER_DECK_LIST.find((d) => d.id === (o.playerDeckId || (o.playerDeck ? '' : warbandOf(f)))); this.showDeckName(o.deckName || (st ? st.name : o.playerDeck ? 'My deck' : '')); }
     return state;
+  }
+  /** Nov 7 (Ken: "in the bottom left-hand corner, show the name of the deck you're playing"): small silver words under the Flow crystal */
+  showDeckName(name: string) {
+    const m = this.root.querySelector('.match') as El | null;
+    if (!m) return;
+    m.querySelector(':scope > .o-deckname')?.remove();
+    if (!name) return;
+    m.append(h('div', { class: 'o-deckname', 'data-testid': 'match-deck-name', role: 'note', 'aria-label': `Your deck: ${name}`, title: `Your deck: ${name}` }, name));
   }
 
   /** Nov 2 (PvP): a match against a friend. Like beginMatch, but the server owns the match: no newMatch, the board comes from the
@@ -1346,6 +1356,7 @@ export class App {
     this.arenaFaction = ''; this.pickMatchArena();
     this.showMatch();
     this.update(ng.state, [{ type: 'newMatch' }]);
+    this.showDeckName(net.matchDeckName || '');
     this.syncCommanderTiers();
   }
   /** Back to the computer-match Game (the friend match keeps running on the server; "Back to your match" re-opens it). */

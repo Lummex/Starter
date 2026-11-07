@@ -8,6 +8,8 @@ export const net = {
   /** Nov 7 (launch): which database this page is signed in to (server_info().server_kind); production hides every TEST marker */
   serverKind: 'test' as 'test' | 'production',
   maxDecks: 30,
+  /** Nov 7 (Ken): the name of the deck picked in the PvP lobby, shown bottom-left in the match */
+  matchDeckName: '',
   decks: [] as SavedDeck[],
   saveDeck: (async () => { throw new Error('offline'); }) as (id: string | undefined, d: SavedDeck) => Promise<void>,
   removeDeck: (async () => { throw new Error('offline'); }) as (id: string) => Promise<void>,

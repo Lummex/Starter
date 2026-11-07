@@ -816,9 +816,9 @@ test('AC689: the Deck Builder knows which copy goes in (Ken, Nov 5): a card with
   await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   const tile = page.locator('.db-tile[data-card="goblin-grunt"]');
   await expect(tile.locator('.db-tiersum')).toHaveText('Enhanced ×1 · Original ×3');
-  expect(await page.locator('.db-tile[data-card="goblin-scrounger"] .db-tiersum').count()).toBe(0); // all plain: no summary
-  // three copies into the deck (a double-click adds one)
-  for (let i = 0; i < 3; i++) { await tile.dblclick(); await page.waitForTimeout(350); }
+  expect(await page.locator('.db-tile[data-card="goblin-scrounger"] .db-tiersum:not([hidden])').count()).toBe(0); // all plain: no summary
+  // three copies into the deck (Nov 7: the tile's + adds one; a double-click opens the big view)
+  for (let i = 0; i < 3; i++) await tile.getByTestId('db-plus').click();
   const li = page.locator('.db-list li', { hasText: 'Snotskull Grunt' });
   await expect(li.locator('.db-cnt')).toHaveText('3 ×');
   const chips = li.locator('.db-tier');
@@ -834,7 +834,7 @@ test('AC689: the Deck Builder knows which copy goes in (Ken, Nov 5): a card with
   await expect(li.locator('.db-tier').nth(0)).toHaveAttribute('data-tier', '2');
   // a plain card has no chips
   const sc = page.locator('.db-tile[data-card="goblin-scrounger"]');
-  await sc.dblclick(); await page.waitForTimeout(350);
+  await sc.getByTestId('db-plus').click();
   expect(await page.locator('.db-list li', { hasText: 'Goblin Miner' }).locator('.db-tier').count()).toBe(0);
 });
 
@@ -1281,4 +1281,80 @@ test('AC705: Card Sleeves in the Shop (Ken, Nov 7): six sleeves with Oreshard pr
   expect(await page.evaluate(() => window.oreheart.cosmetics.equipped())).toBe('piglet-stampede');
   const mine = await page.evaluate(() => window.oreheart.cosmetics.mine());
   expect(mine.card_backs.map((b) => b.item)).toEqual(expect.arrayContaining(['default', 'piglet-stampede', 'skullfang-arena']));
+});
+
+// ---------- Nov 7 (Ken): the Deck Builder: one click picks, a double-click opens the big view; the best copy first; greyed when none can go in; the name field ----------
+test('AC707: Deck Builder (Ken, Nov 7): a click only picks a card; + adds the BEST copy still free and the tile steps down Overcharged -> Enhanced -> Original with the count; none left (or none owned) greys it and turns + off; a double-click opens the big view in full colour with your copies per tier, Put in deck and View 3D; the deck name is a field at the top', async ({ page }) => {
+  test.setTimeout(90000);
+  await openEcon(page, 'shop');
+  await page.getByRole('button', { name: 'Back' }).click();
+  expect(await page.evaluate(() => window.oreheart.packs.setOwned({ 'goblin-grunt': [3, 2, 1], 'goblin-scrounger': 2 }))).toBe(true);
+  for (const w of await page.locator('.overlay.welcome').all()) await w.evaluate((e) => e.remove());
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  const tile = page.locator('.db-tile[data-card="goblin-grunt"]');
+  await expect(tile).toBeVisible();
+  const faceTier = () => tile.locator('.db-tface').getAttribute('data-tier');
+  // the best copy shows first, with the copies left and the tiers
+  await expect.poll(faceTier).toBe('3');
+  await expect(tile.getByTestId('db-left')).toHaveText('×3');
+  await expect(tile.locator('.db-tiersum')).toHaveText('Overcharged ×1 · Enhanced ×1 · Original ×1');
+  // one click: picked (the detail column), nothing pops up
+  await tile.click();
+  await page.waitForTimeout(500);
+  await expect(page.locator('.cardzoom')).toHaveCount(0);
+  await expect(page.locator('.db-detail .db-dname')).toHaveText('Snotskull Grunt');
+  // + adds the best copy; the tile steps down to the next best
+  const plus = tile.getByTestId('db-plus');
+  await plus.click();
+  await expect.poll(faceTier).toBe('2');
+  await expect(tile.getByTestId('db-left')).toHaveText('×2');
+  await plus.click();
+  await expect.poll(faceTier).toBe('1');
+  await plus.click();
+  expect(await page.evaluate(() => window.__dbTiers().filter((x) => x.id === 'goblin-grunt').map((x) => x.tier))).toEqual([3, 2, 1]);
+  await expect(tile).toHaveClass(/\bout\b/);
+  await expect(plus).toBeDisabled();
+  await expect(tile.getByTestId('db-left')).toHaveText('×0');
+  await expect(tile).toHaveAttribute('title', 'All copies in deck');
+  // a card you don't own: greyed, + off, and it can't go in
+  const none = page.locator('.db-tile[data-card="goblin-slinger"]');
+  await expect(none).toHaveClass(/\bout\b/);
+  await expect(none.getByTestId('db-plus')).toBeDisabled();
+  await expect(none).toHaveAttribute('title', "You don't own this card yet");
+  expect(await page.evaluate(() => window.__dbTiers().some((x) => x.id === 'goblin-slinger'))).toBe(false);
+  // − takes the plainest copy out: Original comes back to the pool
+  await tile.getByTestId('db-minus').click();
+  await expect.poll(faceTier).toBe('1');
+  await expect(tile.getByTestId('db-left')).toHaveText('×1');
+  await expect(plus).toBeEnabled();
+  // a double-click: the big view, in full colour, the ladder with your copies per tier, Put in deck, View 3D
+  await tile.dblclick();
+  const zoom = page.locator('.cardzoom');
+  await expect(zoom).toBeVisible();
+  const big = zoom.locator('.cz-oh > .ohcard');
+  await expect(big).toBeVisible();
+  expect(await big.evaluate((e) => [getComputedStyle(e).filter, getComputedStyle(e).opacity])).toEqual(['none', '1']);
+  await expect(zoom.getByTestId('upg-have-3')).toHaveText('You have 1');
+  await expect(zoom.getByTestId('upg-have-4')).toHaveText('None yet');
+  await expect(zoom.getByTestId('upg-indeck-3')).toHaveText('1 in deck');
+  await expect(zoom.getByTestId('upg-put-3')).toBeDisabled(); // the Overcharged copy is in the deck already
+  await expect(zoom.getByTestId('upg-put-1')).toBeEnabled();
+  await expect(zoom.getByTestId('view-3d')).toBeVisible();
+  await zoom.getByTestId('upg-put-1').click();
+  await expect(zoom.getByTestId('upg-indeck-1')).toHaveText('1 in deck');
+  await page.keyboard.press('Escape');
+  await expect(zoom).toHaveCount(0);
+  expect(await page.evaluate(() => window.__dbTiers().filter((x) => x.id === 'goblin-grunt').map((x) => x.tier).sort())).toEqual([1, 2, 3]);
+  // a card you don't own still opens large, in full colour
+  await none.dblclick();
+  await expect(zoom).toBeVisible();
+  expect(await zoom.locator('.cz-oh > .ohcard, .cz-img').first().evaluate((e) => [getComputedStyle(e).filter, getComputedStyle(e).opacity])).toEqual(['none', '1']);
+  await page.keyboard.press('Escape');
+  // the deck name: a field at the top, a fun default after the Commander, 24 letters at most
+  const name = page.getByTestId('db-name');
+  await expect(name).toHaveValue("Grubnak's Deck 1");
+  await name.fill('Junk Lords of the Big Pile Forever More');
+  await expect(name).toHaveValue('Junk Lords of the Big Pi');
+  await name.press('Enter');
+  await expect(page.locator('[data-part="deck-name"]')).toHaveText('Junk Lords of the Big Pi');
 });

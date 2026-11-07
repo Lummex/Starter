@@ -490,3 +490,14 @@ html body .econ-screen .net-btn.pko-leave{position:absolute;left:0;top:50%;trans
 .sl-pair{display:flex;gap:1.2em;align-items:flex-end}.sl-big{height:min(58vh,26em);aspect-ratio:2/3;object-fit:cover;border-radius:12px;box-shadow:0 10px 30px #000c}.sl-big.face{height:min(40vh,18em);opacity:.85}
 .sl-preview-box p{margin:0;color:var(--soft,#c5ccd8)}
 @media (max-width:900px){.sl-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Nov 7 (Ken): the tier ladder in the big view: your copies per tier, "need N more", Put in deck; the big card always in full colour */
+.upg-lookcol{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:3px}
+.upg-lookcol>.upg-look{flex:none;width:100%}
+.upg-look-have{font-size:.62rem;line-height:1.1;color:#8f97a3;white-space:nowrap}.upg-look-have.some{color:#e9edf3;font-weight:700}
+.upg-look-more{font-size:.6rem;line-height:1.1;color:#ffcf8a;white-space:nowrap}
+.upg-look-indeck{font-size:.6rem;line-height:1.1;text-align:center;color:#cfeaff}
+.upg-put{min-height:1.9em;padding:0 .3em;font-size:.68rem;white-space:nowrap}
+.upg-put:disabled{opacity:.4;cursor:not-allowed}
+.upg-3d{float:right;min-height:1.9em;padding:0 .7em;font-size:.75rem}
+.cardzoom .cz-oh>.ohcard,.cardzoom .cz-img .ohcard,.col-big>.ohcard{opacity:1;filter:none}

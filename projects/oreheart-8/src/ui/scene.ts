@@ -101,6 +101,8 @@ export interface BoardView {
 
 const SYMBOL: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨', beer: '🍺' };
 /** Owner (Oct 24): mines take the owner's faction color; unowned mines are white. */
+/** Nov 7 (Ken: "let's make the size of the opponent playing his commander ... 2x the size that it is"): the far Commander stood tiny */
+const ENEMY_CMD_K = 2;
 const MINE_FACTION: Record<string, string> = { goblins: '#3ee06a', gnomes: '#9b4dff', dwarves: '#2f5fd8' };
 const hexOf = (id: string | null) => (id && id !== 'white' ? COLORS[id].hex : COLORS.neutral.hex);
 const CMD_H = 2.4, CREATURE_H = 1.1;
@@ -450,13 +452,13 @@ const _embV = new THREE.Vector3();
       // Oct 30: Thane Borgo (and later Commanders) as the Meshy model standing on his stronghold, posed like Grubnak (owner layout turn + size)
       const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
       const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
-      cm.g3d = makeCommander3d(mid, a3, cm.keep!.group, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: CS.commanders ?? 1, base: CS.commanderBase ?? true });
+      cm.g3d = makeCommander3d(mid, a3, cm.keep!.group, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: (CS.commanders ?? 1) * (side === 'opponent' ? ENEMY_CMD_K : 1), base: CS.commanderBase ?? true });
       cm.fig = cm.g3d.figure;
     } else if (a3) {
       // Round 7 Part B: the Meshy 3D Grubnak on his own fortress
       const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
       const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
-      cm.g3d = makeGrubnak3d(a3, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: CS.commanders ?? 1, base: CS.commanderBase ?? true });
+      cm.g3d = makeGrubnak3d(a3, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: (CS.commanders ?? 1) * (side === 'opponent' ? ENEMY_CMD_K : 1), base: CS.commanderBase ?? true });
       cm.fig = cm.g3d.figure;
     } else if (id === 'grubnak') {
       cm.grub = makeGrubnak(low);

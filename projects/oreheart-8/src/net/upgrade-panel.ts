@@ -25,7 +25,10 @@ export interface UpgradePanelOpts {
   onChange?: (copies: CardCopy[]) => void;
   /** a look in the preview row was clicked: show that tier large */
   onLook?: (tier: number) => void;
+  /** Nov 7 (Ken, the Deck Builder's big view): copies per tier in this deck, the spare ones, and "Put in deck" for a tier */
+  deck?: DeckHooks;
 }
+export interface DeckHooks { inDeck: (tier: number) => number; spare: (tier: number) => number; room: () => boolean; add: (tier: number) => void }
 export interface UpgradePanel { el: HTMLElement; load: () => Promise<void>; best: () => number; copies: () => CardCopy[] }
 
 /** the cheapest copies (by worth) that lift `target` to the next tier, or null when there are not enough */
@@ -56,23 +59,37 @@ export function upgradePanel(c: any, opts: UpgradePanelOpts): UpgradePanel {
   panel.append(list, quick, status, h('div', { class: 'net-actions col-upg-actions' }, nextBtn, btn), h('h3', { class: 'upg-looks-h' }, 'The five looks'), looks,
     ...(hasUpgradeArt(c.id) ? [] : [h('p', { class: 'col-upg-note' }, 'This card\'s upgraded pictures are still being painted; its stars change now.')])); // Nov 6: append(null) wrote the word "null" into the panel
   let copies: CardCopy[] = [];
+  let copiesLoaded = false;
   let target = '';
   const picked = new Set<string>();
   let shownLook = 0;
   const best = () => (copies.length ? Math.max(...copies.map((x) => x.tier)) : 0);
   const others = () => copies.filter((k) => k.id !== target);
   // the five looks: owned tiers lit, the rest dimmed with a lock and the copies they take; a click shows that look large
-  const drawLooks = (reach = 0) => {
-    const b = best();
+  // Nov 7 (Ken: "you need to see the upgrade cards and the upgrade cards available to the right hand side"): under each look, the copies
+  // you own at that tier (and in this deck), "need N more copies" when you are short, and in the Deck Builder "Put in deck" for that tier
+  let lastReach = 0;
+  const drawLooks = (reach = lastReach) => {
+    lastReach = reach;
+    const b = best(), have = copies.reduce((s, k) => s + (k.worth || 1), 0), loaded = copiesLoaded;
     looks.replaceChildren(...[1, 2, 3, 4, 5].map((t) => {
-      const owned = t <= b, need = worthOfTier(t, steps);
-      return h('button', { type: 'button', class: 'upg-look' + (owned ? ' lit' : ' locked') + (shownLook === t ? ' shown' : '') + (reach === t ? ' reach' : ''), 'data-tier': String(t), 'data-owned': String(owned), 'aria-pressed': String(shownLook === t),
-        'aria-label': owned ? TIER_NAMES[t] : `${TIER_NAMES[t]}, locked: ${need} copies combined`, title: owned ? TIER_NAMES[t] : `${TIER_NAMES[t]}: ${need} copies combined into one`,
+      const owned = t <= b, need = worthOfTier(t, steps), n = copies.filter((k) => k.tier === t).length, more = Math.max(0, need - have);
+      const look = h('button', { type: 'button', class: 'upg-look' + (owned ? ' lit' : ' locked') + (shownLook === t ? ' shown' : '') + (reach === t ? ' reach' : ''), 'data-tier': String(t), 'data-owned': String(owned), 'data-copies': String(n), 'aria-pressed': String(shownLook === t),
+        'aria-label': owned ? `${TIER_NAMES[t]}: you have ${n}` : `${TIER_NAMES[t]}, locked: ${need} copies combined${more ? `, you need ${more} more` : ''}`, title: owned ? TIER_NAMES[t] : `${TIER_NAMES[t]}: ${need} copies combined into one`,
         onclick: (e: Event) => { e.preventDefault(); e.stopPropagation(); shownLook = t; drawLooks(reach); opts.onLook?.(t); } },
         ohCardEl({ ...c, tier: t }, opts.pic),
         owned ? null : h('span', { class: 'col-lock', 'aria-hidden': 'true' }),
         h('span', { class: 'upg-look-name', 'data-tier': String(t) }, TIER_NAMES[t]),
-        owned ? null : h('span', { class: 'upg-look-need' }, `${need} copies`));
+        owned ? null : h('span', { class: 'upg-look-need' }, `${need} copies`),
+        loaded ? h('span', { class: 'upg-look-have' + (n ? ' some' : ''), 'data-testid': 'upg-have-' + t }, n ? `You have ${n}` : 'None yet') : null,
+        loaded && !owned && more > 0 ? h('span', { class: 'upg-look-more', 'data-testid': 'upg-more-' + t }, `need ${more} more ${more === 1 ? 'copy' : 'copies'}`) : null);
+      const d = opts.deck;
+      if (!d || !loaded) return look;
+      const inD = d.inDeck(t), spare = d.spare(t);
+      const put = h('button', { type: 'button', class: 'net-btn upg-put', 'data-testid': 'upg-put-' + t, disabled: !(n > 0 && spare > 0 && d.room()) ? 'true' : null,
+        title: n === 0 ? `You have no ${TIER_NAMES[t]} copy` : spare <= 0 ? `Every ${TIER_NAMES[t]} copy is in this deck` : !d.room() ? 'This deck is full for this card' : `Put a ${TIER_NAMES[t]} copy in this deck`,
+        onclick: (e: Event) => { e.preventDefault(); e.stopPropagation(); d.add(t); drawLooks(); } }, 'Put in deck');
+      return h('div', { class: 'upg-lookcol', 'data-tier': String(t) }, look, inD ? h('span', { class: 'upg-look-indeck', 'data-testid': 'upg-indeck-' + t }, `${inD} in deck`) : null, put);
     }));
   };
   const show = () => {
@@ -122,6 +139,7 @@ export function upgradePanel(c: any, opts: UpgradePanelOpts): UpgradePanel {
     if (!stepsAll) { try { stepsAll = (await api.myUpgradeInfo()).steps; steps = stepsFor(c.rarity, stepsAll); } catch { /* the default steps */ } }
     try { copies = await api.myCardCopies(c.id); } catch (e: any) { status.textContent = 'Could not load your copies: ' + String(e?.message || e); drawLooks(); return; }
     copies.sort((a, b) => b.tier - a.tier || b.worth - a.worth);
+    copiesLoaded = true;
     target = copies[0]?.id || ''; picked.clear(); show();
   };
   /** Ken (Nov 5): before any combine, say what it costs and what is left, and which decks would come up short */
@@ -171,16 +189,17 @@ export function upgradePanel(c: any, opts: UpgradePanelOpts): UpgradePanel {
 
 /** The Deck Builder close-up (app.closeUp), signed in: the card at its best tier plus the panel, in the 3D model's place.
  *  Returns null when the player is not in owned mode (offline, vs-computer): the caller keeps its 3D viewer. */
-export function mountInCloseUp(ov: HTMLElement, cardId: string, face: HTMLElement): (() => void) | null {
+export function mountInCloseUp(ov: HTMLElement, cardId: string, face: HTMLElement, extra: { deck?: DeckHooks; view3d?: () => void } = {}): (() => void) | null {
   const id = cardId.startsWith('cmd:') ? 'commander-' + cardId.slice(4) : cardId;
   const c = cardFor(id);
   if (!net.active || !c || c.disabled || ownedOf(id) == null) return null;
   const pic = upgradePicture(c);
   const wrap = h('div', { class: 'cz-img cz-oh', role: 'img', 'aria-label': c.name, 'data-card-id': cardId }, ohCardEl({ ...c, tier: 1 }, pic));
   const swap = (t: number) => { wrap.querySelector(':scope > .ohcard')?.replaceWith(ohCardEl({ ...c, tier: t }, pic)); wrap.dataset.tier = String(t); };
-  const panel = upgradePanel(c, { pic, onChange: () => swap(panel.best()), onLook: swap });
+  const panel = upgradePanel(c, { pic, onChange: () => swap(panel.best()), onLook: swap, deck: extra.deck });
   face.replaceWith(wrap);
   ov.append(panel.el);
+  if (extra.view3d) { const go = extra.view3d; panel.el.prepend(h('button', { type: 'button', class: 'net-btn upg-3d', 'data-testid': 'view-3d', title: 'See the 3D model', onclick: (e: Event) => { e.preventDefault(); e.stopPropagation(); go(); } }, 'View 3D')); }
   ov.classList.add('with-upg');
   void panel.load().then(() => swap(panel.best()));
   return () => { /* nothing runs in the background */ };

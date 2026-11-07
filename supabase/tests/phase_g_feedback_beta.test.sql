@@ -112,6 +112,11 @@ select pg_temp.ok('the shop shows the new price and the new sleeve, and Tess''s 
 create temp table as1 as select pg_temp.json_as(:A1, 'aal2', 'select public.admin_sleeves()') as j;
 select pg_temp.ok('admin_sleeves lists all ten with owner counts', (select jsonb_array_length(j) = 10 and (select (x ->> 'owners')::int from jsonb_array_elements(j) e(x) where x ->> 'id' = 'goblin-junkpile') >= 1 from as1), (select left(j::text, 300) from as1));
 
+-- ========== Nov 7: deck names go through the same word mask ==========
+create temp table dn1 as select pg_temp.json_as(:U1, 'aal1', $q$ select to_jsonb(public.save_deck(null, '  Shit Stompers  ', 'grubnak', '{}'::text[])) $q$) as j;
+select pg_temp.ok('a deck name with a blocked word is saved masked, never refused', (select name from public.decks where user_id = :U1 and id = (select (j #>> '{}')::uuid from dn1)) = '**** Stompers',
+  (select j::text from dn1) || ' ' || coalesce((select string_agg(name, ',') from public.decks where user_id = :U1), 'none'));
+
 select n, case when ok then 'PASS' else 'FAIL' end as result, name, detail from results order by n;
 do $$ declare f int := (select count(*) from results where not ok); t int := (select count(*) from results);
 begin

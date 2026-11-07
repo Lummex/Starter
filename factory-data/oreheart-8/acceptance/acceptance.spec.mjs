@@ -2395,11 +2395,11 @@ async function chooseFilter(page, label, option) {
   await expect(page.getByRole('combobox', { name: label, exact: true })).toContainText(option);
 }
 const deckList = (page) => page.getByLabel('Deck list', { exact: true });
-// first copy by double-click on the card face, further copies with the + button
+// first copy with the + on the card tile (Nov 7: a double-click opens the big view), further copies with the list's + button
 async function addCard(page, name, n = 1) {
   const plus = deckList(page).getByRole('button', { name: `Add ${name}`, exact: true });
   if ((await plus.count()) === 0) {
-    await allCards(page).getByRole('button', { name, exact: true }).dblclick();
+    await allCards(page).getByRole('button', { name: `Add ${name} to the deck`, exact: true }).click();
     await expect(plus).toBeVisible();
     n -= 1;
   }
@@ -2633,13 +2633,13 @@ test('AC69: dragging a creature over an enemy shows the attack preview; letting 
 test('AC70: double-click and + add cards; single click only enlarges; copy limit and cost chart', async ({ page }) => {
   await openDecks(page);
   const all = allCards(page);
-  await all.getByRole('button', { name: 'Shiv Rat', exact: true }).click();
+  await all.getByRole('button', { name: 'Shiv Rat', exact: true }).dblclick(); // Nov 7 (Ken): a double-click opens it large; one click only picks it
   const view = page.getByRole('dialog', { name: 'Shiv Rat' });
   await expect(view).toBeVisible();
   await view.locator('[data-card-id]').first().click(); // Round 6a: no Close button, click dismisses
   await expect(view).toBeHidden();
   await expect(deckList(page)).not.toContainText('Shiv Rat');
-  await all.getByRole('button', { name: 'Goblin Miner', exact: true }).dblclick();
+  await all.getByRole('button', { name: 'Add Goblin Miner to the deck', exact: true }).click();
   await expect(deckList(page)).toContainText('1 × Goblin Miner');
   await deckList(page).getByRole('button', { name: 'Add Goblin Miner', exact: true }).click();
   await expect(deckList(page)).toContainText('2 × Goblin Miner');
@@ -2648,7 +2648,7 @@ test('AC70: double-click and + add cards; single click only enlarges; copy limit
   await addCard(page, 'Mangewolf Rider', 3);
   await expect(deckList(page)).toContainText('3 × Mangewolf Rider');
   await expect(deckList(page).getByRole('button', { name: 'Add Mangewolf Rider', exact: true })).toBeDisabled();
-  await all.getByRole('button', { name: 'Mangewolf Rider', exact: true }).dblclick();
+  await expect(all.getByRole('button', { name: 'Add Mangewolf Rider to the deck', exact: true })).toBeDisabled(); // the tile's + is off at the limit too
   await expect(deckList(page)).toContainText('3 × Mangewolf Rider');
   await deckList(page).getByRole('button', { name: 'Remove Goblin Miner', exact: true }).click();
   await deckList(page).getByRole('button', { name: 'Remove Goblin Miner', exact: true }).click();
@@ -5163,7 +5163,7 @@ test('AC169: Deck Builder close-up fills the height, has no scrollbar or Close, 
   const tile = allCards(page).getByRole('button', { name: 'Shiv Rat', exact: true });
   const tb = await tile.locator('[data-card-id]').first().boundingBox();
   const view = page.getByRole('dialog', { name: 'Shiv Rat' });
-  const open = async () => { await tile.click(); await expect(view).toBeVisible(); await page.waitForTimeout(400); };
+  const open = async () => { await tile.dblclick(); await expect(view).toBeVisible(); await page.waitForTimeout(400); }; // Nov 7 (Ken): a double-click opens it
   await open();
   const face = view.locator('[data-card-id]').first();
   const fb = await face.boundingBox();
@@ -5188,7 +5188,7 @@ test('AC169: Deck Builder close-up fills the height, has no scrollbar or Close, 
 
 test('AC170: deck list + and - change counts at once, without moving the row; rapid clicks all count', async ({ page }) => {
   await openDecks(page);
-  await allCards(page).getByRole('button', { name: 'Goblin Miner', exact: true }).dblclick();
+  await allCards(page).getByRole('button', { name: 'Add Goblin Miner to the deck', exact: true }).click();
   const list = deckList(page);
   await expect(list).toContainText('1 × Goblin Miner');
   const add = list.getByRole('button', { name: 'Add Goblin Miner', exact: true });
@@ -5284,7 +5284,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
       await testInfo.attach(`6a-card-back-${vp.width}x${vp.height}`, { body: await back.screenshot(), contentType: 'image/png' });
       await page.goto('/?test=1');
       await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
-      await allCards(page).getByRole('button', { name: 'Shiv Rat', exact: true }).click();
+      await allCards(page).getByRole('button', { name: 'Shiv Rat', exact: true }).dblclick(); // Nov 7 (Ken): a double-click opens it
       await expect(page.getByRole('dialog', { name: 'Shiv Rat' })).toBeVisible();
       await page.waitForTimeout(600);
       await testInfo.attach(`6a-deck-closeup-${vp.width}x${vp.height}`, { body: await page.screenshot(), contentType: 'image/png' });
@@ -6250,14 +6250,14 @@ test('AC204: adding cards by double-click, drag and + never moves the panel, the
   const names = TWELVE;
   for (let i = 0; i < names.length; i++) {
     const tile = allCards(page).getByRole('button', { name: names[i], exact: true });
-    if (i % 2 === 0) await tile.dblclick();
+    if (i % 2 === 0) await allCards(page).getByRole('button', { name: `Add ${names[i]} to the deck`, exact: true }).click(); // Nov 7: the tile's +
     else {
       await tile.scrollIntoViewIfNeeded();
       await dragTile(page, tile, await listDrop(page));
     }
     await expect(deckList(page).getByRole('button', { name: `Add ${names[i]}`, exact: true })).toBeVisible();
     await allCards(page).evaluate((g) => { let e = g; while (e) { e.scrollTop = 0; e = e.parentElement; } });
-    await same(`after adding ${names[i]} (${i % 2 === 0 ? 'double-click' : 'drag'})`);
+    await same(`after adding ${names[i]} (${i % 2 === 0 ? 'the tile +' : 'drag'})`);
     await deckList(page).getByRole('button', { name: `Add ${names[i]}`, exact: true }).click();
     await same(`after + on ${names[i]}`);
   }
@@ -6267,7 +6267,7 @@ const deckStacks = (page) => deckRow(page).getByRole('button', { name: /(cards, 
 
 test('AC205: every deck entry on Choose Your Commander has the same size, also for long names and when selected', async ({ page }) => {
   await openDecks(page);
-  await renameDeck(page, 'The Extremely Long Named Goblin Junkpile Deck');
+  await renameDeck(page, 'Extremely Long Junk Deck'); // Nov 7 (Forge): deck names are 24 letters at most
   await addCard(page, 'Goblin Miner', 50);
   await saveDeck(page);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
@@ -6283,7 +6283,7 @@ test('AC205: every deck entry on Choose Your Commander has the same size, also f
     expect(Math.abs(b.width - b0[0].width), 'same width').toBeLessThanOrEqual(1);
     expect(Math.abs(b.height - b0[0].height), 'same height').toBeLessThanOrEqual(1);
   }
-  await deckRow(page).getByRole('button', { name: /^The Extremely Long Named Goblin Junkpile Deck, 50 cards/ }).click();
+  await deckRow(page).getByRole('button', { name: /^Extremely Long Junk Deck, 50 cards/ }).click();
   await page.waitForTimeout(400);
   const b1 = await measure();
   for (let i = 0; i < n; i++) {
@@ -6341,7 +6341,7 @@ test('AC209: the Deck Builder close-up shows the 3D viewer beside Grubnak\'s car
   test.setTimeout(120000);
   await openDecks(page);
   // a card without a model (a spell; Round 12b-1 gives Shiv Rat a model): close-up alone
-  await allCards(page).getByRole('button', { name: /Venom Shiv/ }).first().click();
+  await allCards(page).getByRole('button', { name: /Venom Shiv/ }).first().dblclick(); // Nov 7 (Ken): a double-click opens it
   const shiv = page.getByRole('dialog', { name: /Venom Shiv/ });
   await expect(shiv).toBeVisible();
   await expect(shiv.getByLabel('3D model', { exact: true })).toHaveCount(0);
@@ -8956,7 +8956,7 @@ test('AC321: Deck Builder — three Commander portraits in the Deck panel (desig
   await expect(orb).toHaveCount(1);
   const before = await deckSize(page).innerText();
   await orb.scrollIntoViewIfNeeded();
-  await orb.dblclick();
+  await all.getByRole('button', { name: 'Add Searing Arcane Orb to the deck', exact: true }).click(); // Nov 7: the tile's +
   await expect(deckSize(page)).not.toHaveText(before);
   await pickDeckCommander(page, 'Thane Borgo Gravelgrim');
   await expect(all.getByRole('button', { name: 'Ironclad Bulwark', exact: true })).toHaveCount(1);
@@ -15524,6 +15524,31 @@ test('AC706: each Crystal Flow stream starts at its mine and lands in the OWNER\
       expect(mine.color, `${tag}: your stream is your goblin green`).toBe('#3ee06a');
       expect(theirs.color, `${tag}: their stream is the colour their mine shows`).toBe(oppHex);
       for (const [x, cell] of [[mine, M1], [theirs, M3]]) { const c = await mineAt(cell); expect(Math.hypot(x.from.x - c.x, x.from.y - c.y), `${tag}: the stream starts at its mine (just above the crystal)`).toBeLessThan(c.size * 1.6); }
+    }
+  }
+});
+
+// ---------- Nov 7 (Ken): "in the bottom left-hand corner, show the name of the deck you're playing" ----------
+test('AC708: the deck you play shows bottom-left in the match (a starter deck by its starter name, your own deck by its name), small, on screen, clear of the Flow crystal and the hand, at PC and phone sizes', async ({ page }) => {
+  for (const [W, H] of [[1920, 1080], [844, 390]]) {
+    await page.setViewportSize({ width: W, height: H });
+    for (const [opts, want] of [[{ playerDeckId: 'goblin-mine-rush' }, null], [{ playerCommander: 'grubnak', playerDeck: null, deckName: 'Junk Lords' }, 'Junk Lords']]) {
+      await start(page, { ai: false, skipMulligan: true, playerCommander: 'grubnak', opponentCommander: 'borgo', ...opts, setup: { firstPlayer: 'player' } });
+      const el = page.getByTestId('match-deck-name');
+      await expect(el).toBeVisible();
+      const expectName = want || (await page.evaluate((id) => window.oreheart.starterDecks?.().find?.((d) => d.id === id)?.name, opts.playerDeckId)) || /Mine Rush/;
+      await expect(el).toHaveText(expectName);
+      const m = await page.evaluate(() => {
+        const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { x0: b.left, x1: b.right, y0: b.top, y1: b.bottom }; };
+        const d = r('[data-testid=match-deck-name]'), hand = [...document.querySelectorAll('.match [data-hud-role="player-hand"] .hand-card, .match .hand .hand-card')].map((c) => { const b = c.getBoundingClientRect(); return { x0: b.left, x1: b.right, y0: b.top, y1: b.bottom }; });
+        return { d, gem: r('[data-role=player-flow-crystal] .o-gem-n') || r('[data-role=player-flow-crystal]'), hand, fs: parseFloat(getComputedStyle(document.querySelector('[data-testid=match-deck-name]')).fontSize) };
+      });
+      const hit = (a, b) => a && b && a.x0 < b.x1 - 1 && b.x0 < a.x1 - 1 && a.y0 < b.y1 - 1 && b.y0 < a.y1 - 1;
+      expect(m.d.x0 >= 0 && m.d.y1 <= H && m.d.x0 < W * 0.2, `${W}x${H}: bottom-left and on screen ${JSON.stringify(m.d)}`).toBe(true);
+      expect(m.d.y0 > H * 0.85, `${W}x${H}: at the bottom`).toBe(true);
+      expect(m.fs >= 10 && m.fs <= 16, `${W}x${H}: small (${m.fs}px)`).toBe(true);
+      expect(hit(m.d, m.gem), `${W}x${H}: clear of the Flow number`).toBe(false);
+      expect(m.hand.some((c) => hit(m.d, c)), `${W}x${H}: clear of the hand`).toBe(false);
     }
   }
 });

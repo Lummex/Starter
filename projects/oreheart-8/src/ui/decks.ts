@@ -12,6 +12,7 @@ const CMD_NAMES: Record<string, string> = { grubnak: 'Grubnak', sproingle: 'Spro
 const CMD_BY_NAME: Record<string, string> = { Grubnak: 'grubnak', Sproingle: 'sproingle', Borgo: 'borgo' };
 const KEY = 'oreheart.decks';
 const MAX_DECKS = 5;
+const NAME_MAX = 24; // Nov 7 (Forge): deck names up to 24 letters in the builder
 
 export const maxDecks = () => (net.active ? net.maxDecks : MAX_DECKS);
 export function loadDecks(): SavedDeck[] {
@@ -141,10 +142,21 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   // the tiers used so far in the deck for a card, and the best tier that still has a spare copy (plain when nothing better)
   const usedTiers = (id: string, skip = -1) => { const u = [0, 0, 0, 0, 0]; deck.forEach((x, i) => { if (x === id && i !== skip) u[Math.max(1, Math.min(5, deckTiers[i] || 1)) - 1]++; }); return u; };
   const spareTier = (id: string, skip = -1, below = 6) => { const own = ownedTiersOf(id), used = usedTiers(id, skip); for (let t = Math.min(5, below - 1); t >= 1; t--) if (own[t - 1] - used[t - 1] > 0) return t; return 1; };
+  // Nov 7 (Ken: "it should show the upgraded first ... each one will cycle through as you add to the deck"): the copies still free for
+  // this deck, per tier (owned minus in the deck); null offline, where every card is unlimited
+  const spareByTier = (id: string): number[] | null => { if (ownedOf(id) == null) return null; const own = ownedTiersOf(id), used = usedTiers(id); return own.map((n, i) => Math.max(0, n - used[i])); };
+  const spareOf = (id: string): number | null => { const s = spareByTier(id); return s ? s.reduce((a, b) => a + b, 0) : null; };
+  /** the tier the pool tile shows: the best copy not already in the deck (the best owned one when none is left) */
+  const bestSpare = (id: string): number => { const s = spareByTier(id); if (!s) return 1; for (let k = 5; k >= 1; k--) if (s[k - 1] > 0) return k; const own = ownedTiersOf(id); for (let k = 5; k >= 1; k--) if (own[k - 1] > 0) return k; return 1; };
+  /** why a card can't go in right now ('' when it can) */
+  const outReason = (id: string): string => { if (lockedFor(id)) return `Only for ${SING[CARDS[id].faction]} Commanders`; const o = ownedOf(id); if (o === 0) return "You don't own this card yet"; if (count(id) >= deckLimit(id)) return o != null && count(id) >= o ? 'All copies in deck' : `At most ${copyLimit(id)} in a deck`; return ''; };
   /** keeps deckTiers in step with deck: new slots take the best spare copy; the test page reads it */
   const syncTiers = () => { while (deckTiers.length < deck.length) deckTiers.push(spareTier(deck[deckTiers.length])); if (deckTiers.length > deck.length) deckTiers.length = deck.length; if (app.test) (window as any).__dbTiers = () => deck.map((id, i) => ({ id, tier: deckTiers[i] || 1 })); };
-  const defaultName = () => { for (let i = 1; ; i++) if (!saved.some((d) => d.name === `Deck ${i}`)) return `Deck ${i}`; };
-  let name = defaultName();
+  // Nov 7 (Forge): new decks get a fun default after their Commander ("Grubnak's Deck 2")
+  const NAME_CMD: Record<string, string> = { grubnak: 'Grubnak', sproingle: 'Knobbin', borgo: 'Borgo' };
+  const defaultName = () => { const who = NAME_CMD[cmdId] || 'My'; for (let i = 1; ; i++) if (!saved.some((d) => d.name === `${who}'s Deck ${i}`)) return `${who}'s Deck ${i}`; };
+  let name = '';
+  let nameTouched = false; // a default name follows the Commander until the player types one
 
   const sel = (label: string, id: string, opts: string[]) => combo(label, id, opts, () => renderCards());
   const fF = sel('Faction', 'f-faction', ['All', 'Goblins', 'Gnomes', 'Dwarves', 'Neutral']);
@@ -172,11 +184,11 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const status = h('p', { class: 'db-status', role: 'status' });
   const limitMsg = h('p', { class: 'db-status' });
   // Round 9c: Play starts a match with the deck on screen (disabled, with a short reason, while the deck is not legal)
-  const startWith = (cards: string[], commander: string) => {
+  const startWith = (cards: string[], commander: string, deckName = name) => {
     let diff = 'normal';
     try { diff = JSON.parse(localStorage.getItem('oreheart.picks') || '{}').diff || 'normal'; } catch { /* ignore */ }
     const others = Object.keys(COMMANDERS).filter((k) => k !== commander);
-    app.beginMatch({ playerCommander: commander, opponentCommander: others[Math.floor(Math.random() * others.length)], difficulty: diff, playerDeck: cards.slice() });
+    app.beginMatch({ playerCommander: commander, opponentCommander: others[Math.floor(Math.random() * others.length)], difficulty: diff, playerDeck: cards.slice(), deckName });
   };
   const playBtn = btn('Play', 'db-play', () => { if (!deckProblems(deck, cmdId).length) startWith(deck, cmdId); }) as HTMLButtonElement;
   const syncPlay = () => { const pr = deckProblems(deck, cmdId); playBtn.disabled = pr.length > 0; playBtn.title = pr.length ? pr[0] : 'Start a match with this deck'; playBtn.setAttribute('aria-disabled', pr.length ? 'true' : 'false'); };
@@ -199,10 +211,10 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     return true;
   };
   const count = (id: string) => deck.filter((x) => x === id).length;
-  const fly = (id: string, from?: DOMRect | null) => {
+  const fly = (id: string, from?: DOMRect | null, tier = 1) => {
     const src = from || (cardsEl.querySelector(`[data-card="${id}"]`) as HTMLElement | null)?.getBoundingClientRect();
     if (!src) return;
-    const ghost = cardFace(CARDS[id]); ghost.classList.add('db-fly');
+    const ghost = tier > 1 ? detailFace(CARDS[id], tier) : cardFace(CARDS[id]); ghost.classList.add('db-fly'); // Nov 7: the copy that goes in flies over
     ghost.style.setProperty('--cw', src.width + 'px');
     ghost.style.left = src.left + 'px'; ghost.style.top = src.top + 'px';
     document.body.append(ghost);
@@ -213,10 +225,22 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     setTimeout(() => ghost.remove(), 400);
   };
   const lockedFor = (id: string) => { const c = CARDS[id]; return c.faction !== 'any' && c.faction !== COMMANDERS[cmdId].faction; };
-  const addCard = (id: string, from?: DOMRect | null, noFly = false) => { if (lockedFor(id)) { status.textContent = `Only for ${SING[CARDS[id].faction]} Commanders`; return; } if (count(id) >= deckLimit(id)) { const o = ownedOf(id); if (o != null && count(id) >= o) status.textContent = `You own ${o} of ${CARDS[id].name}`; return; } if (!noFly) fly(id, from); deck.push(id); status.textContent = ''; renderDeck(); };
+  /** adds one copy: the best spare one, or the tier asked for (the double-click view's "Put in deck") */
+  const addCard = (id: string, from?: DOMRect | null, noFly = false, tier = 0) => {
+    if (lockedFor(id)) { status.textContent = `Only for ${SING[CARDS[id].faction]} Commanders`; return; }
+    if (count(id) >= deckLimit(id)) { const o = ownedOf(id); status.textContent = o === 0 ? `You don't own ${CARDS[id].name} yet` : o != null && count(id) >= o ? `All your copies of ${CARDS[id].name} are in this deck` : `At most ${copyLimit(id)} of ${CARDS[id].name} in a deck`; return; }
+    syncTiers();
+    const sp = spareByTier(id);
+    const k = tier >= 1 && tier <= 5 && (!sp || sp[tier - 1] > 0) ? tier : spareTier(id);
+    if (!noFly) fly(id, from, k);
+    deck.push(id); deckTiers.push(k); status.textContent = ''; renderDeck();
+  };
   const removeCard = (id: string) => { syncTiers(); let i = -1; deck.forEach((x, k) => { if (x === id && (i < 0 || (deckTiers[k] || 1) < (deckTiers[i] || 1))) i = k; }); if (i >= 0) { deck.splice(i, 1); deckTiers.splice(i, 1); } status.textContent = ''; renderDeck(); }; // the plainest copy leaves first
 
-  function enlarge(c: any) { app.closeUp(c.id, true); }
+  /** Nov 7 (Ken): the big view on a double-click (or a long press): the card in full colour, its tier ladder with your copies, Put in deck */
+  function enlarge(c: any) {
+    app.closeUp(c.id, true, { deck: { inDeck: (k: number) => usedTiers(c.id)[k - 1], spare: (k: number) => { const s = spareByTier(c.id); return s ? s[k - 1] : 99; }, room: () => !outReason(c.id), add: (k: number) => addCard(c.id, null, true, k) } });
+  }
   const ghostW = () => Math.max(40, ((cardsEl.clientWidth || 300) - 8 - 2 * 10) / 3);
   function drag(e: PointerEvent, c: any, el: HTMLElement) {
     if (e.button !== 0) return;
@@ -245,22 +269,53 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   }
   function tile(c: any) {
     const own = ownedOf(c.id);
-    const summary = tierSummary(c.id); // Nov 5: "Overcharged ×1 · Original ×5" on a card with upgraded copies
+    const summary = tierSummary(c.id); // Nov 5: "Overcharged ×1 · Original ×5" on a card with upgraded copies (Nov 7: the copies still free)
     const indeck = h('span', { class: 'db-indeck', 'aria-hidden': 'true' }, ''); // design D: "2/4 in deck" on the tile
-    const el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : '') + (own === 0 ? ' unowned' : '') + (c.id === selId ? ' sel' : ''), 'data-owned': own == null ? null : String(own), 'data-locked': lockedFor(c.id) ? 'true' : null, 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': summary ? `${c.name}: ${summary}` : c.name, 'data-card': c.id }, cardFace(c), indeck, summary ? h('span', { class: 'db-tiersum', 'aria-hidden': 'true' }, summary) : null, lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, own == null ? null : h('span', { class: 'db-owned', 'aria-label': `You own ${own}` }, own === 0 ? '' : `owned ×${own}`), h('span', { hidden: '' }, c.longText || '')) as any;
-    el._indeck = indeck;
-    let timer: any = null;
+    const tierSum = h('span', { class: 'db-tiersum', 'aria-hidden': 'true', hidden: summary ? null : '' }, summary);
+    const ownEl = own == null ? null : h('span', { class: 'db-owned', 'data-testid': 'db-left', 'aria-label': `You own ${own}` }, own === 0 ? '' : `×${own}`);
+    // Nov 7 (Ken: "it makes it hard to push add to the deck or take one out"): + / − on every tile; they never open the big view
+    const stop = (e: Event) => { e.stopPropagation(); };
+    let el: any = null;
+    const plus = h('button', { type: 'button', class: 'db-tplus', 'data-testid': 'db-plus', 'aria-label': `Add ${c.name} to the deck`, onclick: (e: Event) => { e.stopPropagation(); select(c.id); addCard(c.id, (el as HTMLElement).getBoundingClientRect()); } }, '+') as HTMLButtonElement;
+    const minus = h('button', { type: 'button', class: 'db-tminus', 'data-testid': 'db-minus', 'aria-label': `Take one ${c.name} out of the deck`, onclick: (e: Event) => { e.stopPropagation(); select(c.id); if (count(c.id) > 0) removeCard(c.id); } }, '−') as HTMLButtonElement;
+    const acts = h('div', { class: 'db-tacts' }, minus, plus);
+    for (const ev of ['pointerdown', 'dblclick', 'mousedown', 'touchstart', 'keydown']) acts.addEventListener(ev, stop);
+    const faceBox = h('div', { class: 'db-tface', 'data-tier': '1' }, cardFace(c));
+    el = h('div', { class: 'db-tile' + (lockedFor(c.id) ? ' locked' : '') + (own === 0 ? ' unowned' : '') + (c.id === selId ? ' sel' : ''), 'data-owned': own == null ? null : String(own), 'data-locked': lockedFor(c.id) ? 'true' : null, 'aria-disabled': lockedFor(c.id) ? 'true' : null, role: 'button', tabindex: '0', 'aria-label': c.name, 'data-card': c.id }, faceBox, indeck, tierSum, lockedFor(c.id) ? h('span', { class: 'lock-hint' }, '🔒 Only for ' + SING[c.faction] + ' Commanders') : null, ownEl, acts, h('span', { hidden: '' }, c.longText || ''));
+    el._indeck = indeck; el._sum = tierSum; el._own = ownEl; el._plus = plus; el._minus = minus; el._face = faceBox;
     el.addEventListener('focus', () => select(c.id));
-    el.addEventListener('click', () => {
-      select(c.id);
-      if (el._dragged) return;
-      if (timer) { clearTimeout(timer); timer = null; addCard(c.id); return; }
-      timer = setTimeout(() => { timer = null; enlarge(c); }, 300);
+    el.addEventListener('click', () => { select(c.id); }); // one click: pick it (the detail column shows it); nothing pops up
+    el.addEventListener('dblclick', () => { if (el._dragged) return; enlarge(c); });
+    // a long press on a phone opens the big view too (not when it turns into a drag or a scroll)
+    let press: any = null;
+    el.addEventListener('pointerdown', (e: PointerEvent) => {
+      if (e.pointerType === 'mouse') return;
+      clearTimeout(press);
+      const sx = e.clientX, sy = e.clientY;
+      const off = () => { clearTimeout(press); press = null; document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', off); document.removeEventListener('pointercancel', off); };
+      const mv = (m: PointerEvent) => { if (Math.hypot(m.clientX - sx, m.clientY - sy) > 8) off(); };
+      press = setTimeout(() => { off(); if (!el._dragged) { el._longPressed = true; enlarge(c); } }, 550);
+      document.addEventListener('pointermove', mv); document.addEventListener('pointerup', off); document.addEventListener('pointercancel', off);
     });
-    el.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enlarge(c); } });
+    el.addEventListener('contextmenu', (e: Event) => { if (el._longPressed) { e.preventDefault(); el._longPressed = false; } });
+    el.addEventListener('keydown', (e: KeyboardEvent) => { if (e.target !== el) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enlarge(c); } else if (e.key === '+' || e.key === '=') { e.preventDefault(); addCard(c.id); } else if (e.key === '-') { e.preventDefault(); if (count(c.id) > 0) removeCard(c.id); } });
     el.addEventListener('pointerdown', (e: PointerEvent) => drag(e, c, el));
-    el.addEventListener('dragstart', (e) => e.preventDefault());
+    el.addEventListener('dragstart', (e: Event) => e.preventDefault());
     return el;
+  }
+  /** Nov 7 (Ken): a tile shows the best copy still free, how many are left, which tiers; greyed (and + off) when none can go in */
+  function syncTile(t: any) {
+    const id = t.dataset.card as string; if (!id || !CARDS[id]) return;
+    const c = CARDS[id];
+    const k = bestSpare(id), why = outReason(id), left = spareOf(id), sp = spareByTier(id);
+    if (t._face && t._face.dataset.tier !== String(k)) { t._face.dataset.tier = String(k); t._face.replaceChildren(k > 1 ? detailFace(c, k) : cardFace(c)); }
+    t.classList.toggle('out', !!why && !lockedFor(id));
+    t.dataset.left = left == null ? '' : String(left);
+    if (t._own) { const own = ownedOf(id) || 0; const txt = own === 0 ? '' : `×${left}`; if (t._own.textContent !== txt) t._own.textContent = txt; t._own.setAttribute('aria-label', own === 0 ? 'You own none' : `${left} of your ${own} left to add`); t._own.title = own === 0 ? "You don't own this card yet" : `${left} of your ${own} copies left to add`; }
+    if (t._sum) { const up = !!sp && ownedTiersOf(id).slice(1).some((n) => n > 0); const s = up ? [5, 4, 3, 2, 1].filter((x) => sp![x - 1] > 0).map((x) => `${TIER_NAMES[x]} ×${sp![x - 1]}`).join(' · ') : ''; if (t._sum.textContent !== s) t._sum.textContent = s; t._sum.hidden = !s; }
+    if (t._plus) { t._plus.disabled = !!why; t._plus.title = why || `Add ${c.name}`; }
+    if (t._minus) { t._minus.disabled = count(id) === 0; t._minus.hidden = count(id) === 0; }
+    t.title = why;
   }
   function fitRow() {
     if (!perRow && cardsEl.clientWidth) { perRow = Math.max(2, Math.min(8, Math.round(cardsEl.clientWidth / 160))); slider.value = String(perRow); }
@@ -296,7 +351,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   }
   const slider = h('input', { type: 'range', id: 'cards-per-row', min: '2', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
   slider.addEventListener('input', () => setPerRow(+slider.value));
-  const pickCmd = (id: string) => { cmdId = id; fCmd.set(CMD_NAMES[id]); renderCards(); renderDeck(); };
+  const pickCmd = (id: string) => { cmdId = id; fCmd.set(CMD_NAMES[id]); if (!nameTouched && editing < 0) name = defaultName(); renderCards(); renderDeck(); };
   const cmdBtns = ['grubnak', 'sproingle', 'borgo'].map((id) => h('button', { type: 'button', class: 'db-cmdcard', 'data-cmd': id, 'aria-label': COMMANDERS[id].name, 'aria-pressed': 'false', onclick: () => pickCmd(id), ondblclick: () => app.closeUp('cmd:' + id, true) }, h('img', { alt: '', draggable: 'false', src: commanderPortrait(id) })) as HTMLElement);
   const cmdWrap = h('div', { class: 'db-cmdwrap', role: 'group', 'aria-label': 'Deck Commander' }, h('div', { class: 'db-cmdinner', role: 'group', 'aria-label': 'Commander card' }, ...cmdBtns)) as HTMLElement;
   const syncThumb = () => { for (const b of cmdBtns) { const on = b.dataset.cmd === cmdId; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); } };
@@ -373,6 +428,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
     });
     const c = deckCounts(deck);
     nameEl.textContent = name;
+    if (document.activeElement !== nameIn && nameIn.value !== name) nameIn.value = name;
     sizeEl.textContent = `${c.cards} cards (${CONFIG.deckMin}–${CONFIG.deckMax})`;
     countsEl.textContent = `Cards: ${c.cards} (${CONFIG.deckMin}–${CONFIG.deckMax}) · Creatures: ${c.creatures} · Spells: ${c.spells} · Crystal cards: ${c.crystals}`;
     const buckets = [1, 2, 3, 4, 5, 6, 7].map((k) => deck.filter((id) => CARDS[id].type !== 'crystal' && (k === 7 ? CARDS[id].cost >= 7 : CARDS[id].cost === k)).length);
@@ -397,7 +453,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   }
   /** the "2/4 in deck" badge on every tile and the detail's count line follow the deck */
   function syncIndeck() {
-    for (const t of cardsEl.querySelectorAll('.db-tile')) { const id = (t as HTMLElement).dataset.card!; const b = (t as any)._indeck as HTMLElement | undefined; if (!b) continue; const k = count(id); const lim = deckLimit(id); const txt = k ? (lim >= 99 ? `${k} in deck` : `${k}/${lim} in deck`) : ''; if (b.textContent !== txt) b.textContent = txt; }
+    for (const t of cardsEl.querySelectorAll('.db-tile')) { const id = (t as HTMLElement).dataset.card!; const b = (t as any)._indeck as HTMLElement | undefined; if (!b) continue; const k = count(id); const lim = deckLimit(id); const txt = k ? (lim >= 99 ? `${k} in deck` : `${k}/${lim} in deck`) : ''; if (b.textContent !== txt) b.textContent = txt; syncTile(t); }
     syncDetailCount();
   }
   // ---- deck carousel (saved decks only, plus the "+ New Deck" slot)
@@ -417,7 +473,8 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
         const d = saved[cur];
         deck = d.cards.slice(); deckTiers = d.tiers && d.tiers.length === d.cards.length ? d.tiers.slice() : []; editing = cur; name = d.name;
         cmdId = d.commander && CMD_NAMES[d.commander] ? d.commander : 'grubnak';
-      } else { deck = []; deckTiers = []; editing = -1; name = defaultName(); cmdId = 'grubnak'; }
+      } else { deck = []; deckTiers = []; editing = -1; cmdId = 'grubnak'; name = defaultName(); }
+      nameTouched = false;
       fCmd.set(CMD_NAMES[cmdId]);
       status.textContent = ''; limitMsg.textContent = '';
       renderCards();
@@ -432,7 +489,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
       h('img', { class: 'deck-img', src: '/art/deck/deck-menu.png', alt: '', draggable: 'false' }), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, '+ New Deck')));
     items.forEach((b, i) => {
       b.addEventListener('click', () => { if (carDrag) return; if (i !== cur) setCur(i); });
-      b.addEventListener('dblclick', () => { const d = saved[i]; if (!d || carDrag) return; const cm = d.commander || cmdId; if (!deckProblems(d.cards, cm).length) startWith(d.cards, cm); });
+      b.addEventListener('dblclick', () => { const d = saved[i]; if (!d || carDrag) return; const cm = d.commander || cmdId; if (!deckProblems(d.cards, cm).length) startWith(d.cards, cm, d.name); });
       b.addEventListener('keydown', (e: KeyboardEvent) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
         e.preventDefault();
@@ -465,9 +522,9 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => place(0, false)).observe(carEl);
 
   function rename() {
-    const input = h('input', { id: 'deck-name', type: 'text', maxlength: '60' }) as HTMLInputElement;
+    const input = h('input', { id: 'deck-name', type: 'text', maxlength: String(NAME_MAX) }) as HTMLInputElement;
     input.value = name;
-    const apply = () => { name = input.value.trim() || name; d.close(); renderDeck(); };
+    const apply = () => { const v = input.value.trim().slice(0, NAME_MAX); if (v) { name = v; nameTouched = true; } d.close(); renderDeck(); };
     const d: any = app.dialog('Rename deck', [h('h2', {}, 'Rename deck'), h('div', { class: 'f-field' }, h('label', { for: 'deck-name' }, 'Deck name'), input),
       h('div', { class: 'row' }, btn('OK', 'primary', apply), btn('Cancel', '', () => d.close()))]);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') apply(); });
@@ -538,7 +595,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
         detailEl.append(panel.el);
         void panel.load().then(() => { if (seq === detailSeq) swap(panel.best()); });
       }).catch(() => {});
-    } else detailEl.append(h('p', { class: 'db-dhint' }, net.active ? 'Your copies and their upgrade looks show here once your collection has loaded.' : 'Double-click a card to add it, click it once to see it large. Practice decks may use every card.'));
+    } else detailEl.append(h('p', { class: 'db-dhint' }, net.active ? 'Your copies and their upgrade looks show here once your collection has loaded.' : 'Click a card to see it here, double-click it to see it large, + to add it. Practice decks may use every card.'));
   }
   function select(id: string) {
     if (selId === id) return;
@@ -554,6 +611,13 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const carWrap = h('div', { class: 'db-carwrap', 'aria-label': 'My decks', role: 'group' },
     h('div', { class: 'db-carnav', style: 'display:flex;gap:.3em' }, btn('▲', 'small scroll', () => setCur(cur - 1), { 'aria-label': 'Previous deck' }), btn('▼', 'small scroll', () => setCur(cur + 1), { 'aria-label': 'Next deck' })), carEl);
   const renameBtn = online && net.under13 ? null : btn('Rename', '', rename);
+  // Nov 7 (Ken: "you need to be able to name the deck inside the deck builder"): the name, editable in place, at the top of the deck column
+  const kidNames = online && net.under13;
+  const nameIn = h('input', { type: 'text', class: 'db-namein', 'data-testid': 'db-name', maxlength: String(NAME_MAX), 'aria-label': 'Deck name', placeholder: 'Name your deck', spellcheck: 'false', autocomplete: 'off', readonly: kidNames ? 'true' : null, title: kidNames ? 'Deck names are set for you' : 'Click to rename this deck' }) as HTMLInputElement;
+  nameIn.addEventListener('input', () => { const v = nameIn.value.slice(0, NAME_MAX).trim(); if (v) { name = v; nameTouched = true; nameEl.textContent = name; } });
+  nameIn.addEventListener('change', () => { if (!nameIn.value.trim()) nameIn.value = name; renderDeck(); });
+  nameIn.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); nameIn.blur(); } else if (e.key === 'Escape') { nameIn.value = name; nameIn.blur(); } });
+  const nameRow = h('label', { class: 'db-namerow' }, h('span', { class: 'f-label' }, 'Deck name'), nameIn, kidNames ? null : h('span', { class: 'db-namepen', 'aria-hidden': 'true' }, '✎'));
   const actsL = h('div', { class: 'row db-actions db-acts-l' }, newBtn, ...(renameBtn ? [renameBtn] : []));
   const limits = CONFIG.copyLimits || {};
   const rulesP = h('p', { class: 'db-rules' }, h('b', {}, `${CONFIG.deckMin} to ${CONFIG.deckMax} cards`), ', one Commander. Up to ', h('b', {}, `${limits.Rare ?? 3} copies`), ' of each Rare, Ultra Rare and Collector card. Up to ', h('b', {}, `${CONFIG.crystalCardLimit} crystal cards`), '. Online, a deck only uses copies ', h('b', {}, 'you own'), '.');
@@ -579,11 +643,14 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
         h('section', { class: 'panel db-check', 'aria-label': 'Deck check' }, h('div', { class: 'ptitle h' }, 'Deck check'), probEl, countsEl, h('div', { class: 'db-sub' }, 'Deck rules'), rulesP)),
       h('section', { class: 'panel db-pool', 'aria-label': 'Card pool' }, h('div', { class: 'ptitle h' }, 'Card pool', poolMore), filtersEl, h('div', { class: 'db-sline' }, searchInp, ...(voiceBtn ? [voiceBtn] : [])), cardsEl),
       detailEl,
-      h('section', { class: 'panel dd-right', 'aria-label': 'Deck' }, pileEl, h('div', { class: 'db-cmdrow' }, h('span', { class: 'f-label', 'aria-hidden': 'true' }, 'Commander'), cmdWrap), listWrap, actsR, saveBtn, h('p', { class: 'db-msgs' }, status, limitMsg, alertEl))));
+      h('section', { class: 'panel dd-right', 'aria-label': 'Deck' }, nameRow, pileEl, h('div', { class: 'db-cmdrow' }, h('span', { class: 'f-label', 'aria-hidden': 'true' }, 'Commander'), cmdWrap), listWrap, actsR, saveBtn, h('p', { class: 'db-msgs' }, status, limitMsg, alertEl))));
   app.root.append(mainEl);
   if (online) void import('../net/dashboard').then((m) => m.loadAll().then((d) => { if (top.isConnected) { const t = m.topBar(d); t.setAttribute('aria-hidden', 'true'); top.replaceWith(t); } })).catch(() => {});
   const wake = () => cardsEl.removeAttribute('aria-hidden');
   for (const ev of ['pointermove', 'pointerdown', 'keydown', 'change', 'focusin']) mainEl.addEventListener(ev, wake);
   setCur(opts.focus != null && opts.focus >= 0 && opts.focus < saved.length ? opts.focus : saved.length);
   requestAnimationFrame(fitRow);
+  // Nov 7: signed in, the copies you own load here (the D Dashboard skipped the old menu that loaded them, so the builder thought every
+  // card was free: nothing greyed, cards you don't own could go in, and the close-up showed the 3D model instead of your copies)
+  if (online) void import('../net/economy').then((m) => m.refreshOwned()).then((got) => { if (!got || !mainEl.isConnected) return; renderCards(); renderDeck(); renderDetail(); }).catch(() => {});
 }

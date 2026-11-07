@@ -601,6 +601,7 @@ function picker() {
     value(): { commander: string; deckId?: string; cards?: string[]; commanderTier?: number } {
       const v = sel.value || '';
       const commanderTier = chosenCommanderTier(cmd); // Nov 6: the Commander copy to fight as (the server checks he owns it)
+      net.matchDeckName = (sel.selectedOptions[0]?.textContent || '').trim(); // Nov 7: shown bottom-left in the match
       // a saved deck goes by its server id (the server re-reads and re-checks it); its card list only if it has no id
       if (v.startsWith('saved:')) { const d = net.decks[+v.slice(6)]; if (d) return d.id ? { commander: cmd, deckId: d.id, commanderTier } : { commander: cmd, cards: d.cards.slice(), commanderTier }; }
       return { commander: cmd, deckId: v.startsWith('starter:') ? v.slice(8) : warbandOf((COMMANDERS as any)[cmd].faction), commanderTier };
