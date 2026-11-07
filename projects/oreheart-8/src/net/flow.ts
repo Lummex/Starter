@@ -510,6 +510,7 @@ async function proceed(s: Status) {
       return;
     }
   }
+  void import('./friends').then((m) => m.startInviteWatch()).catch(() => {}); // Nov 7: friend challenges pop up from here on
   if (await resumePvp()) return; // Nov 2 (PvP): a friend match still running? Straight back into it.
   app.showMenu();
 }
@@ -522,6 +523,7 @@ export async function startMockPvp(a: App, user: string) {
   bindPvpApp(a);
   if (!isMockPvp()) { app.showMenu(); return; } // only ever on a ?test=1&pvp=mock page
   mockSignIn = true;
+  void import('./friends').then((m) => m.startInviteWatch()).catch(() => {}); // Nov 7: friend challenges pop up here
   status = { user_id: 'mock:' + user, username: user, avatar: null, needs_avatar: false, age_group: 'adult', consent_status: 'not_required', decks_imported: true, coins: 0, banned: false, ban_expires_at: null, ban_reason: null };
   serverKind = 'test';
   net.offlineChosen = false; net.under13 = false; net.ageGroup = 'adult'; net.decks = [];
@@ -566,7 +568,9 @@ function showProfile() {
         h('section', { class: 'panel idc', 'data-testid': 'profile-identity', 'aria-label': 'Who you are' },
           h('img', { class: 'bigav net-avatar-big', src: avatarPicture(s.avatar), alt: avatarName(s.avatar) }),
           h('div', { class: 'uname' }, h('b', { class: 'net-username' }, s.username)), rkLabel, joined,
-          nbtn('Change avatar', () => avatarScreen(s, showProfile), 'btn panel play avatar-btn')),
+          nbtn('Change avatar', () => avatarScreen(s, showProfile), 'btn panel play avatar-btn'),
+          (() => { const code = h('b', { 'data-testid': 'profile-friend-code' }, '\u2026'); void import('./friends').then((m) => m.overview()).then((o: any) => { code.textContent = o && o.code ? o.code : '\u2014'; }).catch(() => {}); return h('div', { class: 'acc' }, h('span', {}, 'Friend code'), code); })(),
+          nbtn('Friends', () => { void import('./friends').then((m) => m.showFriends()); }, 'btn panel friends-btn')), // Nov 7 (Ken)
         favCmd ? h('section', { class: 'panel', 'aria-label': 'Favourite Commander' }, h('div', { class: 'ptitle h' }, ic('/art/ui/silver/icon-deck.webp'), 'Favourite Commander'),
           h('div', { class: 'fav' }, h('div', { class: 'por', style: `background-image:url(${por(fav)})` }), h('div', {}, h('h4', {}, favCmd.name), h('p', {}, favCmd.abilityText || ''), h('p', { class: 'dash-note' }, 'The last one you picked')))) : null,
         h('section', { class: 'panel', 'data-testid': 'profile-account', 'aria-label': 'Account' }, h('div', { class: 'ptitle h' }, ic('/art/ui/silver/icon-settings.webp'), 'Account'),

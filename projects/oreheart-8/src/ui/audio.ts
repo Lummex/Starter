@@ -93,7 +93,7 @@ class AudioEngine {
   unlocked = false;
   sfx = LS('oreheart.sfxVolume', DEFAULT_SFX_VOLUME);
   voice = LS('oreheart.voiceVolume', 80);
-  muted = localStorage.getItem('oreheart.muted') === '1';
+  muted = typeof localStorage !== 'undefined' && localStorage.getItem('oreheart.muted') === '1';
   private sfxGain: GainNode | null = null;
   private voiceGain: GainNode | null = null;
   private noiseBuf: AudioBuffer | null = null;
@@ -128,7 +128,7 @@ class AudioEngine {
 
   music = LS('oreheart.musicVolume', 60);
   musicMode: 'menu' | 'match' = 'menu';
-  musicOn = localStorage.getItem('oreheart.musicOff') !== '1';
+  musicOn = typeof localStorage === 'undefined' || localStorage.getItem('oreheart.musicOff') !== '1';
   private tracks: Record<string, HTMLAudioElement> = {};
   private fadeT: any = null;
   private starts: Record<string, number> = {};

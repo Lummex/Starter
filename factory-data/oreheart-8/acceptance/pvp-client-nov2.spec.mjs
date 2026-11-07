@@ -901,3 +901,95 @@ test('AC696: Commander copies (Ken, Nov 6): the player picks WHICH Commander cop
   await expect.poll(() => b.evaluate(() => (window.oreheart.commanderTiers ? window.oreheart.commanderTiers() : null)), { timeout: 15000 }).toEqual({ player: 1, opponent: 3 });
   await closeAll(a, b);
 });
+
+// ---------- Friends (Ken, Nov 7) ----------
+const fr = (page, name, ...args) => page.evaluate(async ([n, a]) => await window.oreheart.friends[n](...a), [name, args]);
+async function openFriends(page) {
+  await page.locator('[data-testid=pvp-friends]').click();
+  await expect(page.locator('[data-screen="econ-friends"]')).toBeVisible({ timeout: 10000 });
+}
+
+test('AC698: friends (Ken, Nov 7): Alice adds Bob by name, Bob accepts, both see each other online; Alice challenges Bob, Bob gets the pop-up, accepts, and both are in the same match', async ({ browser }) => {
+  test.setTimeout(150000);
+  const id = uniq();
+  const a = await openAs(browser, 'alice' + id), b = await openAs(browser, 'bob' + id);
+  await atMenu(a); await atMenu(b);
+  // Alice: Friends -> my code shows -> add Bob by name
+  await openFriends(a);
+  await expect(a.locator('[data-testid=friends-my-code]')).toHaveText(/^[A-HJ-NP-Z2-9]{8}$/);
+  await expect(a.locator('[data-testid=friends-empty]')).toBeVisible();
+  await a.locator('[data-testid=friends-add-input]').fill('bob' + id);
+  await a.locator('[data-testid=friends-add-send]').click();
+  await expect(a.locator('[data-testid=friends-alert]')).toContainText('Request sent');
+  await expect(a.locator('[data-testid=friends-outgoing] [data-player="bob' + id + '"]')).toBeVisible();
+  // Bob: the request is waiting; accept
+  await openFriends(b);
+  const req = b.locator('[data-testid=friends-incoming] [data-player="alice' + id + '"]');
+  await expect(req).toBeVisible({ timeout: 10000 });
+  await req.locator('[data-testid=friends-accept]').click();
+  await expect(b.locator('[data-testid=friends-row][data-player="alice' + id + '"]')).toBeVisible({ timeout: 10000 });
+  // both show each other online (the screen refreshes itself)
+  await expect(a.locator('[data-testid=friends-row][data-player="bob' + id + '"]')).toHaveAttribute('data-status', 'online', { timeout: 15000 });
+  await expect(b.locator('[data-testid=friends-row][data-player="alice' + id + '"] [data-testid=friends-status]')).toHaveText('Online');
+  // no free text anywhere: the only text box on the screen is the name/code field
+  expect(await a.locator('[data-screen="econ-friends"] textarea').count()).toBe(0);
+  expect(await a.locator('[data-screen="econ-friends"] input[type=text]').count()).toBe(1);
+  // Alice challenges Bob: she lands on her code screen with the note; Bob gets the pop-up with a countdown
+  await a.locator('[data-testid=friends-row][data-player="bob' + id + '"] [data-testid=friends-challenge]').click();
+  await expect(a.locator('[data-screen="pvp-code"]')).toBeVisible({ timeout: 10000 });
+  await expect(a.locator('[data-testid=friends-challenge-sent]')).toContainText('Challenge sent to bob' + id);
+  const pop = b.locator('[data-testid=friend-invite]');
+  await expect(pop).toBeVisible({ timeout: 10000 });
+  await expect(pop).toContainText('alice' + id + ' challenges you!');
+  expect(Number(await pop.locator('[data-testid=invite-secs]').textContent())).toBeGreaterThan(40);
+  await pop.locator('[data-testid=invite-accept]').click();
+  await inMatch(b); await inMatch(a);
+  const va = await view(a), vb = await view(b);
+  expect(va.matchId).toBe(vb.matchId);
+  expect(va.names.them).toBe('bob' + id);
+  await closeAll(a, b);
+});
+
+test('AC698b: friends: "Add friend" on the Match End sends a request to the player you just played; a block hides you from their requests and stops them joining your friend code', async ({ browser }) => {
+  test.setTimeout(150000);
+  const { a, b, id } = await pair(browser);
+  const r = await hook(a, 'forfeit');
+  expect(r && r.ok, JSON.stringify(r)).toBe(true);
+  await expect(b.locator('main.end')).toBeVisible({ timeout: 15000 });
+  const add = b.locator('[data-testid=end-friend] [data-testid=add-friend]');
+  await expect(add).toBeVisible({ timeout: 10000 });
+  await add.click();
+  await expect(add).toHaveText('Request sent');
+  const ov = await fr(a, 'overview');
+  expect(ov.incoming.map((x) => x.username)).toEqual(['bob' + id]);
+  // Alice blocks Bob: his next request looks like "no such player", and he can't join her code
+  expect((await fr(a, 'block', ov.incoming[0].id)).ok).toBe(true);
+  const again = await fr(b, 'request', 'alice' + id);
+  expect(again.ok).toBe(false);
+  expect(again.error).toMatch(/No player with that name/);
+  await a.goto(a.url()); await b.goto(b.url()); await atMenu(a); await atMenu(b);
+  const made = await hook(a, 'create', 'grubnak', 'goblin-warband');
+  expect(made && made.ok, JSON.stringify(made)).toBe(true);
+  const joined = await hook(b, 'join', made.code, 'borgo', 'dwarf-warband');
+  expect(joined && joined.ok).toBe(false);
+  expect(String(joined.error)).toMatch(/can't join this player/i);
+  await closeAll(a, b);
+});
+
+test('AC699: Exit (Ken, Nov 7): the box offers Exit Oreheart, Sign out and Stay; in a browser tab Exit shows the goodbye screen ("You can close this tab") with a way back', async ({ page }) => {
+  await page.goto('/?test=1');
+  await page.waitForFunction(() => !!window.oreheart && !!window.oreheart.exit);
+  await page.evaluate(() => window.oreheart.exit.open());
+  const box = page.locator('[data-testid=exit-dialog]');
+  await expect(box).toBeVisible();
+  await expect(box.locator('[data-testid=exit-app]')).toHaveText('Exit Oreheart');
+  await expect(box.locator('[data-testid=exit-signout]')).toHaveText('Sign out');
+  await box.locator('[data-testid=exit-stay]').click();
+  await expect(box).toHaveCount(0);
+  await page.evaluate(() => window.oreheart.exit.open());
+  await page.locator('[data-testid=exit-app]').click();
+  await expect(page.locator('[data-screen=goodbye]')).toBeVisible();
+  await expect(page.locator('[data-testid=goodbye-note]')).toHaveText('You can close this tab now.');
+  await page.locator('[data-testid=goodbye-back]').click();
+  await expect(page.locator('[data-screen=goodbye]')).toHaveCount(0);
+});

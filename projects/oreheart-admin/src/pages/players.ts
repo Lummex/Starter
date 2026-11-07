@@ -58,6 +58,11 @@ export async function playersPage(root: HTMLElement, params: URLSearchParams) {
       page < pages ? h('a', { href: link(page + 1) }, 'Next →') : h('span', {})));
 }
 
+interface FriendsAdmin {
+  code: string | null; blocked_by: number;
+  friends: { id: string; username: string; status: string; requested_by: string; since: string }[];
+  blocks: { id: string; username: string; at: string }[];
+}
 interface Shards {
   oreshards: number; money_spent_cents: number; review: unknown;
   purchases: { id: string; bundle: string; oreshards: number; amount_cents: number; currency: string; status: string; session: string | null; payment_intent: string | null; at: string }[];
@@ -105,11 +110,12 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
   root.replaceChildren(h('p', { class: 'small' }, 'Loading…'));
   const cardFilter = (params.get('card') ?? '').trim();
   const cardPage = Math.max(1, parseInt(params.get('cp') ?? '1', 10) || 1);
-  const [d, audit, cards, shards] = await Promise.all([
+  const [d, audit, cards, shards, friends] = await Promise.all([
     rpc<Detail>('admin_player_detail', { p_user: id }),
     rpc<AuditRow[]>('admin_audit_log', { p_page: 1, p_page_size: 50, p_target: id }),
     rpc<CardRow[]>('admin_player_cards', { p_user: id, p_card_id: cardFilter || null, p_page: cardPage, p_page_size: 100 }),
     rpc<Shards>('admin_oreshards', { p_user: id }).catch(() => null), // Nov 6 (Stripe): Oreshards and purchases
+    rpc<FriendsAdmin>('admin_friends', { p_user: id }).catch(() => null), // Nov 7: friends and blocks
   ]);
   const reload = () => void playerPage(root, id, params);
   const isAdmin = d.roles.includes('admin');
@@ -200,6 +206,11 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
     ...(consentCard ? [consentCard] : []),
     h('section', { class: 'card' }, h('h2', {}, `Decks (${d.decks.length})`),
       table(['Name', 'Commander', 'Cards', 'From', 'Updated'], d.decks.map((x) => [x.name, x.commander ?? '—', fmtNum(x.cards), x.source, fmtDate(x.updated_at)]), 'deck-table')),
+    h('section', { class: 'card', 'data-testid': 'friends-card' }, h('h2', {}, `Friends (${friends ? friends.friends.length : 0})`),
+      h('p', { class: 'small' }, `Friend code ${friends?.code ?? '—'} · blocks ${friends ? friends.blocks.length : 0} players · blocked by ${friends ? friends.blocked_by : 0}`),
+      table(['Player', 'State', 'Since', ''], (friends ? friends.friends : []).map((x) => [h('a', { href: `#/player/${x.id}` }, x.username), x.status === 'accepted' ? 'friends' : x.requested_by === id ? 'request sent' : 'request received', fmtDate(x.since),
+        actionForm('unfriend-' + x.id, [], 'Remove', 'danger', (reason) => rpc('admin_remove_friendship', { p_user: id, p_other: x.id, p_reason: reason }), reload)]), 'friends-table'),
+      ...(friends && friends.blocks.length ? [h('p', { class: 'small' }, 'Blocked: ' + friends.blocks.map((b) => b.username).join(', '))] : [])),
     h('section', { class: 'card' }, h('h2', {}, `Oreshard purchases (${shards ? shards.purchases.length : 0})`),
       table(['When', 'Bundle', 'Oreshards', 'Paid', 'State', 'Stripe session', 'Payment'], (shards ? shards.purchases : []).map((x) => [fmtDate(x.at), x.bundle, fmtNum(x.oreshards), fmtMoney(x.amount_cents), x.status, h('span', { class: 'mono' }, x.session ?? '—'), h('span', { class: 'mono' }, x.payment_intent ?? '—')]), 'purchase-table')),
     h('section', { class: 'card' }, h('h2', {}, 'Coin history'),

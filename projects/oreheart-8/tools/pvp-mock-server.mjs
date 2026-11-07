@@ -28,6 +28,8 @@ const service = new PvpService(store, { engineVersion: ENGINE_VERSION + '-mock',
 // API checks that play hundreds of moves ask for no minimum Respond window with this header; browsers and the real function never have it
 const noMinService = new PvpService(store, { engineVersion: ENGINE_VERSION + '-mock', summarize, rules: { ...DEFAULT_RULES, respondMinSeconds: 0 } });
 const users = new Map();
+const { makeFriends } = await import('./friends-mock.mjs'); // Nov 7: friends in memory (the real rules are SQL)
+const friends = makeFriends(store, users);
 const userOf = (name) => {
   const n = String(name || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 16);
   if (!n) return null;
@@ -91,6 +93,14 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { ok: true });
   }
   if (url.pathname === '/debug/moves' && req.method === 'GET') return json(res, 200, { ok: true, moves: store.moves.filter((m) => m.matchId === url.searchParams.get('matchId')) });
+  if (url.pathname === '/debug/expire-invites' && req.method === 'GET') { friends.debugExpire(); return json(res, 200, { ok: true }); }
+  if (url.pathname === '/friends' && req.method === 'POST') { // Nov 7: the friends list, requests, blocks and challenges
+    const who = userOf(req.headers['x-mock-user'] || url.searchParams.get('user'));
+    if (!who) return json(res, 401, { ok: false, error: 'not signed in' });
+    let fb = ''; for await (const chunk of req) { fb += chunk; if (fb.length > 20_000) return json(res, 413, { ok: false, error: 'too big' }); }
+    let fbody; try { fbody = fb ? JSON.parse(fb) : {}; } catch { return json(res, 400, { ok: false, error: 'bad JSON' }); }
+    return json(res, 200, await friends.handle(String(fbody.op || ''), fbody, who));
+  }
   if (url.pathname !== '/match' || req.method !== 'POST') return json(res, 404, { ok: false, error: 'not found' });
   const user = userOf(req.headers['x-mock-user'] || url.searchParams.get('user'));
   if (!user) return json(res, 401, { ok: false, error: 'not signed in' });

@@ -13,7 +13,7 @@ const STD = [ // Ken's Nov 5 layout: 3 cheap Miners, 4 Common, 2 Uncommon, 1 Rar
 ];
 
 describe('shop odds in plain words', () => {
-  it('reads the default pack like the contract (Nov 5: 11 cards, the top rarity reads Legendary)', () => expect(oddsWords(STD)).toBe('11 cards: 3 cheap Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 85%, Ultra Rare 13%, Legendary 2%'));
+  it('reads the default pack like the contract (Nov 5: 11 cards, the top rarity reads Legendary)', () => expect(oddsWords(STD)).toBe('11 cards: 3 Standard Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 85%, Ultra Rare 13%, Legendary 2%'));
   it('keeps slot order and odd percentages', () => expect(oddsWords([{ slot_no: 2, count: 1, odds: { Rare: 9950, Collector: 50 } }, { slot_no: 1, count: 3, odds: { Common: 10000 } }])).toBe('4 cards: 3 Common, 1 Rare or better: Rare 99.5%, Legendary 0.5%'));
 });
 

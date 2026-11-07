@@ -1,5 +1,13 @@
 // Nov 2 (Helper C): the PvP client's match driver (src/net/pvp.ts NetGame) against a fake server.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+// Nov 7: pvp.ts now reaches the sound engine (menus -> audio), which reads window/localStorage when it loads; node has neither
+vi.hoisted(() => {
+  const g: any = globalThis;
+  if (!g.window) g.window = g;
+  for (const k of ['addEventListener', 'removeEventListener']) if (typeof g[k] !== 'function') g[k] = () => {};
+  if (!g.document) g.document = { addEventListener: () => {}, removeEventListener: () => {}, visibilityState: 'visible', querySelector: () => null, querySelectorAll: () => [] };
+  if (!g.localStorage) { const m = new Map<string, string>(); g.localStorage = { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, String(v)); }, removeItem: (k: string) => { m.delete(k); } }; }
+});
 import { NetGame, cleanCode, codeOk, friendlyError, type Transport } from '../src/net/pvp';
 import { createMatch, legalActions } from '../src/engine';
 import { viewFor } from '../src/engine/view';

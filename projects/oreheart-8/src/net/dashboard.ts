@@ -72,7 +72,10 @@ export function topBar(data: Data, extra: El[] = []): El {
     // Nov 6 (regions): the player's server and how many are on it; a tap opens the lobby where the server can be changed
     h('button', { type: 'button', class: 'server panel', 'data-testid': 'dash-server', title: 'Your server: change it in the PvP Lobby', onclick: () => net.openPvp?.('ranked') }, h('span', { class: 'dot' + (data.online ? '' : ' off') }), serverPillText(data.online)),
     ...extra,
-    h('button', { type: 'button', class: 'icn panel', 'aria-label': 'Settings', onclick: () => app?.showSettings() }, ico('/art/ui/silver/icon-settings.webp')));
+    // Nov 7 (Ken): the friends list, and an Exit button near the gear
+    h('button', { type: 'button', class: 'icn panel friends-btn', 'aria-label': 'Friends', title: 'Friends', 'data-testid': 'dash-friends', onclick: () => { void import('./friends').then((m) => m.showFriends()); } }, ico('/art/ui/silver/icon-deck.webp'), h('span', { class: 'fr-badge', 'data-friends-badge': '1', hidden: true })),
+    h('button', { type: 'button', class: 'icn panel', 'aria-label': 'Settings', onclick: () => app?.showSettings() }, ico('/art/ui/silver/icon-settings.webp')),
+    h('button', { type: 'button', class: 'icn panel exit-btn', 'aria-label': 'Exit', title: 'Exit or sign out', 'data-testid': 'dash-exit', onclick: () => { if (app) void import('./exit').then((m) => m.openExit(app!)); } }, ico('/art/ui/silver/icon-quit.webp')));
 }
 
 function rankPanel(data: Data, mini = false): El {

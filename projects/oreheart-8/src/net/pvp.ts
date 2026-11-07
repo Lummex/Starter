@@ -393,6 +393,14 @@ export class NetGame {
 let app: App | null = null;
 let current: NetGame | null = null;
 let activeMatch: string | null = null;
+/** Nov 7 (Exit button): the match this player still has running, if any */
+export const currentActiveMatch = () => activeMatch;
+/** Nov 7 (friend challenges): the Commander and deck to bring without a picker: the last ones chosen, else Grubnak and his warband */
+export function quickPick(): { commander: string; deckId?: string; commanderTier?: number } {
+  let c = 'grubnak';
+  try { const p = JSON.parse(localStorage.getItem('oreheart.picks') || '{}'); if (p && (COMMANDERS as any)[p.cmd] && !(COMMANDERS as any)[p.cmd].locked) c = p.cmd; } catch { /* default */ }
+  return { commander: c, deckId: warbandOf((COMMANDERS as any)[c].faction), commanderTier: chosenCommanderTier(c) };
+}
 let roomCode: string | null = null;
 let roomTimer: any = null;
 let queueTimer: any = null;
@@ -450,7 +458,8 @@ function screen(name: string, ...kids: (El | null)[]): El {
     h('section', { class: 'panel', 'data-testid': 'lobby-friend', 'aria-label': 'Play a friend', style: 'flex:1' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/silver/icon-deck.webp', alt: '' }), 'Play a friend'),
       h('p', { class: 'lbl' }, 'Make a secret code and send it, or type in the one a friend sent you.'),
       h('div', { class: 'frow' }, nbtn('Make a code', () => showMake(), 'sbtn panel pvp-make', { 'data-testid': 'lobby-make' }), nbtn('I have a code', () => showJoin(), 'sbtn panel join pvp-join', { 'data-testid': 'lobby-join' })),
-      h('div', { class: 'frow' }, nbtn('Practice with a friend', () => showMake(true), 'sbtn panel pvp-practice', { 'data-testid': 'lobby-practice', title: 'A code like any other, but nothing is paid or counted: no coins, no quests, no rank' }))));
+      h('div', { class: 'frow' }, nbtn('Practice with a friend', () => showMake(true), 'sbtn panel pvp-practice', { 'data-testid': 'lobby-practice', title: 'A code like any other, but nothing is paid or counted: no coins, no quests, no rank' })),
+      h('div', { class: 'frow' }, nbtn('Friends list', () => { void import('./friends').then((m) => m.showFriends()); }, 'sbtn panel pvp-friends', { 'data-testid': 'lobby-friends', title: 'Your friends: who is online, requests, challenges' })))); // Nov 7 (Ken)
   // the right column: your rank (the army panel joins it when a screen has a picker)
   const rankBox = h('section', { class: 'panel', 'data-testid': 'lobby-rank', 'aria-label': 'Your rank' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/rank-charms/diamond.webp', alt: '' }), 'Your rank', h('button', { type: 'button', class: 'more', onclick: () => { void import('./dashboard').then((m) => m.showRankings(app!)); } }, 'Rankings ›')),
     h('div', { class: 'mini-rk' }, h('img', { class: 'rk-charm', src: '/art/ui/rank-charms/sapphire.webp', alt: '' }), h('div', {}, h('b', { class: 'rk-label' }, lastRank ? lastRank.name : 'Unranked'), h('small', { class: 'rk-line' }, lastRank ? rankText(lastRank) : 'Play a ranked match to be placed'))));
@@ -474,7 +483,8 @@ export function pvpMenu(el: El): void {
   box.append(rankLine,
     nbtn('Ranked match', () => showQueue('ranked'), 'pvp-menu-btn primary', { 'data-testid': 'pvp-ranked' }),
     nbtn('Unranked match', () => showQueue('unranked'), 'pvp-menu-btn', { 'data-testid': 'pvp-unranked' }),
-    nbtn('Play a friend', () => showFriend(), 'pvp-menu-btn', { 'data-testid': 'pvp-play-friend' }));
+    nbtn('Play a friend', () => showFriend(), 'pvp-menu-btn', { 'data-testid': 'pvp-play-friend' }),
+    nbtn('Friends', () => { void import('./friends').then((m) => m.showFriends()); }, 'pvp-menu-btn', { 'data-testid': 'pvp-friends' })); // Nov 7 (Ken): the friends list
   void transport().call('rank', {}).then((r: any) => { if (r && r.ok && r.rank && box.isConnected) { lastRank = r.rank; rankLine.textContent = rankText(r.rank); } }).catch(() => {});
   const addBack = (id: string) => {
     if (box.querySelector('.pvp-back-btn')) return;
@@ -689,9 +699,9 @@ async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string
 }
 
 /** create → the code screen ("Waiting for your friend…", polling `room` every 2 s). */
-export async function makeCode(pick: { commander: string; deckId?: string; cards?: string[]; commanderTier?: number }, practice = false): Promise<{ ok: boolean; code?: string; error?: string }> {
+export async function makeCode(pick: { commander: string; deckId?: string; cards?: string[]; commanderTier?: number }, practice = false, region?: string | null): Promise<{ ok: boolean; code?: string; error?: string }> {
   let r: any;
-  try { r = await transport().call('create', { commander: pick.commander, ...(pick.commanderTier != null ? { commanderTier: pick.commanderTier } : {}), ...(practice ? { practice: true } : {}), ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }) }); }
+  try { r = await transport().call('create', { ...(region ? { region } : {}), commander: pick.commander, ...(pick.commanderTier != null ? { commanderTier: pick.commanderTier } : {}), ...(practice ? { practice: true } : {}), ...(pick.cards ? { cards: pick.cards } : { deckId: pick.deckId }) }); }
   catch (e) { return { ok: false, error: friendlyError(e) }; }
   if (!r || !r.ok || !r.code) return { ok: false, error: friendlyError(r?.error || 'Could not make a code') };
   showCode(r.code);

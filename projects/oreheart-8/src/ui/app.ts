@@ -4287,6 +4287,7 @@ export class App {
         side(me, ng.avatars?.me, myCmd, win, this.commanderTier('player')),
         h('div', { class: 'word' }, h('h1', { class: 'end-title' }, win ? 'VICTORY' : 'DEFEAT'), h('div', { class: 'rule' }), h('p', { class: 'pvp-end-vs' }, win ? `${cmdName(theirCmd) || them} retreats! ` : `${cmdName(myCmd) || 'Your Commander'} retreats. `, h('b', {}, `${mode} match vs ${them}`), ` · turn ${st.turn}`), why ? h('p', { class: 'pvp-end-why' }, why) : null),
         side(them, ng.avatars?.them, theirCmd, !win, this.commanderTier('opponent'))),
+      ng.names?.them ? h('div', { class: 'end-friend', 'data-testid': 'end-friend' }, (() => { const slot = h('span', {}); void import('../net/friends').then((m) => { slot.replaceWith(m.addFriendButton(String(ng.names.them))); }); return slot; })()) : '', // Nov 7 (Ken): save the player you just played
       h('div', { class: 'row4' }, ratingPanel || h('section', { class: 'panel', 'data-testid': 'end-rating', 'aria-label': 'Rating' }, h('div', { class: 'ptitle h' }, ic(ladderCharm('diamond')), 'Rating'), h('p', { class: 'dash-note' }, mode === 'Ranked' ? 'No rating change was reported.' : `${mode} matches do not move your rating.`)), coinsPanel, questsPanel, statsPanel),
       h('div', { class: 'acts' }, home, again)));
   }

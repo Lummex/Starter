@@ -191,7 +191,10 @@ export class PvpService {
     m.region = room.region ?? null;
     await this.tiersFor(m);
     room.guest = user; room.guestDeck = deck; room.status = 'started'; room.matchId = id;
-    if (!(await this.store.claimRoom(room))) fail('Someone else just joined that code.');
+    // Nov 7 (friends): a block between the two players refuses the claim; say so (any other store error stays in the log)
+    let claimed = false;
+    try { claimed = await this.store.claimRoom(room); } catch (e: any) { if (/can't join this player/i.test(String(e?.message || e))) fail("You can't join this player's game."); throw e; }
+    if (!claimed) fail('Someone else just joined that code.');
     await this.store.insertMatch(m);
     await this.store.putViews(m, viewsFor(m, [{ type: 'newMatch' }]));
     return { ok: true, matchId: id, view: viewFor(m, 'b', [{ type: 'newMatch' }]) };

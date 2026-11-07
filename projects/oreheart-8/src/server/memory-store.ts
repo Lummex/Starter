@@ -33,6 +33,8 @@ export class MemoryStore implements Store {
   async claimRoom(room: Room) {
     const cur = this.rooms.get(room.code);
     if (!cur || cur.status !== 'waiting' || cur.guest) return false;
+    const bl: Set<string> | undefined = (this as any).blocks; // Nov 7 (friends): a blocked player can't join (the real check is claim_room in SQL)
+    if (bl && room.guest && (bl.has(`${cur.host.userId}|${room.guest.userId}`) || bl.has(`${room.guest.userId}|${cur.host.userId}`))) throw new Error("You can't join this player's game.");
     this.rooms.set(room.code, clone(room));
     return true;
   }
