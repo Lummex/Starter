@@ -12191,7 +12191,7 @@ test('AC482: the Fireball and the Starfall meteor fall from high above, from a d
 // Ken: "the done button and the menu button. They're still not centered. And the done button is a little too big. It should be more the size of the menu button."
 // owner check change (Ken, Nov 1: "I don't want any of the computer style drawn buttons. I want nice graphic coins" / "use little graphics instead of words"):
 // Done and Menu are Brush's coins, picture only (the word stays the name and the hover tooltip); still the same size, centred, Done clear of the deck pile
-test('AC483: the Done button is the size of the Menu button, both have their contents centred, and Done stays clear of the deck pile', async ({ page }) => {
+test('AC483: the Done button is larger than the Menu button (Ken, Nov 7: about 2.5x on PC; 56 px on a phone, under the phase panel), both have their contents centred, and Done stays clear of the deck pile', async ({ page }) => {
   for (const [W, H] of [[1920, 1080], [844, 390]]) {
     await page.setViewportSize({ width: W, height: H });
     await start(page, { ai: false, skipMulligan: true, setup: { firstPlayer: 'player' } });
@@ -12202,18 +12202,22 @@ test('AC483: the Done button is the size of the Menu button, both have their con
       const menu = document.querySelector('.match .o-menu .menu-btn'), done = document.querySelector('.match .btn.o-text.done-btn');
       const deck = document.querySelector('.match [aria-label="Your deck"]');
       const shownWords = (e) => [e, ...e.querySelectorAll('*')].filter((x) => [...x.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && x.getBoundingClientRect().width > 2).map((x) => x.textContent.trim()).join('');
-      return { menu: r(menu), done: r(done), mc: coin(menu), dc: coin(done), mt: menu.title, dt: done.title, mtext: shownWords(menu), dtext: shownWords(done), deck: deck ? r(deck) : null };
+      return { menu: r(menu), done: r(done), mc: coin(menu), dc: coin(done), mt: menu.title, dt: done.title, mtext: shownWords(menu), dtext: shownWords(done), deck: deck ? r(deck) : null, phase: document.querySelector('.match .o-phase') ? r(document.querySelector('.match .o-phase')) : null };
     });
-    expect(Math.abs(m.done.w - m.menu.w), `${W}x${H}: Done ${Math.round(m.done.w)} px wide, Menu ${Math.round(m.menu.w)}`).toBeLessThanOrEqual(2);
-    expect(Math.abs(m.done.h - m.menu.h), `${W}x${H}: Done ${Math.round(m.done.h)} px tall, Menu ${Math.round(m.menu.h)}`).toBeLessThanOrEqual(2);
+    // Nov 7 (Ken: "I want that much larger, so like maybe two to three times larger"): about 2.5x the Menu coin on PC, and 56 px on a phone (the most that fits between the deck pile and the phase panel)
+    if (H > 500) expect(m.done.w / m.menu.w, `${W}x${H}: Done ${Math.round(m.done.w)} px wide, Menu ${Math.round(m.menu.w)}`).toBeGreaterThanOrEqual(2.2);
+    else expect(Math.round(m.done.w), `${W}x${H}: Done on a phone`).toBe(56);
+    expect(Math.abs(m.done.w - m.done.h), `${W}x${H}: Done stays round`).toBeLessThanOrEqual(2);
+    expect(m.done.x1 <= W && m.done.y1 <= H, `${W}x${H}: Done is fully on screen`).toBe(true);
     expect(m.done.w, `${W}x${H}: big enough to tap`).toBeGreaterThanOrEqual(44);
     expect(m.dc.img, 'Done is the painted done coin').toContain('/art/ui/match/done.webp');
     expect(m.mc.img, 'Menu is the painted menu coin').toContain('/art/ui/match/menu.webp');
     expect(m.dc.w, `${W}x${H}: the coin shows`).toBeGreaterThan(m.done.w * 0.6);
-    expect(Math.abs(m.dc.w - m.mc.w), 'the two coins match').toBeLessThanOrEqual(2);
+    expect(m.dc.w, 'the Done coin is at least as big as the Menu coin').toBeGreaterThanOrEqual(m.mc.w - 2);
     expect([m.dtext, m.mtext], 'picture only: no word on screen').toEqual(['', '']);
     expect([m.dt, m.mt], 'the word is the hover tooltip').toEqual(['Done', 'Menu']);
     if (m.deck) expect(m.done.x0, `${W}x${H}: Done stays clear of the deck pile`).toBeGreaterThanOrEqual(m.deck.x1 - 1);
+    if (m.phase) expect(m.done.y0 >= m.phase.y1 - 1 || m.done.x1 <= m.phase.x0 + 1 || m.done.x0 >= m.phase.x1 - 1 || m.done.y1 <= m.phase.y0 + 1, `${W}x${H}: Done stays clear of the phase panel`).toBe(true);
   }
 });
 

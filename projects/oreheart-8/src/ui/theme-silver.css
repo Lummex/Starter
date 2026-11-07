@@ -615,3 +615,10 @@ html body:not(#_a):not(#_b) #app .match .e-recap .btn.recap-tog.mcoin.mcoin{posi
 html body:not(#_a):not(#_b) #app .match .e-recap .btn.recap-tog.mcoin[aria-expanded=true]::before{filter:brightness(1.2) drop-shadow(0 0 6px #d8e8ffcc) drop-shadow(0 2px 3px #000b)}
 html body:not(#_a):not(#_b) #app .match .e-discard.empty{border:0;border-radius:0;background:url(/art/ui/match/frame-card-slot.webp) center/100% 100% no-repeat}
 html body:not(#_a):not(#_b) #app .match .e-discard .e-discard-n{border:0;border-radius:0;background:url(/art/ui/match/count-blank.webp) center/contain no-repeat;min-width:0;width:2.1em;height:2.1em;padding:0;display:flex;align-items:center;justify-content:center;right:-.7em;bottom:-.7em}
+
+/* Nov 7 (Ken: "the next button or continue button ... I want that much larger, so like maybe two to three times larger"):
+   the Done coin about 2.5x on PC (160px at 1080p, 108px at 720p), bottom-right under the phase panel and clear of the hand;
+   on a phone 64px, just left of the phase panel and right of the hand, never off the screen. Same element and test hooks. */
+html body:not(#_a):not(#_b):not(#_c) #app .match .btn.o-text.done-btn.mcoin.mcoin.btn{--done-size:clamp(96px,15vh,160px);width:var(--done-size)!important;height:var(--done-size)!important;left:auto!important;top:auto!important;right:max(10px,1.2vw)!important;bottom:max(4px,.6vh)!important;filter:drop-shadow(0 .6vh 1.2vh #000c)}
+html body:not(#_a):not(#_b):not(#_c) #app .match .btn.o-text.done-btn.mcoin.mcoin.btn:is(:hover,:focus-visible):not(:disabled){filter:drop-shadow(0 0 1.6vh rgba(207,227,255,.75)) drop-shadow(0 .6vh 1.2vh #000c)}
+@media (max-height:500px){html body:not(#_a):not(#_b):not(#_c) #app .match .btn.o-text.done-btn.mcoin.mcoin.btn{--done-size:56px;right:max(8px,2.5vw)!important;bottom:3px!important}}
