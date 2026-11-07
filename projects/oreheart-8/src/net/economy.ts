@@ -349,7 +349,7 @@ export function toast(text: string, icon = '/art/packs/icons/coin-pile.webp') {
 }
 
 // ------------------------------------------------------------------ screens
-export type EconScreen = 'shop' | 'collection' | 'quests' | 'pack';
+export type EconScreen = 'shop' | 'collection' | 'quests' | 'pack' | 'oreshards';
 /** While an economy screen is up, everything else in the game's root is inert: no keyboard focus, no clicks, nothing read out. */
 function syncInert(root: Element) {
   const open = !!root.querySelector(':scope > .econ-screen');
@@ -384,6 +384,7 @@ export async function openScreen(kind: EconScreen) {
   if (kind === 'shop') (await import('./shop')).showShop();
   else if (kind === 'collection') (await import('./collection')).showCollection();
   else if (kind === 'quests') (await import('./quests')).showQuests();
+  else if (kind === 'oreshards') (await import('./oreshards')).showOreshards(); // Nov 6 (Stripe): Buy Oreshards
   else if (kind === 'pack') await testOpen('standard');
 }
 
@@ -518,10 +519,12 @@ if (isTestPage() && typeof window !== 'undefined') {
       net.openShop = () => { void openScreen('shop'); }; return true;
     },
   };
-  const attach = () => { const w = window as any; w.oreheart = Object.assign(w.oreheart || {}, { packs }); };
+  const attach = () => { const w = window as any; w.oreheart = Object.assign(w.oreheart || {}, { packs }); if (!w.oreheart.oreshards) void import('./oreshards').then((m) => { w.oreheart.oreshards = m.oreshardHooks(); }); };
   attach(); setTimeout(attach, 0); setTimeout(attach, 500);
   const want = params().get('econ') as EconScreen | null;
-  if (want && ['shop', 'collection', 'quests', 'pack'].includes(want)) setTimeout(() => {
+  // Nov 6 (Stripe): back from Stripe's page (?oreshards=paid|cancel): open Buy Oreshards once the sign-in is back, and it reads the balance again
+  if (params().get('oreshards') && !want) { let tries = 0; const t = setInterval(() => { if (net.active || ++tries > 40) { clearInterval(t); if (net.active) void openScreen('oreshards'); } }, 500); }
+  if (want && ['shop', 'collection', 'quests', 'pack', 'oreshards'].includes(want)) setTimeout(() => {
     for (const w of document.querySelectorAll('.overlay.welcome')) w.remove(); // the test page's first-visit welcome box would sit on top
     void refreshCoins().then(() => openScreen(want));
   }, 50);

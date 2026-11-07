@@ -58,6 +58,11 @@ export async function playersPage(root: HTMLElement, params: URLSearchParams) {
       page < pages ? h('a', { href: link(page + 1) }, 'Next →') : h('span', {})));
 }
 
+interface Shards {
+  oreshards: number; money_spent_cents: number; review: unknown;
+  purchases: { id: string; bundle: string; oreshards: number; amount_cents: number; currency: string; status: string; session: string | null; payment_intent: string | null; at: string }[];
+  ledger: unknown[];
+}
 interface Detail {
   profile: { id: string; username: string; avatar: string | null; created_at: string; last_seen_at: string; age_group: string; consent_status: string };
   email: string; email_confirmed_at: string | null; coins: number; money_spent_cents: number; roles: string[];
@@ -100,10 +105,11 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
   root.replaceChildren(h('p', { class: 'small' }, 'Loading…'));
   const cardFilter = (params.get('card') ?? '').trim();
   const cardPage = Math.max(1, parseInt(params.get('cp') ?? '1', 10) || 1);
-  const [d, audit, cards] = await Promise.all([
+  const [d, audit, cards, shards] = await Promise.all([
     rpc<Detail>('admin_player_detail', { p_user: id }),
     rpc<AuditRow[]>('admin_audit_log', { p_page: 1, p_page_size: 50, p_target: id }),
     rpc<CardRow[]>('admin_player_cards', { p_user: id, p_card_id: cardFilter || null, p_page: cardPage, p_page_size: 100 }),
+    rpc<Shards>('admin_oreshards', { p_user: id }).catch(() => null), // Nov 6 (Stripe): Oreshards and purchases
   ]);
   const reload = () => void playerPage(root, id, params);
   const isAdmin = d.roles.includes('admin');
@@ -184,6 +190,7 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
           h('dt', {}, 'Avatar card'), h('dd', {}, d.profile.avatar ?? '—'),
           h('dt', {}, 'Coins'), h('dd', { 'data-testid': 'player-coins' }, fmtNum(d.coins)),
           h('dt', {}, 'Money spent'), h('dd', { 'data-testid': 'player-money' }, fmtMoney(d.money_spent_cents)),
+          h('dt', {}, 'Oreshards'), h('dd', { 'data-testid': 'player-oreshards' }, shards ? fmtNum(shards.oreshards) : '—', shards?.review ? h('span', { class: 'pill bad' }, 'payment review') : null),
           h('dt', {}, 'Cards owned'), h('dd', {}, `${fmtNum(d.cards_owned)} (${origins})`),
           h('dt', {}, 'State'), h('dd', { 'data-testid': 'player-state' }, banLabel(!!d.ban, d.ban?.expires_at ?? null)),
           h('dt', {}, 'Player id'), h('dd', { class: 'mono' }, d.profile.id))),
@@ -193,6 +200,8 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
     ...(consentCard ? [consentCard] : []),
     h('section', { class: 'card' }, h('h2', {}, `Decks (${d.decks.length})`),
       table(['Name', 'Commander', 'Cards', 'From', 'Updated'], d.decks.map((x) => [x.name, x.commander ?? '—', fmtNum(x.cards), x.source, fmtDate(x.updated_at)]), 'deck-table')),
+    h('section', { class: 'card' }, h('h2', {}, `Oreshard purchases (${shards ? shards.purchases.length : 0})`),
+      table(['When', 'Bundle', 'Oreshards', 'Paid', 'State', 'Stripe session', 'Payment'], (shards ? shards.purchases : []).map((x) => [fmtDate(x.at), x.bundle, fmtNum(x.oreshards), fmtMoney(x.amount_cents), x.status, h('span', { class: 'mono' }, x.session ?? '—'), h('span', { class: 'mono' }, x.payment_intent ?? '—')]), 'purchase-table')),
     h('section', { class: 'card' }, h('h2', {}, 'Coin history'),
       table(['When', 'Change', 'Reason', 'Balance after'], d.transactions.map((t) => [fmtDate(t.created_at), (t.delta > 0 ? '+' : '') + fmtNum(t.delta), t.reason, fmtNum(t.balance_after)]), 'coin-table')),
     h('section', { class: 'card' }, h('h2', {}, `Cards (${fmtNum(cardTotal)}${cardFilter ? ` × ${cardFilter}` : ''})`),

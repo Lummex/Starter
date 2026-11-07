@@ -1065,3 +1065,44 @@ test('AC669: FREE, NEW and the shop text are readable (white on a dark or painte
   const pale = await page.locator('.shop-free').first().evaluate((e) => getComputedStyle(e).backgroundImage);
   expect(pale).toBe('none');
 });
+
+test('AC697: Buy Oreshards (Ken, Nov 6, Stripe): the four bundles at the plan\'s prices with their bonuses, the no-refund line, a tap asks the server for Stripe\'s page (never the game), the one-way convert, the Shop\'s shard counter with its +, and an under-13 account without a parent sees a message instead', async ({ page }) => {
+  test.setTimeout(60000);
+  await openEcon(page, 'oreshards');
+  const cards = page.locator('[data-testid="shard-bundles"] .shard-bundle');
+  await expect(cards).toHaveCount(4);
+  const seen = await cards.evaluateAll((els) => els.map((e) => ({ id: e.dataset.bundle, price: e.querySelector('.shard-buy').textContent.trim(), amount: e.querySelector('.shard-amount b').textContent.trim(), bonus: (e.querySelector('[data-testid="shard-bonus"]') || {}).textContent || '' })));
+  expect(seen).toEqual([
+    { id: 'pouch', price: '$1.99', amount: '200', bonus: '' },
+    { id: 'sack', price: '$4.99', amount: '550', bonus: '+10% bonus' },
+    { id: 'chest', price: '$9.99', amount: '1,200', bonus: '+20% bonus' },
+    { id: 'hoard', price: '$19.99', amount: '2,600', bonus: '+30% bonus' },
+  ]);
+  await expect(page.locator('[data-testid="shard-fine"]')).toContainText('not refundable');
+  await expect(page.locator('[data-testid="shard-count"] b')).toHaveText('0');
+  // a tap asks the server (stand-in) for the Stripe page for THAT bundle, from this page's own origin; the game never builds a payment itself
+  await page.locator('[data-testid="shard-buy-chest"]').click();
+  await expect.poll(() => page.evaluate(() => window.oreheart.oreshards.state().lastCheckout), { timeout: 8000 }).toEqual({ bundle: 'chest', origin: new URL(page.url()).origin });
+  await expect(page.locator('[data-testid="oreshards-alert"]')).toContainText('Stripe');
+  // the convert is one way and shows up in the balance and the coins
+  expect(await page.evaluate(() => window.oreheart.oreshards.give(500))).toBe(true);
+  await page.evaluate(() => window.oreheart.oreshards.open());
+  await expect(page.locator('[data-testid="shard-count"] b')).toHaveText('500');
+  await expect(page.locator('[data-testid="shard-purchase"]')).toHaveCount(1);
+  const coinsBefore = Number((await page.locator('[data-testid="coin-chip"] .econ-coins-n').first().textContent()).replace(/,/g, ''));
+  await page.locator('[data-testid="shard-convert-n"]').fill('120');
+  await page.locator('[data-testid="shard-convert-btn"]').click();
+  await expect(page.locator('[data-testid="shard-count"] b')).toHaveText('380');
+  await expect.poll(() => page.locator('[data-testid="coin-chip"] .econ-coins-n').first().textContent().then((s) => Number(s.replace(/,/g, '')))).toBe(coinsBefore + 120);
+  expect(await page.locator('body').textContent()).not.toMatch(/coins? (into|to) oreshards/i);
+  // the Pack Shop shows the shard counter with its + which opens this screen
+  await openEcon(page, 'shop');
+  await expect(page.locator('[data-testid="shard-chip"] .econ-coins-n')).toHaveText('0'); // a fresh page: the stand-in balance starts again
+  await page.locator('[data-testid="buy-oreshards"]').click();
+  await expect(page.locator('[data-screen="econ-oreshards"]')).toBeVisible();
+  // an under-13 account without an approved parent: no bundles, a plain message
+  await page.goto('/?test=1&econ=oreshards&kid=1');
+  await expect(page.locator('[data-screen="econ-oreshards"]')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('[data-testid="shard-blocked"]')).toContainText('parent must approve');
+  await expect(page.locator('[data-testid="shard-bundles"] .shard-bundle')).toHaveCount(0);
+});

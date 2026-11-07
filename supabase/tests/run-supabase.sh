@@ -15,3 +15,4 @@ psql "$db_url" -v ON_ERROR_STOP=1 -q -f supabase/tests/phase_a_security.test.sql
 psql "$db_url" -v ON_ERROR_STOP=1 -q -f supabase/tests/phase_bc_economy.test.sql
 psql "$db_url" -v ON_ERROR_STOP=1 -q -f supabase/tests/phase_bc_quests.test.sql
 psql "$db_url" -v ON_ERROR_STOP=1 -q -f supabase/tests/phase_bc_pvp.test.sql
+psql "$db_url" -v ON_ERROR_STOP=1 -q -f supabase/tests/phase_d_oreshards.test.sql

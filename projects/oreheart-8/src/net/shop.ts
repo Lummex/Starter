@@ -5,6 +5,7 @@
 import { h } from '../ui/app';
 import { econShow, backBtn, coinChip, coinIcon, api, setShop, buyPack, buyBundle, openStash, currentCoins, currentFreePacks, lastShop, STREAK_DAYS, type PackInfo, type ShopInfo, type BundleInfo } from './economy';
 import { sealedPack } from './packopen';
+import { shardChip } from './oreshards';
 import { oddsWords } from './quest-summary';
 import { TIER_NAMES, RARITY_LABEL } from '../content/card-labels';
 export { oddsWords };
@@ -27,7 +28,7 @@ export async function showShop(): Promise<void> {
   econShow('shop',
     h('div', { class: 'econ-head' }, backBtn(),
       h('div', { class: 'econ-titles' }, h('h1', {}, 'The Pack Shop'), h('p', { class: 'econ-sub' }, 'Shiny, crinkly, and only slightly haunted. Every pack holds 11 cards.')),
-      h('div', { class: 'econ-wallet' }, coinChip())),
+      h('div', { class: 'econ-wallet' }, shardChip(), coinChip())),
     alert,
     h('div', { class: 'shop-main' },
       h('div', { class: 'shop-left' }, kinds, grid, strip),
