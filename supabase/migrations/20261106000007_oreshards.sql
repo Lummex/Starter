@@ -360,7 +360,7 @@ create function public.stripe_event_begin(p_event_id text, p_type text) returns 
 language plpgsql security definer set search_path = '' as $$
 begin
   perform private.assert_referee();
-  if p_event_id is null or p_event_id !~ '^evt_[A-Za-z0-9]{8,64}$' then raise exception 'bad event id'; end if;
+  if p_event_id is null or p_event_id !~ '^evt_[A-Za-z0-9_]{8,64}$' then raise exception 'bad event id'; end if;
   insert into public.stripe_events (id, type) values (p_event_id, p_type) on conflict (id) do nothing;
   return found;
 end $$;
@@ -414,7 +414,7 @@ declare pr public.purchases; l public.oreshard_ledger; st text;
 begin
   perform private.assert_referee();
   if p_kind not in ('refund', 'dispute') then raise exception 'kind is refund or dispute'; end if;
-  if p_payment_intent is null or p_payment_intent !~ '^pi_[A-Za-z0-9]{8,64}$' then raise exception 'bad payment intent'; end if;
+  if p_payment_intent is null or p_payment_intent !~ '^pi_[A-Za-z0-9_]{8,64}$' then raise exception 'bad payment intent'; end if;
   select * into pr from public.purchases where stripe_payment_intent = p_payment_intent for update;
   if not found then return jsonb_build_object('ok', false, 'error', 'unknown payment'); end if;
   st := case when p_kind = 'dispute' then 'disputed' else 'refunded' end;

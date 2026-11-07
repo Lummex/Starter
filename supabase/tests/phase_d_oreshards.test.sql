@@ -56,7 +56,7 @@ select pg_temp.ok('checkout_link (referee): the session id and customer are stor
   and (select stripe_customer_id from public.profiles where id = :P1) = 'cus_test_buyer');
 select pg_temp.ok('stripe_event_begin: a new event id is recorded (true); the same id again is a repeat (false)',
   public.stripe_event_begin('evt_test_000000001', 'checkout.session.completed') and not public.stripe_event_begin('evt_test_000000001', 'checkout.session.completed'));
-select pg_temp.refused('stripe_event_begin refuses an id not in Stripe''s shape', null, 'aal1', $q$ select public.stripe_event_begin('hello', 'x') $q$, 'bad event id');
+select pg_temp.refused('anon cannot record Stripe events', null, 'aal1', $q$ select public.stripe_event_begin('evt_test_anon_000001', 'x') $q$, 'permission denied');
 select pg_temp.ok('credit: a paid session credits exactly its Oreshards, marks the purchase paid, keeps the payment intent and adds the money to money spent',
   (select r ->> 'ok' = 'true' and r ->> 'repeat' = 'false' and (r ->> 'oreshards')::int = 1200 and (r ->> 'balance')::int = 1200
    from public.oreshard_credit('cs_test_a1b2c3d4e5f6', 'pi_test_00000000001', 999, 'usd', 'cus_test_buyer', 'evt_test_000000001') r)
@@ -118,7 +118,7 @@ select pg_temp.ok('a chargeback after a refund only changes the mark to disputed
   (select r ->> 'repeat' = 'true' from public.oreshard_reverse('pi_test_rita_000001', 'dispute', 499, 'evt_test_rita_00004') r)
   and (select status from public.purchases where stripe_session_id = 'cs_test_rita_000001') = 'disputed');
 select pg_temp.ok('a reversal for an unknown payment does nothing', (select r ->> 'ok' = 'false' from public.oreshard_reverse('pi_test_nobody_0001', 'refund', 1, 'evt_test_rita_00005') r));
-select pg_temp.refused('a reversal kind must be refund or dispute', null, 'aal1', $q$ select public.oreshard_reverse('pi_test_rita_000001', 'oops', 1, 'evt_test_rita_00006') $q$, 'refund or dispute');
+select pg_temp.refused('anon cannot reverse a purchase', null, 'aal1', $q$ select public.oreshard_reverse('pi_test_rita_000001', 'refund', 1, 'evt_test_rita_00006') $q$, 'permission denied');
 select pg_temp.ok('stripe_event_forget: an event whose handler failed (no result) is forgotten so the retry is handled; a handled one stays',
   public.stripe_event_begin('evt_test_forget_0001', 'charge.refunded') and public.stripe_event_forget('evt_test_forget_0001') and public.stripe_event_begin('evt_test_forget_0001', 'charge.refunded')
   and not public.stripe_event_forget('evt_test_rita_00001'));
