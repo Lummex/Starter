@@ -73,9 +73,9 @@ const STUB = {
   owned: {} as Record<string, number>,
   copies: {} as Record<string, CardCopy[]>, // test page: each owned card's copies with tiers
   // Nov 5 (Ken): bundles and My Packs on the test page (the real ones are settings and rows on the server)
-  bundles: [{ size: 1, bonus: 0, promises: {} }, { size: 6, bonus: 0, promises: {} }, { size: 24, bonus: 3, promises: { upgraded_min_tier: 3 } }, { size: 99, bonus: 16, promises: { upgraded_min_tier: 4, legendary_unowned: true, card_back: 'chest' } }] as BundleInfo[],
+  bundles: [{ size: 1, bonus: 0, promises: {} }, { size: 6, bonus: 0, promises: {} }, { size: 24, bonus: 3, promises: { upgraded_min_tier: 3, legendary_min: 2 } }, { size: 99, bonus: 16, promises: { upgraded_min_tier: 4, legendary_min: 10, legendary_unowned: true, card_back: 'chest' } }] as BundleInfo[],
   stashBundles: [] as { id: string; type: string; left: number; promises: Record<string, any>; best: number; newLeg: boolean }[],
-  pitySince: 0, pityLimit: 40,
+  pitySince: 0, pityLimit: 20,
   cardBacks: [] as string[],
   opens: 0,
   rerolled: false,

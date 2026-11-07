@@ -4,7 +4,7 @@
 // open_stash, open_pack); the browser only shows what it says. No fake timers, no fake scarcity, odds always visible.
 import { h } from '../ui/app';
 import { econShow, backBtn, coinChip, coinIcon, api, setShop, buyPack, buyBundle, openStash, currentCoins, currentFreePacks, lastShop, STREAK_DAYS, type PackInfo, type ShopInfo, type BundleInfo } from './economy';
-import { sealedPack } from './packopen';
+import { sealedPack, packArt } from './packopen';
 import { shardChip } from './oreshards';
 import { sleevesPanel } from './cosmetics';
 import { oddsWords } from './quest-summary';
@@ -48,7 +48,9 @@ export function promiseWords(p: Record<string, any> | null | undefined): string[
   if (!p) return out;
   const t = Number(p.upgraded_min_tier) || 0;
   if (t >= 2) out.push(`one upgraded card at ${TIER_NAMES[t]}${t < 5 ? ' or better' : ''}`);
-  if (p.legendary_unowned) out.push("one Legendary you don't own yet");
+  const lm = Number(p.legendary_min) || 0; // Nov 7 (Ken): a minimum in TOTAL; lucky drops count toward it
+  if (lm > 0) out.push(`at least ${lm} Legendar${lm === 1 ? 'y' : 'ies'}${p.legendary_unowned ? `, one of them new to you` : ''}`);
+  else if (p.legendary_unowned) out.push("one Legendary you don't own yet");
   if (p.card_back) out.push(`the ${String(p.card_back)} card back (only from this chest)`);
   return out;
 }
@@ -122,6 +124,65 @@ function stashRow(p: PackInfo, n: number, parts: Parts, free = false): El {
   return row;
 }
 
+// ------------------------------------------------------------------ Nov 7 (Ken): Brush's painted badges (blank; the game writes the words)
+const BADGE = '/art/shop-badges/';
+/** the starburst: "+N FREE" (red) or "FREE" (green) */
+export function burstBadge(main: string, sub: string, free = false, attrs: Record<string, any> = {}): El {
+  return h('span', { class: 'ohb ohb-burst' + (free ? ' free' : ''), ...attrs }, h('span', {}, h('b', {}, main), sub ? ' ' : '', sub ? h('small', {}, sub) : null));
+}
+/** the ribbon: BEST VALUE (red) or MOST POPULAR (blue) */
+export function ribbonBadge(text: string, popular = false, attrs: Record<string, any> = {}): El {
+  return h('span', { class: 'ohb ohb-ribbon' + (popular ? ' popular' : ''), ...attrs }, h('span', {}, text));
+}
+/** the pack-count plaque: grander with the count (x1 steel .. x115 winged) */
+export function countPlaque(n: number): El {
+  const c = n <= 1 ? 'c1' : n <= 6 ? 'c6' : n <= 27 ? 'c27' : 'c115';
+  return h('span', { class: `ohb ohb-count ${c}`, 'data-testid': 'pack-count', 'aria-hidden': 'true' }, h('span', {}, `×${n}`));
+}
+
+// ------------------------------------------------------------------ Nov 7 (Ken: "it only shows one pack for each ... a visual representation
+// of what you're actually getting"): the bundles drawn from the one pack picture: a fan of 6, a tower of 24 with the 3 free ones apart
+// (glowing, with their badge), and the chest with a spill of packs in front and its 16 free ones apart. No new pictures.
+const packImg = (p: PackInfo, cls: string, style = '') => h('img', { class: `shop-stk ${cls}`, src: packArt(p), alt: '', draggable: 'false', 'aria-hidden': 'true', style });
+function bundleArt(p: PackInfo, b: BundleInfo, total: number): El {
+  if (b.size === 1) return sealedPack(p);
+  if (b.size >= 99) return chestBundleArt(p, b, total);
+  const n = b.size, shown = n <= 6 ? n : 12; // a tower of 24 reads as many: 12 visible layers
+  const layers: El[] = [];
+  for (let i = 0; i < shown - 1; i++) {
+    const k = i / Math.max(1, shown - 2);
+    const style = n <= 6
+      ? `--r:${(-14 + 28 * k).toFixed(1)}deg;--x:${(-34 + 68 * k).toFixed(1)}%;--y:${(Math.abs(k - 0.5) * 10).toFixed(1)}%;z-index:${i + 1}`
+      : `--r:${(((i * 37) % 11) - 5).toFixed(1)}deg;--x:${(((i * 53) % 13) - 6).toFixed(1)}%;--y:${(-1.4 * (shown - 2 - i)).toFixed(1)}%;z-index:${i + 1}`;
+    layers.push(packImg(p, n <= 6 ? 'fan' : 'tower', style));
+  }
+  const front = sealedPack(p); front.classList.add('shop-stk-front');
+  const bonus = b.bonus > 0 ? h('div', { class: 'shop-bonus-packs', 'data-testid': 'bonus-packs', 'aria-hidden': 'true' },
+    ...Array.from({ length: Math.min(b.bonus, 3) }, (_, i) => packImg(p, 'bonus', `--i:${i}`))) : null;
+  return h('div', { class: `shop-stack ${n <= 6 ? 'is-fan' : 'is-tower'}`, 'data-packs': String(total) }, ...layers, front, bonus);
+}
+/** the chest: a spill of packs in front, the free ones apart; hover (or a long press) opens it, heaped with packs */
+function chestBundleArt(p: PackInfo, b: BundleInfo, total: number): El {
+  const heap = h('div', { class: 'chest-heap', 'aria-hidden': 'true' },
+    ...Array.from({ length: 22 }, (_, i) => packImg(p, 'heap', `--hx:${(((i * 47) % 100) - 50).toFixed(0)}%;--hy:${(Math.floor(i / 5) * -9).toFixed(0)}%;--hr:${(((i * 29) % 40) - 20).toFixed(0)}deg;--i:${i}`)));
+  const spill = h('div', { class: 'chest-spill', 'aria-hidden': 'true' },
+    ...Array.from({ length: 7 }, (_, i) => packImg(p, 'spill', `--sx:${(-42 + i * 14).toFixed(0)}%;--sr:${(((i * 31) % 36) - 18).toFixed(0)}deg;--i:${i}`)));
+  const bonus = b.bonus > 0 ? h('div', { class: 'shop-bonus-packs chest-bonus', 'data-testid': 'bonus-packs', 'aria-hidden': 'true' },
+    ...Array.from({ length: 4 }, (_, i) => packImg(p, 'bonus', `--i:${i}`))) : null;
+  const box = h('div', { class: 'chest-box', 'data-testid': 'chest-box' },
+    h('img', { class: 'chest-open', src: '/art/packs/chest/chest-open.webp', alt: '', draggable: 'false', 'aria-hidden': 'true' }),
+    heap,
+    chestArt(),
+    h('img', { class: 'chest-lid', src: '/art/packs/chest/chest-lid.webp', alt: '', draggable: 'false', 'aria-hidden': 'true' }),
+    h('span', { class: 'chest-total', 'aria-hidden': 'true' }, `${total} packs`));
+  const el = h('div', { class: 'shop-stack is-chest', 'data-packs': String(total) }, box, spill, bonus);
+  // a long press on a phone opens it as a hover would; letting go closes it
+  let t: any = null;
+  el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType === 'mouse') return; t = setTimeout(() => el.classList.add('open'), 350); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, () => { clearTimeout(t); el.classList.remove('open'); });
+  return el;
+}
+
 /** Brush's treasure chest (art/packs/chest, approved Nov 5): the closed chest with its seam light pulsing */
 export function chestArt(cls = ''): El {
   return h('div', { class: `chest-art ${cls}`.trim(), 'data-testid': 'chest-art' },
@@ -151,15 +212,15 @@ function tile(p: PackInfo, b: BundleInfo, info: ShopInfo, parts: Parts): El {
   };
   buy.addEventListener('click', () => { void go(); });
   const art = h('div', { class: 'shop-art' + (chest ? ' shop-chest' : ''), role: 'img', 'aria-label': chest ? `${p.name} treasure chest` : p.name },
-    chest ? chestArt() : sealedPack(p),
-    total > 1 ? h('span', { class: 'shop-count', 'aria-hidden': 'true' }, `×${total}`) : null);
+    bundleArt(p, b, total),
+    countPlaque(total));
   art.addEventListener('click', () => { void go(); });
   const promises = promiseWords(b.promises);
   return h('div', { class: `shop-pack shop-bundle econ-panel${b.size === 24 ? ' shop-big' : ''}${chest ? ' shop-bundle-chest' : ''}`, role: 'listitem', 'data-pack': p.id, 'data-size': String(b.size), 'data-packs': String(total) },
-    Number(badges.best_value) === b.size ? h('span', { class: 'shop-badge shop-best', 'data-testid': 'best-value' }, 'BEST VALUE') : null,
-    Number(badges.most_popular) === b.size ? h('span', { class: 'shop-badge shop-popular' }, 'MOST POPULAR') : null,
-    b.size === 1 && free ? h('span', { class: 'shop-free', 'aria-label': 'Free pack available' }, 'FREE') : null,
-    b.bonus > 0 ? h('span', { class: 'shop-bonus', 'data-testid': 'bundle-bonus' }, `+${b.bonus} FREE`) : null,
+    Number(badges.best_value) === b.size ? ribbonBadge('BEST VALUE', false, { class: 'ohb ohb-ribbon shop-badge shop-best', 'data-testid': 'best-value' }) : null,
+    Number(badges.most_popular) === b.size ? ribbonBadge('MOST POPULAR', true, { class: 'ohb ohb-ribbon popular shop-badge shop-popular' }) : null,
+    b.size === 1 && free ? burstBadge('FREE', '', true, { class: 'ohb ohb-burst free shop-free', 'aria-label': 'Free pack available' }) : null,
+    b.bonus > 0 ? burstBadge(`+${b.bonus}`, 'FREE', false, { class: 'ohb ohb-burst shop-bonus', 'data-testid': 'bundle-bonus' }) : null,
     art,
     h('h2', {}, b.size === 1 ? 'Single Pack' : chest ? 'Treasure Chest' : b.size >= 24 ? 'Warband Bundle' : 'Pack Bundle'),
     h('p', { class: 'shop-blurb shop-qty' }, ...(b.size === 1 ? ['1 pack \u00b7 11 cards'] : b.bonus > 0 ? [`${b.size} packs `, h('b', { class: 'plus' }, `+${b.bonus} FREE`), ` = ${total} packs`] : [`${b.size} packs \u00b7 ${b.size * 11} cards`])),

@@ -850,9 +850,9 @@ test('AC690: the shop sells bundles (Ken, Nov 5): 1, 6, 24 (+3 free, the big one
   await expect(tiles.nth(3).locator('[data-testid="best-value"]')).toHaveText('BEST VALUE');
   await expect(tiles.nth(3)).toHaveClass(/shop-bundle-chest/);
   expect(await tiles.locator('[data-testid="per-pack"]').evaluateAll((els) => els.map((e) => e.textContent))).toEqual(['100 per pack', '100 per pack', '~89 per pack', '~86 per pack']);
-  await expect(tiles.nth(2).locator('[data-testid="bundle-promise"]')).toContainText('one upgraded card at Overcharged or better');
-  await expect(tiles.nth(3).locator('[data-testid="bundle-promise"]')).toContainText("one upgraded card at Radiant or better, one Legendary you don't own yet, the chest card back");
-  await expect(page.getByTestId('shop-shield')).toContainText('40 packs in a row without a Legendary, and the 40th brings one');
+  await expect(tiles.nth(2).locator('[data-testid="bundle-promise"]')).toContainText('one upgraded card at Overcharged or better, at least 2 Legendaries'); // Nov 7 (Ken)
+  await expect(tiles.nth(3).locator('[data-testid="bundle-promise"]')).toContainText('one upgraded card at Radiant or better, at least 10 Legendaries, one of them new to you, the chest card back'); // Nov 7 (Ken)
+  await expect(page.getByTestId('shop-shield')).toContainText('20 packs in a row without a Legendary, and the 20th brings one'); // Nov 7 (Ken: every 20 packs)
   await expect(page.locator('.shop-odds')).toContainText('Rare 78%');
   // 500 coins: only the single pack is affordable; the stand-in player gets coins for the 24
   await expect(tiles.nth(2).locator('.shop-buy')).toBeDisabled();
@@ -1063,7 +1063,7 @@ test('AC669: FREE, NEW and the shop text are readable (white on a dark or painte
   expect(fill).toBe('rgb(255, 255, 255)');
   await expect(page.locator('.shop-odds').first()).toContainText('78%');
   const pale = await page.locator('.shop-free').first().evaluate((e) => getComputedStyle(e).backgroundImage);
-  expect(pale).toBe('none');
+  expect(pale).toContain('/art/shop-badges/badge-burst-green.webp'); // Nov 7 (Ken): Brush's painted badge, the word written on it (no pale chip)
 });
 
 test('AC697: Buy Oreshards (Ken, Nov 6, Stripe): the four bundles at the plan\'s prices with their bonuses, the no-refund line, a tap asks the server for Stripe\'s page (never the game), the one-way convert, the Shop\'s shard counter with its +, and an under-13 account without a parent sees a message instead', async ({ page }) => {
