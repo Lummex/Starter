@@ -167,8 +167,8 @@ test('AC645: a "NEW" tag shows on (only) the cards the server marks is_new, once
   await expect.poll(() => cards.nth(i).locator('.pko-new').evaluate((e) => +getComputedStyle(e).opacity)).toBeGreaterThan(0.9);
 });
 
-for (const vp of [{ name: 'PC', width: 1920, height: 1080, minW: 150 }, { name: 'PC small', width: 1280, height: 720, minW: 110 }, { name: 'phone', width: 844, height: 390, minW: 70 }]) {
-  test(`AC646: the pack opening fits the screen (${vp.name} ${vp.width}x${vp.height}): pack, eight cards in one row and the buttons all inside the view`, async ({ page }) => {
+for (const vp of [{ name: 'PC', width: 1920, height: 1080, minW: 150 }, { name: 'PC small', width: 1280, height: 720, minW: 100 }, { name: 'phone', width: 844, height: 390, minW: 70 }]) {
+  test(`AC646: the pack opening fits the screen (${vp.name} ${vp.width}x${vp.height}): pack, eleven cards (Ken, Nov 5: 3 Standard Miners + 8) in one row and the buttons all inside the view`, async ({ page }) => {
     await page.setViewportSize({ width: vp.width, height: vp.height });
     await openEcon(page, 'pack');
     const inside = async (sel) => page.locator(sel).evaluateAll((els, [W, H]) => els.filter((e) => e.getClientRects().length).map((e) => { const r = e.getBoundingClientRect(); return r.left >= -1 && r.top >= -1 && r.right <= W + 1 && r.bottom <= H + 1; }), [vp.width, vp.height]);
@@ -177,7 +177,7 @@ for (const vp of [{ name: 'PC', width: 1920, height: 1080, minW: 150 }, { name: 
     await page.evaluate(() => window.oreheart.packs.skip());
     await page.evaluate(() => window.oreheart.packs.skip());
     await page.waitForTimeout(800);
-    expect(await inside('.pko-card')).toEqual(Array(8).fill(true));
+    expect(await inside('.pko-card')).toEqual(Array(11).fill(true));
     expect(await inside('.pko-done')).toEqual([true]);
     const r = await page.locator('.pko-card').evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((b) => ({ w: b.width, top: Math.round(b.top) })));
     expect(new Set(r.map((x) => x.top)).size, 'one row').toBe(1);
