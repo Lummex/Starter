@@ -354,6 +354,9 @@ export type EconScreen = 'shop' | 'collection' | 'quests' | 'pack' | 'oreshards'
 function syncInert(root: Element) {
   const open = !!root.querySelector(':scope > .econ-screen');
   for (const c of [...root.children] as HTMLElement[]) {
+    // Nov 7 (Ken: the Exit box over the Collection let clicks through to the cards): a pop-up opened over an economy screen is never
+    // made inert (an inert box takes no clicks, so they fell through to the screen behind); if one was, it is freed again
+    if (c.classList.contains('overlay')) { if (c.dataset.econInert) { c.removeAttribute('inert'); delete c.dataset.econInert; } continue; }
     if (c.classList.contains('econ-screen')) continue;
     if (open) { if (!c.hasAttribute('inert')) { c.setAttribute('inert', ''); c.dataset.econInert = '1'; } }
     else if (c.dataset.econInert) { c.removeAttribute('inert'); delete c.dataset.econInert; }

@@ -172,7 +172,10 @@ function build(root: El, data: Data) {
       h('div', { class: 'grid' },
         h('div', { class: 'panel tile big', 'data-testid': 'dash-play' }, h('div', { class: 'art', style: 'background-image:url(/art/menu-front-oct29.webp);background-position:62% 70%' }),
           h('div', { class: 'txt' }, h('div', { class: 'h' }, 'Play'), h('p', { class: 'play-sub' }, playSub()), modeChips(),
-            h('button', { type: 'button', class: 'btn panel play', 'data-testid': 'dash-find', onclick: go }, ico('/art/ui/silver/icon-play.webp'), 'Find a match'))),
+            h('div', { class: 'play-row' },
+              h('button', { type: 'button', class: 'btn panel play', 'data-testid': 'dash-find', onclick: go }, ico('/art/ui/silver/icon-play.webp'), 'Find a match'),
+              // Nov 7 (Ken: "I'd also like a tutorial button"): the guided match (the Nov 1 tutorial) from the Dashboard
+              h('button', { type: 'button', class: 'btn panel tut', 'data-testid': 'dash-tutorial', title: 'A short guided match that teaches the basics', onclick: () => app!.beginTutorial() }, ico('/art/ui/silver/icon-howto.webp'), 'Tutorial')))),
         tile('Deck Builder', `${deckN} deck${deckN === 1 ? '' : 's'}`, null, () => showDecks(app!), 'dash-decks', 'background:url(/art/owner/goblin/grubnak-on-throne-art.png) center 25%/cover no-repeat'),
         tile('Collection', ownedN == null ? `${allN} cards` : `${ownedN} / ${allN} cards`, fan, () => { void openScreen('collection'); }, 'dash-collection', 'background:radial-gradient(circle at 50% 35%,#2b2440,#0c0d14 70%)'),
         tile('Shop', freeN > 0 ? `${freeN} free pack${freeN === 1 ? '' : 's'} waiting` : stashN > 0 ? `${stashN} sealed pack${stashN === 1 ? '' : 's'} in My Packs` : 'Packs and bundles', null, () => { void openScreen('shop'); }, 'dash-shop', 'background:url(/art/packs/pack-general.webp) center 14%/56% no-repeat,radial-gradient(circle at 50% 35%,#2b3a66,#0c0d14 70%)'),

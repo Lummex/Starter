@@ -1106,3 +1106,62 @@ test('AC697: Buy Oreshards (Ken, Nov 6, Stripe): the four bundles at the plan\'s
   await expect(page.locator('[data-testid="shard-blocked"]')).toContainText('parent must approve');
   await expect(page.locator('[data-testid="shard-bundles"] .shard-bundle')).toHaveCount(0);
 });
+
+// ---------- Nov 7 fix batch ----------
+async function signedInDash(page) {
+  await openEcon(page, 'shop');
+  await page.getByRole('button', { name: 'Back' }).click();
+  expect(await page.evaluate(() => window.oreheart.packs.setOwned({ 'goblin-grunt': 4 }, [{ name: 'Junk Pile', cards: Array(4).fill('goblin-grunt'), commander: 'grubnak' }]))).toBe(true);
+  await page.evaluate(() => window.__app.showMenu());
+  await expect(page.locator('main.dash[data-dash="1"]')).toBeVisible({ timeout: 10000 });
+}
+/** opens the Exit box from the top bar on screen and proves its buttons take the clicks (nothing behind can be clicked) */
+async function exitBoxWorks(page, where) {
+  const exit = page.locator('[data-testid=dash-exit]:visible').last();
+  await expect(exit, where + ': Exit in the top bar').toBeVisible({ timeout: 10000 });
+  await exit.click();
+  const box = page.locator('[data-testid=exit-dialog]');
+  await expect(box, where).toBeVisible();
+  const hit = await page.evaluate(() => {
+    const b = document.querySelector('[data-testid=exit-stay]'); const r = b.getBoundingClientRect();
+    const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    const ov = document.querySelector('[data-testid=exit-dialog]');
+    const corner = document.elementFromPoint(4, innerHeight - 4); // a spot outside the box: the backdrop, never the screen behind
+    return { onButton: !!at && (at === b || b.contains(at)), inert: !!b.closest('[inert]'), backdrop: !!corner && ov.contains(corner) };
+  });
+  expect(hit, where + ': ' + JSON.stringify(hit)).toEqual({ onButton: true, inert: false, backdrop: true });
+  await page.locator('[data-testid=exit-stay]').click();
+  await expect(box, where + ': Stay closes it').toHaveCount(0);
+}
+
+test('AC700: the Exit box (Ken, Nov 7: from the cards screen the clicks went through to the cards) takes every click from every screen with the top bar: Dashboard, Collection, Shop, Quests, Deck Builder, Rankings', async ({ page }) => {
+  test.setTimeout(120000);
+  await signedInDash(page);
+  await exitBoxWorks(page, 'Dashboard');
+  for (const [kind, label] of [['collection', 'Collection'], ['shop', 'Shop'], ['quests', 'Quests']]) {
+    await page.evaluate((k) => window.__app.showMenu(), kind);
+    await page.locator(`[data-testid=dash-${kind === 'quests' ? 'questtile' : kind}]`).click();
+    await expect(page.locator(`[data-screen="econ-${kind}"]`)).toBeVisible({ timeout: 10000 });
+    await exitBoxWorks(page, label);
+  }
+  await page.evaluate(() => window.__app.showMenu());
+  await page.locator('[data-testid=dash-decks]').click();
+  await page.waitForTimeout(800);
+  await exitBoxWorks(page, 'Deck Builder');
+  await page.evaluate(() => window.__app.showMenu());
+  await page.locator('[data-testid=dash-rankings]').click();
+  await page.waitForTimeout(800);
+  await exitBoxWorks(page, 'Rankings');
+});
+
+test('AC701: the Dashboard has a Tutorial button (Ken, Nov 7) next to Find a match; it starts the guided match (the Nov 1 tutorial)', async ({ page }) => {
+  await signedInDash(page);
+  const tut = page.locator('[data-testid=dash-tutorial]');
+  await expect(tut).toBeVisible();
+  await expect(tut).toHaveText('Tutorial');
+  const [a, b] = await Promise.all([tut.boundingBox(), page.locator('[data-testid=dash-find]').boundingBox()]);
+  expect(Math.abs(a.y - b.y), 'same row as Find a match').toBeLessThan(4);
+  await tut.click();
+  await expect(page.locator('main.match')).toBeVisible({ timeout: 20000 });
+  await expect.poll(() => page.evaluate(() => !!(window.oreheart.getState() && window.oreheart.getState().tutorial)), { timeout: 10000 }).toBe(true);
+});

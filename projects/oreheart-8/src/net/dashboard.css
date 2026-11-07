@@ -617,3 +617,6 @@ html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dslot{position:relative
 
 /* Nov 6 (Ken): the Commander copy to fight as: owned looks are clickable, the pick is framed */
 .dash.setup-d .cmd-look.own{cursor:pointer;opacity:1}.dash.setup-d .cmd-look.own:hover{box-shadow:0 0 0 2px #cfd6e4,0 0 10px rgba(255,255,255,.35)}.dash.setup-d .cmd-look.picked{box-shadow:0 0 0 2px #7cc8ff,0 0 12px rgba(124,200,255,.55)}
+
+/* Nov 7: Find a match and Tutorial side by side in the Play tile */
+.dash .big .play-row{display:flex;gap:.6em;margin-top:.75em}.dash .big .play-row .play{flex:1 1 auto;margin-top:0}.dash .big .play-row .tut{flex:0 0 auto;height:3.4em;font-size:1em;padding:0 1.1em;display:flex;align-items:center;gap:.45em}.dash .big .play-row .tut img{width:1.4em;height:1.4em}
