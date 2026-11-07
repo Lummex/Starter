@@ -905,7 +905,8 @@ test('AC696: Commander copies (Ken, Nov 6): the player picks WHICH Commander cop
 // ---------- Friends (Ken, Nov 7) ----------
 const fr = (page, name, ...args) => page.evaluate(async ([n, a]) => await window.oreheart.friends[n](...a), [name, args]);
 async function openFriends(page) {
-  await page.locator('[data-testid=pvp-friends]').click();
+  await page.locator('[data-testid=pvp-play-friend]').click(); // the Lobby's left column has the Friends list button
+  await page.locator('[data-testid=lobby-friends]').click();
   await expect(page.locator('[data-screen="econ-friends"]')).toBeVisible({ timeout: 10000 });
 }
 

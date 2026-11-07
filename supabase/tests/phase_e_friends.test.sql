@@ -99,12 +99,14 @@ update public.settings set value = 'true'::jsonb where key = 'friend_invites_ena
 -- ========== 5. Friend-code rooms and blocks ==========
 insert into public.rooms (code, host, host_deck) values ('BLKEDX', :U1, '{"player": {}, "deck": {}}');
 create temp table cb (err text);
+select set_config('request.jwt.claims', '{"role":"service_role"}', true); -- the referee's claim, as the match function makes it
 do $$ begin
   begin perform public.claim_room('BLKEDX', 'fa000000-0000-4000-8000-000000000004', '{}'::jsonb, gen_random_uuid()); insert into cb values ('joined');
   exception when others then insert into cb values (sqlerrm); end;
 end $$;
 select pg_temp.ok('a player Ann blocked can''t join her friend code (the referee''s claim is refused)', (select err from cb) like '%can''t join this player%', (select err from cb));
 create temp table cr as select public.claim_room('BLKEDX', :U3, '{}'::jsonb, gen_random_uuid()) as a;
+select set_config('request.jwt.claims', '', true);
 select pg_temp.ok('... anyone else still can', (select a from cr), (select a::text from cr));
 create temp table ub as select pg_temp.json_as(:U1, 'aal1', format('select public.friend_unblock(%L)', :U4)) as j;
 select pg_temp.ok('unblock lifts it', not exists (select 1 from public.blocks where blocker = :U1 and blocked = :U4), (select j::text from ub));

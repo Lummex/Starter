@@ -20,6 +20,13 @@ const json = (code: number, body: unknown) => new Response(JSON.stringify(body),
 const stripe = new Stripe(STRIPE_KEY || 'rk_unset', { apiVersion: API_VERSION as any });
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
+let kindCache: string | null = null;
+async function serverKind(db: any): Promise<string> {
+  if (kindCache) return kindCache;
+  try { const { data } = await db.rpc('server_info'); kindCache = data && data.server_kind === 'production' ? 'production' : 'test'; } catch { return 'test'; }
+  return kindCache!;
+}
+
 const idOf = (x: unknown): string | null => (typeof x === 'string' ? x : x && typeof x === 'object' && typeof (x as any).id === 'string' ? (x as any).id : null);
 
 Deno.serve(async (req: Request) => {
@@ -35,9 +42,14 @@ Deno.serve(async (req: Request) => {
     console.error('stripe-webhook: bad signature', e?.message || String(e));
     return json(400, { ok: false, error: 'bad signature' });
   }
-  if (event.livemode) { console.error('stripe-webhook: a LIVE event reached the TEST server', event.id); return json(400, { ok: false, error: 'live events are not accepted here' }); }
-
   const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+  // Nov 7 (launch): the real database takes only LIVE events, the TEST one only test events, so a test card can never buy
+  // real Oreshards and a real payment never lands on the test bed. The kind comes from the database (server_info), once per start.
+  const kind = await serverKind(db);
+  if (event.livemode !== (kind === 'production')) {
+    console.error('stripe-webhook: a', event.livemode ? 'LIVE' : 'test', 'event reached the', kind, 'server', event.id);
+    return json(400, { ok: false, error: `${event.livemode ? 'live' : 'test'} events are not accepted on the ${kind} server` });
+  }
   const begin = await db.rpc('stripe_event_begin', { p_event_id: event.id, p_type: event.type });
   if (begin.error) { console.error('stripe_event_begin', begin.error.message); return json(500, { ok: false, error: 'database' }); }
   if (begin.data !== true) return json(200, { ok: true, repeat: true });

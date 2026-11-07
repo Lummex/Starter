@@ -107,6 +107,7 @@ async function serverCheck() {
   const bad = mismatch(build, kind);
   if (bad) { wrongServer(); return; }
   serverKind = kind === 'production' ? 'production' : 'test';
+  net.serverKind = serverKind;
   await new Promise((r) => setTimeout(r, 0));
   const { data } = await client().auth.getSession();
   if (recovering) { if (data.session && !setPwShown) showSetPassword(); else if (!data.session) { recovering = false; showLogin(); } return; }
@@ -526,6 +527,7 @@ export async function startMockPvp(a: App, user: string) {
   void import('./friends').then((m) => m.startInviteWatch()).catch(() => {}); // Nov 7: friend challenges pop up here
   status = { user_id: 'mock:' + user, username: user, avatar: null, needs_avatar: false, age_group: 'adult', consent_status: 'not_required', decks_imported: true, coins: 0, banned: false, ban_expires_at: null, ban_reason: null };
   serverKind = 'test';
+  net.serverKind = 'test';
   net.offlineChosen = false; net.under13 = false; net.ageGroup = 'adult'; net.decks = [];
   net.active = true;
   if (await resumePvp()) return;

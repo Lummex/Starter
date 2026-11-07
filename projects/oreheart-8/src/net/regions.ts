@@ -100,8 +100,9 @@ export const countsText = (r: Region, counts = true) => (counts && r.online != n
 /** the top-bar pill: "US East · online · 14 online" */
 export function serverPillText(online: boolean): string {
   const r = regionById(currentRegion());
-  if (!online) return 'Test server · cannot reach it';
-  if (!r) return 'Test server · online';
+  const word = net.serverKind === 'production' ? 'Server' : 'Test server'; // Nov 7 (launch): no TEST words on the real site
+  if (!online) return `${word} · cannot reach it`;
+  if (!r) return `${word} · online`;
   return `${r.name} · online${info && info.counts && r.online != null ? ` · ${r.online} here` : ''}`;
 }
 

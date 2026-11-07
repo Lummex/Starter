@@ -443,7 +443,8 @@ function screen(name: string, ...kids: (El | null)[]): El {
   stopRoomPoll();
   app!.clear();
   const panel = h('div', { class: 'txt pvp-panel' }, ...kids);
-  const bar = h('div', { class: 'test-server-bar', 'data-testid': 'test-server-bar' }, isMockPvp() ? 'TEST — local practice server' : 'TEST SERVER — practice accounts only');
+  // Nov 7 (launch): the TEST bar only on the test server and the mock pages, never on the real site
+  const bar = isMockPvp() || net.serverKind !== 'production' ? h('div', { class: 'test-server-bar', 'data-testid': 'test-server-bar' }, isMockPvp() ? 'TEST — local practice server' : 'TEST SERVER — practice accounts only') : null;
   const top = h('div', { class: 'top', 'aria-hidden': 'true' });
   const left = h('div', { class: 'col left' });
   const right = h('div', { class: 'col right' });
@@ -483,8 +484,7 @@ export function pvpMenu(el: El): void {
   box.append(rankLine,
     nbtn('Ranked match', () => showQueue('ranked'), 'pvp-menu-btn primary', { 'data-testid': 'pvp-ranked' }),
     nbtn('Unranked match', () => showQueue('unranked'), 'pvp-menu-btn', { 'data-testid': 'pvp-unranked' }),
-    nbtn('Play a friend', () => showFriend(), 'pvp-menu-btn', { 'data-testid': 'pvp-play-friend' }),
-    nbtn('Friends', () => { void import('./friends').then((m) => m.showFriends()); }, 'pvp-menu-btn', { 'data-testid': 'pvp-friends' })); // Nov 7 (Ken): the friends list
+    nbtn('Play a friend', () => showFriend(), 'pvp-menu-btn', { 'data-testid': 'pvp-play-friend' })); // Nov 7: Friends lives in the Lobby (and the Dashboard); this older menu has no room at 1280x720 (AC611)
   void transport().call('rank', {}).then((r: any) => { if (r && r.ok && r.rank && box.isConnected) { lastRank = r.rank; rankLine.textContent = rankText(r.rank); } }).catch(() => {});
   const addBack = (id: string) => {
     if (box.querySelector('.pvp-back-btn')) return;

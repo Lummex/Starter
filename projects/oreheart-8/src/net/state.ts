@@ -5,6 +5,8 @@ export const net = {
   under13: false,
   ageGroup: null as string | null, // the signed-in account's stored age group; null when signed out or offline (restricted)
   offlineChosen: false,
+  /** Nov 7 (launch): which database this page is signed in to (server_info().server_kind); production hides every TEST marker */
+  serverKind: 'test' as 'test' | 'production',
   maxDecks: 30,
   decks: [] as SavedDeck[],
   saveDeck: (async () => { throw new Error('offline'); }) as (id: string | undefined, d: SavedDeck) => Promise<void>,
