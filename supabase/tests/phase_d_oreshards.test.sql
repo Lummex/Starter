@@ -6,17 +6,17 @@
 \ir _helpers.sql
 
 insert into auth.users (id, aud, role, email, raw_user_meta_data, email_confirmed_at) values
-  ('d0000000-0000-4000-8000-000000000009', 'authenticated', 'authenticated', 'shardadmin@test.local', '{"username":"ShardAdmin"}', now()),
-  ('d0000000-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'd1@test.local', '{"username":"Shard_Buyer"}', now()),
-  ('d0000000-0000-4000-8000-000000000002', 'authenticated', 'authenticated', 'd2@test.local', '{"username":"Little_Kid","age_group":"under_13"}', now()),
-  ('d0000000-0000-4000-8000-000000000003', 'authenticated', 'authenticated', 'd3@test.local', '{"username":"Refund_Rita"}', now());
+  ('f0000000-0000-4000-8000-000000000009', 'authenticated', 'authenticated', 'shardadmin@test.local', '{"username":"ShardAdmin"}', now()),
+  ('f0000000-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'd1@test.local', '{"username":"Shard_Buyer"}', now()),
+  ('f0000000-0000-4000-8000-000000000002', 'authenticated', 'authenticated', 'd2@test.local', '{"username":"Little_Kid","age_group":"under_13"}', now()),
+  ('f0000000-0000-4000-8000-000000000003', 'authenticated', 'authenticated', 'd3@test.local', '{"username":"Refund_Rita"}', now());
 insert into public.roles (user_id, role, granted_by) select id, 'admin', id from auth.users where email = 'shardadmin@test.local';
-update public.profiles set eula_version = (private.setting('eula_version') #>> '{}') where id in ('d0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000003');
+update public.profiles set eula_version = (private.setting('eula_version') #>> '{}') where id in ('f0000000-0000-4000-8000-000000000001', 'f0000000-0000-4000-8000-000000000003');
 
-\set A1 '''d0000000-0000-4000-8000-000000000009'''
-\set P1 '''d0000000-0000-4000-8000-000000000001'''
-\set K1 '''d0000000-0000-4000-8000-000000000002'''
-\set P3 '''d0000000-0000-4000-8000-000000000003'''
+\set A1 '''f0000000-0000-4000-8000-000000000009'''
+\set P1 '''f0000000-0000-4000-8000-000000000001'''
+\set K1 '''f0000000-0000-4000-8000-000000000002'''
+\set P3 '''f0000000-0000-4000-8000-000000000003'''
 
 -- ========== 1. Settings and the page ==========
 select pg_temp.ok('oreshards: the four bundles are the plan''s (Pouch 199/200, Sack 499/550, Chest 999/1200, Hoard 1999/2600) and the shop is on',
