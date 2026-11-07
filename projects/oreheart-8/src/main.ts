@@ -46,7 +46,12 @@ if (pvpMock) {
   import('./net/flow').then((m) => { app.menuHook = m.menuExtras; return m.startMockPvp(app, (params.get('user') || 'tester').slice(0, 24)); });
 } else if (onlineEnabled || pageMode(location.search)) {
   // Online Phase A: login / parent pages first; the flow ends at the normal main menu
-  import('./net/flow').then((m) => { app.menuHook = m.menuExtras; return m.startOnline(app); });
+  const startOnline = () => { void import('./net/flow').then((m) => { app.menuHook = m.menuExtras; return m.startOnline(app); }); };
+  // Nov 7 (Ken: "you took out the starting menu ... the first animation where Oreheart drops onto the logo"): the intro plays first,
+  // as in the offline game (the same "Click to begin" gate, skippable with a click), then login or the Dashboard. A parent's email
+  // link goes straight to its page; a second visit in the same tab skips the intro.
+  if (wantIntro && !pageMode(location.search)) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catch { /* ignore */ } app.afterIntro = startOnline; app.showIntro(); }
+  else startOnline();
 } else if (wantIntro) { try { sessionStorage.setItem('oreheart.introSeen', '1'); } catch { /* ignore */ } app.showIntro(); } else app.showMenu();
 void net;
 

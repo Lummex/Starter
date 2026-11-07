@@ -604,8 +604,11 @@ export class App {
     }
     return s;
   }
+  /** Nov 7: what the intro leads to on the online site (login or the Dashboard), once; offline it leads to the main menu */
+  afterIntro: (() => void) | null = null;
   menuGo(t: string) {
     if (!t) { this.showRules(); return; }
+    if (t === 'main' && this.afterIntro) { const next = this.afterIntro; this.afterIntro = null; next(); return; }
     if (t === 'intro') this.showIntro();
     else if (t === 'main') this.showMenu();
     else if (t === 'commander') this.showSetup();
