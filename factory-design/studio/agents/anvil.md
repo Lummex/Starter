@@ -389,3 +389,9 @@
 - The webhook records each event id BEFORE handling and forgets it on a handler failure, so Stripe's retry is handled instead of skipped; the credit itself is idempotent on the session id and checks the paid amount against the purchase row.
 - A test page that re-opens a screen with page.goto resets the stand-in state: assert the fresh value, or drive the next screen through a hook instead of a reload.
 - SQL checks: never put a door call and the state it changes in ONE expression (`ok(f() and (select ...))`): Postgres may evaluate the sub-select first, so the check reads the old state and fails with no detail. Call the door in its own `create temp table x as select f()` statement, then check, and always pass a detail string with the values seen (an empty detail cost three deploy runs).
+
+## Learned, Nov 7 (Anvil-online, Friends + Exit + launch prep; report anvil-online-nov7-friends-exit-launch.md)
+- Referee doors in SQL checks need `set_config('request.jwt.claims', '{"role":"service_role"}', true)` first (deploy #43 failed on that alone).
+- Prove a failing browser check is older than your change by running it on the previous commit in a scratch worktree (node_modules linked by junction; unlink with `cmd /c rmdir` before removing the worktree).
+- A successful Actions run folds its step logs and loads them lazily; the run's green status is the proof (each suite stops the deploy on any FAIL).
+- Launch: anything that says TEST must follow the database's server_kind, not the build; a webhook must refuse live events on test and test events on production.
