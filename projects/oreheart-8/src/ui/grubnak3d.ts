@@ -155,6 +155,7 @@ export function makeGrubnak3d(a: G3DAssets, pose?: OwnerPose): G3D {
   figure.rotation.y = turn;
   group.add(figure);
   const g = finish(a, group, figure, throne, ch, scepterBone);
+  (g as any).body = { sc, h0: H0 }; // Nov 7: the built height (scene.ts sizes the two Commanders against each other)
   g.weapon = weapon;
   return g;
 }
@@ -303,6 +304,7 @@ export function makeCommander3d(id: string, a: G3DAssets, keep: THREE.Object3D, 
   figure.rotation.y = turn;
   group.add(figure);
   const g = finish(a, group, figure, keep, ch, scepterBone);
+  (g as any).body = { sc, h0: H0 }; // Nov 7: the built height (scene.ts sizes the two Commanders against each other)
   g.files = cfg.files;
   (g as any).items = items;
   g.weapon = items.length ? items[items.length - 1].obj : null;

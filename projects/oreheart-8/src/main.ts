@@ -204,6 +204,8 @@ if (test) {
     squareQuad: (r: number, c: number) => app.squareQuad(r, c),
     squareToScreen: (r: number, c: number) => app.squareToScreen(r, c),
     screenRects: () => app.screenRects(),
+    /** Nov 7: both Commanders' on-screen heights (px) and the opponent's scale-up */
+    commanderSizes: () => (app as any).view?.commanderSizes?.() ?? null,
     poke: (uid: string) => (app.view ? app.view.poke(uid) : null),
     getConfig: () => JSON.parse(JSON.stringify(CONFIG)),
     setPhaseTimeLeft: (n: number) => app.setPhaseTimeLeft(n),

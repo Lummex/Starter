@@ -76,6 +76,7 @@ export interface BoardView {
   setFlowMode(m: string): void;
   setTierLookup?(fn: (cardId: string, owner: 'player' | 'opponent', inst?: any) => number): void;
   setFlowTarget?(side: string, el: HTMLElement | null): void;
+  commanderSizes?(): { player: number; opponent: number; k: number; settled: boolean };
   flowLive?(): { owner: string; color: string | null; from: { x: number; y: number }; to: { x: number; y: number } | null; aimed: boolean }[];
   flowDestinations?(): any;
   mineBox?(row: number, col: number): { x: number; y: number; width: number; height: number };
@@ -101,8 +102,18 @@ export interface BoardView {
 
 const SYMBOL: Record<string, string> = { skull: '💀', gear: '⚙️', hammer: '🔨', beer: '🍺' };
 /** Owner (Oct 24): mines take the owner's faction color; unowned mines are white. */
-/** Nov 7 (Ken: "let's make the size of the opponent playing his commander ... 2x the size that it is"): the far Commander stood tiny */
-const ENEMY_CMD_K = 2;
+/** Nov 7 (Ken: "your player size is massive, but the opponent's is small ... make them both like equivalent size. You can make the opponent's a
+ *  little smaller, because it is supposed to be farther in the background"): the opponent's Commander stands this share of yours ON SCREEN */
+const ENEMY_CMD_SHARE = 0.87;
+/** measured by eye at 1920x1080 and 844x390 (Nov 7): each Commander's model, standing at the far fortress, scaled so it reads ~87% of the near one.
+ *  The live measuring (balanceCommanders) is off: an animated, skinned model's box swings with every idle pose, so fixed numbers look steadier. */
+// The heights as the player SEES them at 1920x1080 (px; the near Commander is partly behind the arena's front wall and seen from the back,
+// the far one stands in full view): the far one is scaled so it reads ENEMY_CMD_SHARE of the near one, for each pairing.
+const NEAR_CMD_PX: Record<string, number> = { grubnak: 190, borgo: 170, sproingle: 150 };
+const FAR_CMD_PX: Record<string, number> = { grubnak: 212, borgo: 172, sproingle: 200 };
+const enemyCmdK = (opp: string, mine: string) => Math.max(0.5, Math.min(2.5, (ENEMY_CMD_SHARE * (NEAR_CMD_PX[mine] ?? 175)) / (FAR_CMD_PX[opp] ?? 190)));
+const CMD_AUTO_BALANCE = false;
+const CMD_AUTO_MATCH = false;
 const MINE_FACTION: Record<string, string> = { goblins: '#3ee06a', gnomes: '#9b4dff', dwarves: '#2f5fd8' };
 const hexOf = (id: string | null) => (id && id !== 'white' ? COLORS[id].hex : COLORS.neutral.hex);
 const CMD_H = 2.4, CREATURE_H = 1.1;
@@ -344,6 +355,46 @@ const _embV = new THREE.Vector3();
       flowDest[sd] = (flowDest[sd] || new THREE.Vector3()).set(x, Y, z);
     }
   }
+  // Nov 7 (Ken): the two Commanders look about the same size on screen, the far one a little smaller (ENEMY_CMD_SHARE); measured from the real
+  // figures once both stand (models load late, tiers swap models), for any pairing of Commanders and tiers, from either seat
+  const cmdBalance = { dirty: true, next: 0, tries: 0, k: 1, hp: 0, ho: 0, mp: 0, mo: 0 };
+  const _bb = new THREE.Box3(), _bv = new THREE.Vector3();
+  const figOf = (side: 'player' | 'opponent'): THREE.Object3D | null => { const cm = cmd[side]; return cm ? ((cm.g3d ? cm.g3d.figure : cm.fig) || null) : null; };
+  const bodyOf = (side: 'player' | 'opponent'): THREE.Object3D | null => (cmd[side]?.g3d as any)?.char || null;
+  const _bw = new THREE.Vector3(), _bs = new THREE.Vector3();
+  /** the on-screen height of a 3D Commander as built (feet to the top of the model's rest pose): steady, whatever the animation does */
+  function builtH(side: 'player' | 'opponent'): number {
+    const b = (cmd[side]?.g3d as any)?.body as { sc: THREE.Object3D; h0: number } | undefined;
+    if (!b || !b.sc) return 0;
+    b.sc.updateMatrixWorld(true); b.sc.getWorldPosition(_bw); b.sc.getWorldScale(_bs);
+    const y0 = (1 - _bv.copy(_bw).project(camera).y) / 2 * view.H;
+    const y1 = (1 - _bv.copy(_bw).add(new THREE.Vector3(0, b.h0 * _bs.y, 0)).project(camera).y) / 2 * view.H;
+    return Math.abs(y0 - y1);
+  }
+  // the posed character itself (precise vertices; Grubnak's figure also holds his throne, half hidden behind the arena edge)
+  const heightOf = (side: 'player' | 'opponent', fig: THREE.Object3D) => screenH(bodyOf(side) || fig);
+  void builtH;
+  function screenH(o: THREE.Object3D): number {
+    o.updateMatrixWorld(true); _bb.setFromObject(o, true); if (_bb.isEmpty()) return 0; // precise: the posed vertices, what is drawn
+    let y0 = 1e9, y1 = -1e9;
+    for (let i = 0; i < 8; i++) { _bv.set(i & 1 ? _bb.max.x : _bb.min.x, i & 2 ? _bb.max.y : _bb.min.y, i & 4 ? _bb.max.z : _bb.min.z).project(camera); const y = (1 - _bv.y) / 2 * view.H; y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    return y1 - y0;
+  }
+  function balanceCommanders(now: number) {
+    cmdBalance.next = now + 400;
+    const fp = figOf('player'), fo = figOf('opponent');
+    if (!fp || !fo || !cmd.player.id || !cmd.opponent.id) return;
+    const base = ((fo as any).__baseScale ??= fo.scale.x) as number;
+    fo.scale.setScalar(base);
+    const hp = heightOf('player', fp), ho = heightOf('opponent', fo); // the character as built (Grubnak's figure also holds his throne)
+    if (hp < 4 || ho < 4) { if (++cmdBalance.tries > 60) cmdBalance.dirty = false; return; }
+    if (cmdBalance.tries === 0) { cmdBalance.mp = 0; cmdBalance.mo = 0; }
+    cmdBalance.mp = Math.max(cmdBalance.mp, hp); cmdBalance.mo = Math.max(cmdBalance.mo, ho);
+    const k = Math.max(0.6, Math.min(4, (ENEMY_CMD_SHARE * cmdBalance.mp) / cmdBalance.mo));
+    fo.scale.setScalar(base * k);
+    Object.assign(cmdBalance, { k, hp: cmdBalance.mp, ho: cmdBalance.mo * k });
+    if (++cmdBalance.tries >= 8) cmdBalance.dirty = false; // a few seconds while the models settle, then leave it
+  }
   /** Shards per stream: the engine's flowShardCount for the Miners on that mine (Ken, Nov 1: the more Miners, the more crystals). */
   function shardCount(miners: number): number {
     const fn = (window as any).oreheart?.flowShardCount;
@@ -452,13 +503,13 @@ const _embV = new THREE.Vector3();
       // Oct 30: Thane Borgo (and later Commanders) as the Meshy model standing on his stronghold, posed like Grubnak (owner layout turn + size)
       const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
       const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
-      cm.g3d = makeCommander3d(mid, a3, cm.keep!.group, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: (CS.commanders ?? 1) * (side === 'opponent' ? ENEMY_CMD_K : 1), base: CS.commanderBase ?? true });
+      cm.g3d = makeCommander3d(mid, a3, cm.keep!.group, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: (CS.commanders ?? 1) * (side === 'opponent' ? enemyCmdK(id, cmd.player?.id || 'grubnak') : 1), base: CS.commanderBase ?? true });
       cm.fig = cm.g3d.figure;
     } else if (a3) {
       // Round 7 Part B: the Meshy 3D Grubnak on his own fortress
       const P = (ownerLayoutJson as any).pieces as any[], CS = (ownerLayoutJson as any).characterSizes || {};
       const pf = P.find((q) => q.id === (side === 'player' ? 'pFort' : 'eFort')), pc = P.find((q) => q.id === (side === 'player' ? 'pCmd' : 'eCmd'));
-      cm.g3d = makeGrubnak3d(a3, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: (CS.commanders ?? 1) * (side === 'opponent' ? ENEMY_CMD_K : 1), base: CS.commanderBase ?? true });
+      cm.g3d = makeGrubnak3d(a3, { fort: { scale: pf.scale, sx: pf.sx, sy: pf.sy, sz: pf.sz, turn: pf.turn }, cmd: { scale: pc.scale, turn: pc.turn }, groups: (CS.all ?? 1), size: (CS.commanders ?? 1) * (side === 'opponent' ? enemyCmdK(id, cmd.player?.id || 'grubnak') : 1), base: CS.commanderBase ?? true });
       cm.fig = cm.g3d.figure;
     } else if (id === 'grubnak') {
       cm.grub = makeGrubnak(low);
@@ -480,6 +531,7 @@ const _embV = new THREE.Vector3();
     } else if (side === 'opponent') cm.fig.rotation.y = Math.PI;
     if (cm.g3d) cm.group.add(cm.g3d.group); else cm.group.add(cm.fig);
     cm.faction = faction; cm.id = id;
+    cmdBalance.dirty = true; cmdBalance.tries = 0; cmdBalance.mp = 0; cmdBalance.mo = 0; // Nov 7: measure both Commanders again once this one stands
     flowCol[side] = new THREE.Color(FLOW_MAIN[faction] || '#3ee06a');
     crystals.forEach((cr, i) => { if (flowOwner[i] === side) cr.art.setDecal('#' + flowCol[side].getHexString()); }); // the ground decal of owned mines takes the faction color
     flowHi[side] = new THREE.Color(FLOW_HI[faction] || '#b45cff');
@@ -1702,7 +1754,8 @@ const _embV = new THREE.Vector3();
     if (disposed) return;
     raf = requestAnimationFrame(frame);
     const now = performance.now();
-    matchCommanders();
+    // Nov 7: the Oct 31 auto-match measured an unposed box and left the far Commander small (Ken); fixed sizes per Commander (ENEMY_CMD_K) replace it
+    if (CMD_AUTO_MATCH) matchCommanders();
     // Automated runs (software GL on the check machines): keep the page responsive by drawing fewer frames while input arrives or frames are slow.
     // Owner fix (Ken, Oct 29): the Round 26 builder also switched the mines to low effects when frames were slow, and the figures moved a fixed
     // step per frame, so the checks measured a slow-motion game with the wrong mine effects (late clips, missing effects, 4 s stats).
@@ -1963,6 +2016,7 @@ const _embV = new THREE.Vector3();
     // mine emblem: on the mine's square centre, moved half a square towards the camera (same spot on screen) so its own crystal stays behind it but units in front cover it
     crystals.forEach((cr) => { if (!cr.emb) return; const p = cr.art.group.position; _embV.copy(camera.position).sub(p).normalize(); cr.emb.position.copy(p).addScaledVector(_embV, 0.55); });
     updateFlow(now);
+    if (CMD_AUTO_BALANCE && cmdBalance.dirty && now >= cmdBalance.next) balanceCommanders(now);
     renderer.info.reset();
     const t0 = performance.now();
     arenaFrame(now);
@@ -2047,7 +2101,8 @@ const _embV = new THREE.Vector3();
     spellShards: (at: { row: number; col: number }, countered: string | null) => spellFx.shatter(at, countered),
     isBusy: () => boardBusy(performance.now()), swingMs: SWING_MS,
     topAt: (row: number, col: number) => thingBox(row, col),
-    is3D: true, setCarry, setCommanderTier(side: 'player' | 'opponent', tier: number) { setTier(side, tier); }, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setTierLookup(fn: (cardId: string, owner: 'player' | 'opponent') => number) { tierLookup = fn; }, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, flowLive() { // Nov 7: what each mine's stream really does on screen: owner, colour, start (the mine) and end (the owner's Flow crystal)
+    is3D: true, setCarry, setCommanderTier(side: 'player' | 'opponent', tier: number) { setTier(side, tier); }, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setTierLookup(fn: (cardId: string, owner: 'player' | 'opponent') => number) { tierLookup = fn; }, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, commanderSizes() { const fp = figOf('player'), fo = figOf('opponent'); return { player: fp ? heightOf('player', fp) : 0, opponent: fo ? heightOf('opponent', fo) : 0, k: cmdBalance.k, settled: !cmdBalance.dirty }; },
+    flowLive() { // Nov 7: what each mine's stream really does on screen: owner, colour, start (the mine) and end (the owner's Flow crystal)
       updateFlowDest(); const rc = canvas.getBoundingClientRect(); const scr = (v: THREE.Vector3) => { const q = v.clone().project(camera); return { x: rc.left + ((q.x + 1) / 2) * rc.width, y: rc.top + ((1 - q.y) / 2) * rc.height }; };
       return mines.map((m, mi) => { const owner = flowOwner[mi] || 'neutral'; const c = owner === 'neutral' ? null : (flowMineCol[mi] || flowCol[owner]); const d = owner === 'neutral' ? null : flowDest[owner];
         return { owner, color: c ? '#' + c.getHexString() : null, from: scr(new THREE.Vector3(m.group.position.x, 1.5, m.group.position.z)), to: d ? scr(d) : null, aimed: !!d }; }); },
