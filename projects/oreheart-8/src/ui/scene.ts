@@ -306,6 +306,7 @@ const _embV = new THREE.Vector3();
   let flowShown = 0;
   const flowOwner: string[] = [];
   const minersAt: number[] = []; // the owner's Miners working each mine (set in setState)
+  const flowMineCol: (THREE.Color | null)[] = []; // Nov 7: each mine's own colour (its owner's crystal, or ruby in a mirror match)
   const flowCol: Record<string, THREE.Color> = { player: new THREE.Color(0x9dff6a), opponent: new THREE.Color(0xff5a4a), neutral: new THREE.Color(0xe8e8ff) };
   const bez = new THREE.Vector3();
   // Round 10: shards flow into the HUD Flow crystal counter (screen element -> a world point on a plane above the board)
@@ -314,7 +315,7 @@ const _embV = new THREE.Vector3();
   const flowHi: Record<string, THREE.Color> = { player: new THREE.Color('#b45cff'), opponent: new THREE.Color('#b45cff') };
   const flowTargetEl: Record<string, HTMLElement | null> = { player: null, opponent: null };
   const flowDest: Record<string, THREE.Vector3 | null> = { player: null, opponent: null };
-  const flowRay = new THREE.Vector3(), flowDir = new THREE.Vector3();
+  const flowM = new THREE.Matrix4();
   let flowDestAt = -1e9, flowDestDirty = true;
   function updateFlowDest() {
     const rc = canvas.getBoundingClientRect();
@@ -324,10 +325,20 @@ const _embV = new THREE.Vector3();
       const er = el.getBoundingClientRect();
       if (!er.width) { flowDest[sd] = null; continue; }
       const nx = ((er.left + er.width / 2 - rc.left) / rc.width) * 2 - 1, ny = -(((er.top + er.height / 2 - rc.top) / rc.height) * 2 - 1);
-      flowRay.set(nx, ny, 0.5).unproject(camera);
-      flowDir.copy(flowRay).sub(camera.position).normalize();
-      const k = (2.2 - camera.position.y) / (flowDir.y || -1e-6);
-      flowDest[sd] = (flowDest[sd] || new THREE.Vector3()).copy(camera.position).addScaledVector(flowDir, k);
+      // Nov 7 (Ken: the streams must land in the owner's Crystal Flow crystal): the painted view's projection is custom, so unproject() missed
+      // by thousands of pixels. Solve directly for the point at stream height whose projection is the crystal's centre.
+      flowM.copy(camera.projectionMatrix).multiply(camera.matrixWorldInverse);
+      const e = flowM.elements, Y = 2.2; // column-major: row r, col c = e[c * 4 + r]
+      const row = (r: number) => [e[r], e[4 + r], e[8 + r], e[12 + r]];
+      const r0 = row(0), r1 = row(1), r3 = row(3);
+      const a = r0.map((v, i) => v - nx * r3[i]), b = r1.map((v, i) => v - ny * r3[i]); // a·p = 0 and b·p = 0 for p = (x, Y, z, 1)
+      const a0 = a[0], a2 = a[2], ac = -(a[1] * Y + a[3]), b0 = b[0], b2 = b[2], bc = -(b[1] * Y + b[3]);
+      const det = a0 * b2 - a2 * b0;
+      if (Math.abs(det) < 1e-9) { flowDest[sd] = null; continue; }
+      const x = (ac * b2 - a2 * bc) / det, z = (a0 * bc - ac * b0) / det;
+      const wv = r3[0] * x + r3[1] * Y + r3[2] * z + r3[3];
+      if (!(wv > 0)) { flowDest[sd] = null; continue; } // behind the eye: fall back to the Commander
+      flowDest[sd] = (flowDest[sd] || new THREE.Vector3()).set(x, Y, z);
     }
   }
   /** Shards per stream: the engine's flowShardCount for the Miners on that mine (Ken, Nov 1: the more Miners, the more crystals). */
@@ -352,7 +363,7 @@ const _embV = new THREE.Vector3();
       const nm = owner === 'neutral' ? Math.min(n, flowMode === 'reduced' ? 6 : 16) : Math.min(n, shardCount(minersAt[mi] || 1));
       const a = m.group.position;
       const dest = owner === 'neutral' ? null : flowDest[owner] || cmd[owner].group.position;
-      const c = flowCol[owner];
+      const c = flowMineCol[mi] || flowCol[owner]; // Nov 7 (Ken): the stream is the colour the mine shows (crimson for a same-faction opponent)
       for (let i = 0; i < FN; i++) {
         const k = mi * FN + i;
         flowDum.rotation.set(0, 0, 0);
@@ -1076,11 +1087,14 @@ const _embV = new THREE.Vector3();
       } }
       cr.art.group.position.copy(world(s.row, s.col)); cr.art.group.userData.cell = { row: s.row, col: s.col };
       cr.art.group.rotation.set(0, 0, 0); cr.art.group.scale.setScalar(1); // mines sit flat and level, all the same size
-      if (cr.ctl === s.color) return;
+      // Nov 7 (Ken: "all of them just go down towards the player"): in a same-faction match both owners share a colour, so the owner is part of the key
+      const ctlKey = `${s.controller || ''}|${s.color}|${mirror ? 1 : 0}`;
+      if (cr.ctl === ctlKey) return;
       const first = cr.ctl === undefined;
-      cr.ctl = s.color;
+      cr.ctl = ctlKey;
       flowOwner[i] = s.controller || 'neutral';
       const mineHex = s.controller ? (mirror && s.controller === 'opponent' ? MIRROR_LOOK.mine : MINE_FACTION[st.players[s.controller].faction] || '#ffffff') : '#ffffff';
+      flowMineCol[i] = s.controller ? new THREE.Color(mineHex) : null;
       cr.art.recolor(mineHex); mineFx[i].setColor(mineHex);
       cr.art.setDecal('#ffffff');
       if (!first) cr.art.burst();
@@ -2030,7 +2044,11 @@ const _embV = new THREE.Vector3();
     spellShards: (at: { row: number; col: number }, countered: string | null) => spellFx.shatter(at, countered),
     isBusy: () => boardBusy(performance.now()), swingMs: SWING_MS,
     topAt: (row: number, col: number) => thingBox(row, col),
-    is3D: true, setCarry, setCommanderTier(side: 'player' | 'opponent', tier: number) { setTier(side, tier); }, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setTierLookup(fn: (cardId: string, owner: 'player' | 'opponent') => number) { tierLookup = fn; }, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
+    is3D: true, setCarry, setCommanderTier(side: 'player' | 'opponent', tier: number) { setTier(side, tier); }, setState(st: any, ev: any[]) { setState(st, ev); syncBuffNow(performance.now()); preloadSpells(st); }, cellRect, cellQuad, resize, setCamera() { /* the painted view is driven by zoomAt / panBy / recenter */ }, zoomAt, panBy, recenter, getView, lookBack, impatient, advanceFigureIdle(sec: number) { for (const f of figs.values()) f.c3d?.advanceIdle?.(sec); }, facing, squareCenter, mineBox, arenaDetails, piecePoses, playEmote, playBowl, blowDelay(uid: string) { const f = figs.get(uid); return f && f.blowAt ? Math.max(0, f.blowAt - performance.now()) : 0; }, focusCommander, screenRects, unitAt, setTierLookup(fn: (cardId: string, owner: 'player' | 'opponent') => number) { tierLookup = fn; }, setFlowMode(m) { flowMode = m; }, setFlowTarget(side: string, el: HTMLElement | null) { flowTargetEl[side] = el; }, flowDestinations() { updateFlowDest(); const o: any = {}; for (const sd of ['player', 'opponent']) { const v = flowDest[sd]; const p = v ? v.clone().project(camera) : null; const rc = canvas.getBoundingClientRect(); o[sd] = p ? { x: rc.left + ((p.x + 1) / 2) * rc.width, y: rc.top + ((1 - p.y) / 2) * rc.height } : null; } return o; }, flowLive() { // Nov 7: what each mine's stream really does on screen: owner, colour, start (the mine) and end (the owner's Flow crystal)
+      updateFlowDest(); const rc = canvas.getBoundingClientRect(); const scr = (v: THREE.Vector3) => { const q = v.clone().project(camera); return { x: rc.left + ((q.x + 1) / 2) * rc.width, y: rc.top + ((1 - q.y) / 2) * rc.height }; };
+      return mines.map((m, mi) => { const owner = flowOwner[mi] || 'neutral'; const c = owner === 'neutral' ? null : (flowMineCol[mi] || flowCol[owner]); const d = owner === 'neutral' ? null : flowDest[owner];
+        return { owner, color: c ? '#' + c.getHexString() : null, from: scr(new THREE.Vector3(m.group.position.x, 1.5, m.group.position.z)), to: d ? scr(d) : null, aimed: !!d }; }); },
+    pulseFlow(side) { pulseAt[side] = performance.now(); }, emote, poke, retreat, stats,
     dispose() {
       spellFx.dispose(); proj.dispose();
       disposed = true; for (const ev of inputEvs) window.removeEventListener(ev, onInput, true); window.removeEventListener('resize', onWinResize); document.removeEventListener('fullscreenchange', onWinResize);

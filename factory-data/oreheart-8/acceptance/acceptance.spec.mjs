@@ -15495,3 +15495,35 @@ test('AC564: dragging a unit onto the enemy Commander gives it a standing chase:
   expect(hits, 'the Commander is hit again and again without another click').toBeGreaterThanOrEqual(2);
   expect(last).toBeLessThan(20);
 });
+
+// ---------- Nov 7 (Ken): "it needs to go to whoever owns the mine's icon ... Right now, all of them just go down towards the player" ----------
+test('AC706: each Crystal Flow stream starts at its mine and lands in the OWNER\'s Flow crystal, in the colour that mine shows (crimson for a same-faction opponent), at PC and phone sizes', async ({ page }) => {
+  test.setTimeout(120000);
+  const board = [
+    { cardId: 'goblin-scrounger', owner: 'player', row: 5, col: 1, minedMine: M1 },
+    { cardId: 'gnome-tinker', owner: 'opponent', row: 3, col: 6, minedMine: M3 },
+  ];
+  for (const [W, H] of [[1920, 1080], [844, 390]]) {
+    await page.setViewportSize({ width: W, height: H });
+    for (const [opp, oppHex] of [['grubnak', '#ff3b4a'], ['borgo', '#2f5fd8']]) {
+      await start(page, { ai: false, playerCommander: 'grubnak', opponentCommander: opp, skipMulligan: true, setup: { opponentHand: [], board, firstPlayer: 'player' } });
+      const live = async () => (await page.evaluate(async () => await window.oreheart.getFlowStreams())).live;
+      await expect.poll(async () => ((await live()) || []).filter((s) => s.owner !== 'neutral').length, { timeout: 15000 }).toBe(2);
+      const tag = `${W}x${H} vs ${opp}`;
+      const rect = async (role) => page.locator(`[data-role="${role}"]`).first().boundingBox();
+      const inside = (b, pt) => !!pt && pt.x >= b.x - 4 && pt.x <= b.x + b.width + 4 && pt.y >= b.y - 4 && pt.y <= b.y + b.height + 4;
+      const mineAt = async (cell) => { const q = await page.evaluate(async (c) => await window.oreheart.squareQuad(c.row, c.col), cell); const xs = q.map((p) => p.x), ys = q.map((p) => p.y); return { x: xs.reduce((s, v) => s + v, 0) / q.length, y: ys.reduce((s, v) => s + v, 0) / q.length, size: Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) }; };
+      const s = await live();
+      const mine = s.find((x) => x.owner === 'player'), theirs = s.find((x) => x.owner === 'opponent');
+      const me = await rect('player-flow-crystal'), them = await rect('enemy-flow-crystal');
+      expect(me && me.width > 0 && them && them.width > 0, `${tag}: both Flow crystals are on screen`).toBe(true);
+      expect(them.x + them.width <= W + 4 && them.y + them.height >= 0, `${tag}: the opponent's crystal is inside the screen`).toBe(true);
+      expect(mine.aimed && theirs.aimed, `${tag}: both streams aim at a crystal`).toBe(true);
+      expect(inside(me, mine.to), `${tag}: your mine's stream lands in YOUR crystal ${JSON.stringify(mine.to)} ${JSON.stringify(me)}`).toBe(true);
+      expect(inside(them, theirs.to), `${tag}: their mine's stream lands in THEIR crystal ${JSON.stringify(theirs.to)} ${JSON.stringify(them)}`).toBe(true);
+      expect(mine.color, `${tag}: your stream is your goblin green`).toBe('#3ee06a');
+      expect(theirs.color, `${tag}: their stream is the colour their mine shows`).toBe(oppHex);
+      for (const [x, cell] of [[mine, M1], [theirs, M3]]) { const c = await mineAt(cell); expect(Math.hypot(x.from.x - c.x, x.from.y - c.y), `${tag}: the stream starts at its mine (just above the crystal)`).toBeLessThan(c.size * 1.6); }
+    }
+  }
+});
