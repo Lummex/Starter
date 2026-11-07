@@ -2790,7 +2790,7 @@ export class App {
     if (!r.board) return;
     const now = Date.now();
     if (this.bannerEl) {
-      const life = this.bannerQ.length ? 450 : 1500;
+      const life = (this.bannerQ.length ? 450 : 1500) * 2.5; // Nov 7 (Ken: "they're too quick ... maybe 2 to 3 times longer"); clicks pass through (pointer-events: none), the clock runs as before
       if (now - this.bannerAt < life) return;
       this.bannerEl.remove();
       this.bannerEl = null;

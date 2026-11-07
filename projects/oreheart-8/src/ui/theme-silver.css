@@ -624,3 +624,10 @@ html body:not(#_a):not(#_b):not(#_c) #app .match .btn.o-text.done-btn.mcoin.mcoi
 @media (max-height:500px){html body:not(#_a):not(#_b):not(#_c) #app .match .btn.o-text.done-btn.mcoin.mcoin.btn{--done-size:56px;right:max(8px,2.5vw)!important;bottom:3px!important}}
 /* Nov 7 (Ken: "in the bottom left-hand corner, show the name of the deck you're playing"): small silver words under the Flow crystal, clear of the hand */
 html body #app .match>.o-deckname{position:absolute;z-index:6;left:max(10px,.9vw);bottom:max(3px,.45vh);max-width:calc(var(--hand-left,11vw) - max(14px,1.2vw));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;font:600 clamp(10px,1.3vh,15px)/1.15 Cinzel,Georgia,serif;letter-spacing:.04em;color:#dfe5ee;text-shadow:0 1px 2px #000,0 0 6px #000c}
+/* Nov 7 (Ken: "make the opponent's cards in his hand twice the size ... on the layer above their deck. And move their deck over slightly so they're not covering") */
+html body:not(#_a):not(#_b) #app .match .enemy-hand.o-fan.o-piece{z-index:9!important;overflow:visible}
+html body:not(#_a):not(#_b) #app .match .enemy-hand.o-fan.o-piece .back{top:-78%;width:60%;height:120%;margin-left:-30%}
+html body:not(#_a):not(#_b) #app .match .pile.o-deck.o-piece[data-hud-role="enemy-deck"]{translate:-2.2vw 0!important}
+/* Nov 7 (Ken: "just in game ... make the avatars bigger", 30%): the in-match avatars only; a little less on a phone */
+html body:not(#_a):not(#_b) #app .match .o-plate .o-av{width:2.78em;height:2.78em;margin-block:-.78em}
+@media (max-height:500px){html body:not(#_a):not(#_b) #app .match .o-plate .o-av{width:2.46em;height:2.46em;margin-block:-.62em}}
