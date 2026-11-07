@@ -6,7 +6,7 @@
 \ir _helpers.sql
 
 insert into auth.users (id, aud, role, email, raw_user_meta_data, email_confirmed_at) values
-  ('f0000000-0000-4000-8000-000000000009', 'authenticated', 'authenticated', 'shardadmin@test.local', '{"username":"ShardAdmin"}', now()),
+  ('f0000000-0000-4000-8000-000000000009', 'authenticated', 'authenticated', 'shardadmin@test.local', '{"username":"ShardKeeper"}', now()),
   ('f0000000-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'd1@test.local', '{"username":"Shard_Buyer"}', now()),
   ('f0000000-0000-4000-8000-000000000002', 'authenticated', 'authenticated', 'd2@test.local', '{"username":"Little_Kid","age_group":"under_13"}', now()),
   ('f0000000-0000-4000-8000-000000000003', 'authenticated', 'authenticated', 'd3@test.local', '{"username":"Refund_Rita"}', now());
