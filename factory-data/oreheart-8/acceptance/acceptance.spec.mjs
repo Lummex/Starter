@@ -6996,7 +6996,7 @@ test('AC238: saved deck entries glow in their faction color; the deck name text 
 
 test('AC239: every creature card close-up has a 3D viewer; spells do not', async ({ page }) => {
   await openDecks(page);
-  await allCards(page).getByRole('button', { name: /Bowler Brawler/ }).first().click();
+  await allCards(page).getByRole('button', { name: /Bowler Brawler/ }).first().dblclick(); // Nov 7 (Ken): a double-click opens the close-up
   const dlg = page.getByRole('dialog', { name: /Bowler Brawler/ });
   await expect(dlg).toBeVisible();
   const viewer = page.getByRole('region', { name: '3D model' });
@@ -7004,7 +7004,7 @@ test('AC239: every creature card close-up has a 3D viewer; spells do not', async
   await expect(viewer.getByRole('button', { name: 'Idle', exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(dlg).toBeHidden();
-  await allCards(page).getByRole('button', { name: /Venom Shiv/ }).first().click();
+  await allCards(page).getByRole('button', { name: /Venom Shiv/ }).first().dblclick(); // Nov 7 (Ken): a double-click opens the close-up
   await expect(page.getByRole('dialog', { name: /Venom Shiv/ })).toBeVisible();
   await expect(page.getByRole('region', { name: '3D model' })).toHaveCount(0);
 });
@@ -7061,7 +7061,7 @@ for (const [W, H] of [[1920, 1080], [844, 390]]) {
       await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
       await page.waitForTimeout(1200);
       await shot('deck-builder');
-      await allCards(page).getByRole('button', { name: /Bowler Brawler/ }).first().click();
+      await allCards(page).getByRole('button', { name: /Bowler Brawler/ }).first().dblclick(); // Nov 7 (Ken): a double-click opens the close-up
       await page.waitForTimeout(1500);
       await shot('deck-builder-closeup');
       await page.keyboard.press('Escape');
@@ -7970,7 +7970,7 @@ test.describe('round 12a at 1920x1080', () => {
     await page.mouse.up();
     await openDecks(page);
     for (const name of ['Goblin Miner', 'Boneknocker', 'Shiv Rat', 'Scrapsmith Miner']) {
-      await allCards(page).getByRole('button', { name, exact: true }).click();
+      await allCards(page).getByRole('button', { name, exact: true }).dblclick(); // Nov 7 (Ken): a double-click opens the close-up
       await expect(page.getByRole('dialog', { name })).toBeVisible();
       await page.waitForTimeout(300);
       await shot(`r12a-card-${name.toLowerCase().replace(/ /g, '-')}`);
@@ -8092,7 +8092,7 @@ for (const [cardId, spec] of Object.entries(R12B_MODELS)) {
     const m = await creatureModels(request);
     test.skip(!m || !m[cardId], `${spec.name} model not delivered`);
     await openDecks(page);
-    await allCards(page).getByRole('button', { name: spec.name, exact: true }).click();
+    await allCards(page).getByRole('button', { name: spec.name, exact: true }).dblclick(); // Nov 7 (Ken): a double-click opens the close-up
     const dlg = page.getByRole('dialog', { name: spec.name });
     await expect(dlg).toBeVisible();
     const viewer = page.getByRole('region', { name: '3D model' });
