@@ -382,3 +382,10 @@
 - Adding to a pool setting (pack_miner_ids) breaks the SQL check that lists its members: grep the tests for every setting a migration touches BEFORE the deploy run, each failed run costs ~5 minutes and a Chrome trip.
 - GitHub's job page for a long SQL suite is too big for find/get_page_text (267k tokens): read it with javascript_tool (`document.body.innerText`, filter FAIL/ERROR lines, slice the tail).
 - The built game is 295.6 MB after the merge (tier art 35 MB on the pvp side, models 168 MB): measure `dist` after every merge and say the number.
+
+## Learned, Nov 6 (Anvil-online, Oreshards + Stripe; report anvil-online-nov6-oreshards-stripe.md)
+- A new SQL test file needs its OWN user ids and names: seed.sql owns the d0000000-… ids (duplicate key), and the sign-up filter refuses names with a reserved part ("ShardAdmin" has "admin"). Two deploy runs lost; check both before the first run.
+- The restricted key has Products/Prices READ only, so Checkout Sessions use inline price_data from the settings row; no catalog product is needed, and the admin can change prices without Stripe.
+- The webhook records each event id BEFORE handling and forgets it on a handler failure, so Stripe's retry is handled instead of skipped; the credit itself is idempotent on the session id and checks the paid amount against the purchase row.
+- A test page that re-opens a screen with page.goto resets the stand-in state: assert the fresh value, or drive the next screen through a hook instead of a reload.
+- SQL checks: never put a door call and the state it changes in ONE expression (`ok(f() and (select ...))`): Postgres may evaluate the sub-select first, so the check reads the old state and fails with no detail. Call the door in its own `create temp table x as select f()` statement, then check, and always pass a detail string with the values seen (an empty detail cost three deploy runs).
