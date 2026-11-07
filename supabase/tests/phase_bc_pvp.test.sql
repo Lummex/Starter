@@ -278,7 +278,8 @@ select pg_temp.ok('every security definer function pins search_path',
 -- ========== Modes (Nov 5): ranked queue + Elo, unranked queue, practice pays nothing ==========
 select pg_temp.ok('modes: settings, the season name, the rank names',
   (private.setting('ranked_k'))::int = 32 and private.season_now() ~ '^\d{4}-Q[1-4]$'
-  and private.rank_name(899) = 'Iron I' and private.rank_name(1000) = 'Sapphire III' and private.rank_name(1299) = 'Ruby I' and private.rank_name(1300) = 'Amethyst III' and private.rank_name(1500) = 'Oreheart' -- the 10-step ladder (Forge, Nov 5)
+  and private.rank_name(0) = 'Stone III' and private.rank_name(299) = 'Stone I' and private.rank_name(300) = 'Copper III' and private.rank_name(1200) = 'Sapphire III' and private.rank_name(2399) = 'Amethyst I' and private.rank_name(2700) = 'Oreheart' -- the 10-step ladder on ladder points (Ken, Nov 7: everyone starts at Stone)
+  and private.points_target(1000) = 1200 and private.points_delta(0, 1000, 1) = 60 and private.points_delta(0, 1000, 0) = -5 and private.points_delta(1200, 1000, 1) = 20 and private.points_delta(1200, 1000, 0) = -20 and private.points_delta(2400, 1000, 0) = -40
   and 'ranked_k' = any (private.editable_settings()));
 select pg_temp.refused('queue: players cannot call the referee doors', :PA, 'aal1', $q$ select public.pvp_queue_pair('c0000000-0000-4000-8000-000000000021') $q$);
 select pg_temp.refused('queue: players cannot read the queue table', :PA, 'aal1', 'select * from public.pvp_queue');
@@ -335,19 +336,19 @@ select pg_temp.ok('wait: a real pairing records both waits', (select j is not nu
 insert into public.matches (id, mode, player_a, player_b, state, seq, status, engine_version)
   values ('22222222-0000-4000-8000-0000000000cc', 'ranked', :PA, :PB, '{"turn": 7}', 40, 'active', 'test');
 create temp table fin2 as select private.pvp_finish('22222222-0000-4000-8000-0000000000cc', :PA, 'a', 'win', 7, '{"commander": "grubnak", "turns": 7}', '{"commander": "borgo", "turns": 7}') as j;
-select pg_temp.ok('ranked finish: coins as usual, ratings 1016 / 984, rating_events for both, the result says so',
-  (select (j ->> 'finished')::boolean and j ->> 'mode' = 'ranked' and (j -> 'a' -> 'rating' ->> 'before')::int = 1000 and (j -> 'a' -> 'rating' ->> 'after')::int = 1016
-          and (j -> 'b' -> 'rating' ->> 'after')::int = 984 and (j -> 'a' ->> 'coins')::int > 0 from fin2)
-  and (select rating = 1016 and games = 1 and wins = 1 and peak = 1016 from public.ratings where user_id = :PA and season = private.season_now())
-  and (select rating = 984 and games = 1 and losses = 1 and peak = 1000 from public.ratings where user_id = :PB and season = private.season_now())
+select pg_temp.ok('ranked finish: coins as usual, hidden Elo 1016 / 984, ladder points 0 -> 60 / 0 -> 0 (never below 0), rating_events for both, the result shows the points',
+  (select (j ->> 'finished')::boolean and j ->> 'mode' = 'ranked' and (j -> 'a' -> 'rating' ->> 'before')::int = 0 and (j -> 'a' -> 'rating' ->> 'after')::int = 60
+          and (j -> 'b' -> 'rating' ->> 'after')::int = 0 and (j -> 'a' -> 'rating' ->> 'elo_after')::int = 1016 and (j -> 'a' ->> 'coins')::int > 0 from fin2)
+  and (select rating = 1016 and points = 60 and peak_points = 60 and games = 1 and wins = 1 and peak = 1016 from public.ratings where user_id = :PA and season = private.season_now())
+  and (select rating = 984 and points = 0 and games = 1 and losses = 1 and peak = 1000 from public.ratings where user_id = :PB and season = private.season_now())
   and (select count(*) from public.rating_events where match_id = '22222222-0000-4000-8000-0000000000cc') = 2,
   (select j::text from fin2));
 select pg_temp.ok('ranked finish: the same match again moves nothing',
   (select not (j ->> 'finished')::boolean from private.pvp_finish('22222222-0000-4000-8000-0000000000cc', :PA, 'a', 'win', 7, null, null) j)
   and (select rating from public.ratings where user_id = :PA and season = private.season_now()) = 1016);
-select pg_temp.ok('my_rank: Side A sees 1016 Sapphire III, first place; Side C (never ranked) sees 1000 and no place',
-  (select (r ->> 'rating')::int = 1016 and r ->> 'name' = 'Sapphire III' and r -> 'rank' ->> 'division' = 'III' and (r -> 'rank' ->> 'next')::int = 1100 and jsonb_array_length(r -> 'ladder') = 10 and r ? 'season_end' and (r ->> 'place')::int = 1 and (r ->> 'wins')::int = 1 from pg_temp.json_as(:PA, 'aal1', 'select public.my_rank()') r)
-  and (select (r ->> 'rating')::int = 1000 and r -> 'place' = 'null'::jsonb from pg_temp.json_as(:PC, 'aal1', 'select public.my_rank()') r),
+select pg_temp.ok('my_rank: Side A sees 60 points, Stone III, first place; Side C (never ranked) sees 0, Stone III and no place',
+  (select (r ->> 'rating')::int = 60 and r ->> 'name' = 'Stone III' and r -> 'rank' ->> 'division' = 'III' and (r -> 'rank' ->> 'next')::int = 300 and jsonb_array_length(r -> 'ladder') = 10 and r ? 'season_end' and (r ->> 'place')::int = 1 and (r ->> 'wins')::int = 1 from pg_temp.json_as(:PA, 'aal1', 'select public.my_rank()') r)
+  and (select (r ->> 'rating')::int = 0 and r ->> 'name' = 'Stone III' and r -> 'place' = 'null'::jsonb from pg_temp.json_as(:PC, 'aal1', 'select public.my_rank()') r),
   (select r::text from pg_temp.json_as(:PA, 'aal1', 'select public.my_rank()') r));
 select pg_temp.refused('my_rank needs a login', null, null, 'select public.my_rank()');
 -- a practice match: nothing paid, nothing counted
@@ -369,8 +370,8 @@ select pg_temp.ok('practice finish: the match ends, 0 coins, no match_rewards, n
 -- ========== Nov 6: the Dashboard: leaderboard and What's New ==========
 insert into public.roles (user_id, role, granted_by) select id, 'admin', id from auth.users where id = :PC and not exists (select 1 from public.roles r where r.user_id = :PC and r.role = 'admin'); -- Side C becomes the admin for these checks
 select pg_temp.ok('leaderboard: Side A on top with its name and label, the caller flagged, the shares by step, the season end',
-  (select jsonb_array_length(j -> 'top') >= 1 and j -> 'top' -> 0 ->> 'label' = 'Sapphire III' and (j -> 'top' -> 0 ->> 'me')::boolean and (j -> 'top' -> 0 ->> 'place')::int = 1
-          and (j -> 'me' ->> 'rating')::int = 1016 and (j -> 'shares' ->> 'Sapphire')::int >= 1 and j ? 'season_end'
+  (select jsonb_array_length(j -> 'top') >= 1 and j -> 'top' -> 0 ->> 'label' = 'Stone III' and (j -> 'top' -> 0 ->> 'me')::boolean and (j -> 'top' -> 0 ->> 'place')::int = 1
+          and (j -> 'me' ->> 'rating')::int = 60 and (j -> 'top' -> 0 ->> 'rating')::int = 60 and (j -> 'shares' ->> 'Stone')::int >= 1 and j ? 'season_end'
    from pg_temp.json_as(:PA, 'aal1', 'select public.leaderboard(10)') j),
   (select j::text from pg_temp.json_as(:PA, 'aal1', 'select public.leaderboard(10)') j));
 select pg_temp.refused('leaderboard needs a login', null, null, 'select public.leaderboard(10)');

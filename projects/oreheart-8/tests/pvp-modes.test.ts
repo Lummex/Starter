@@ -36,7 +36,7 @@ describe('modes: the ranked / unranked queue', () => {
     expect((await svc.handle('my_match', {}, alice, T0 + 4000)).matchId).toBe(r2.matchId);
     expect((await svc.handle('queue', { mode: 'unranked', ...pick }, alice, T0 + 4000)).matchId).toBe(r2.matchId); // a late poll answers with the match
   });
-  it('ranked and unranked never meet; leave takes a player out; rank reads 1000 Sapphire III to start', async () => {
+  it('ranked and unranked never meet; leave takes a player out; rank reads 0 Stone III to start (Ken, Nov 7)', async () => {
     const { store, svc } = rig();
     await svc.handle('queue', { mode: 'ranked', ...pick }, alice, T0);
     const r = await svc.handle('queue', { mode: 'unranked', ...pick }, bob, T0 + 1000);
@@ -44,7 +44,7 @@ describe('modes: the ranked / unranked queue', () => {
     expect(store.queue.size).toBe(2);
     expect((await svc.handle('leave', {}, alice, T0 + 2000)).ok).toBe(true);
     expect(store.queue.size).toBe(1);
-    expect((await svc.handle('rank', {}, alice, T0)).rank).toMatchObject({ rating: 1000, name: 'Sapphire III', games: 0 });
+    expect((await svc.handle('rank', {}, alice, T0)).rank).toMatchObject({ rating: 0, name: 'Stone III', games: 0 });
   });
   it('a ranked match moves both ratings when it ends (the winner up, the loser down), and a practice code pays nothing', async () => {
     const { store, svc } = rig();
@@ -53,8 +53,8 @@ describe('modes: the ranked / unranked queue', () => {
     expect(r.matchId).toBeTruthy();
     expect((await svc.handle('forfeit', { matchId: r.matchId }, bob, T0 + 1000)).ok).toBe(true);
     await svc.handle('state', { matchId: r.matchId }, alice, T0 + 1500); // the referee settles the finished match on the next call
-    expect((await svc.handle('rank', {}, alice, T0)).rank).toMatchObject({ rating: 1016, wins: 1, games: 1 });
-    expect((await svc.handle('rank', {}, bob, T0)).rank).toMatchObject({ rating: 984, losses: 1 });
+    expect((await svc.handle('rank', {}, alice, T0)).rank).toMatchObject({ rating: 60, name: 'Stone III', wins: 1, games: 1 }); // ladder points: +60 out of Stone (hidden Elo 1016)
+    expect((await svc.handle('rank', {}, bob, T0)).rank).toMatchObject({ rating: 0, losses: 1 }); // points never go below 0 (hidden Elo 984)
     // practice: a code made with practice: true
     const c = await svc.handle('create', { ...pick, practice: true }, carol, T0 + 2000);
     expect(c).toMatchObject({ ok: true, mode: 'practice' });

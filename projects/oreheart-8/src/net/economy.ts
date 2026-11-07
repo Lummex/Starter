@@ -241,10 +241,10 @@ export const api = {
   },
   /** Nov 6 (Dashboard): the rank card */
   async myRank(): Promise<RankCard> {
-    if (stubMode()) { stubInit(); const rating = 1016; return { season: '2026-Q4', season_end: new Date(Date.now() + 12 * 86400000 + 6 * 3600000).toISOString(), rating, name: rankOfRating(rating).label, games: 27, wins: 18, losses: 9, peak: 1044, place: 84, players: 2184, rank: rankOfRating(rating), ladder: DEFAULT_LADDER.slice() }; }
+    if (stubMode()) { stubInit(); const rating = 1250; /* Nov 7: ladder points (Sapphire III) */ return { season: '2026-Q4', season_end: new Date(Date.now() + 12 * 86400000 + 6 * 3600000).toISOString(), rating, name: rankOfRating(rating).label, games: 27, wins: 18, losses: 9, peak: 1290, place: 84, players: 2184, rank: rankOfRating(rating), ladder: DEFAULT_LADDER.slice() }; }
     const r = await rpc<any>('my_rank');
     const ladder: LadderStep[] = Array.isArray(r?.ladder) ? r.ladder.map((s: any) => ({ name: String(s.name), min: Number(s.min) || 0 })) : DEFAULT_LADDER.slice();
-    return { ...r, rank: r && r.rank && r.rank.label ? { ...rankOfRating(Number(r.rating) || 1000, ladder), ...r.rank, divFloor: Number(r.rank.div_floor), divNext: r.rank.div_next == null ? null : Number(r.rank.div_next), progress: Number(r.rank.progress) || 0 } : rankOfRating(Number(r?.rating) || 1000, ladder), ladder };
+    return { ...r, rank: r && r.rank && r.rank.label ? { ...rankOfRating(Number(r.rating) || 0, ladder), ...r.rank, divFloor: Number(r.rank.div_floor), divNext: r.rank.div_next == null ? null : Number(r.rank.div_next), progress: Number(r.rank.progress) || 0 } : rankOfRating(Number(r?.rating) || 1000, ladder), ladder };
   },
   /** Nov 6 (regions): the enabled servers with live counts, the caller's choice, the fallback time; calling it is the heartbeat */
   async regionsInfo(): Promise<import('./regions').RegionsInfo> {
@@ -262,7 +262,7 @@ export const api = {
   },
   /** Nov 6 (Dashboard): the top of the season and the caller's row */
   async leaderboard(limit = 10): Promise<any> {
-    if (stubMode()) { stubInit(); const names = ['Snagtooth', 'Amvilina', 'ProfessorZap', 'MossQueen', 'SirBonksAlot', 'IronBeardBetty', 'Propellerhead', 'LadyGloom', 'HexyBexy', 'BigBogBrian']; const top = names.map((n, i) => { const rating = 1700 - i * 40; return { place: i + 1, user_id: 'stub-' + i, username: n, avatar: null, rating, label: rankOfRating(rating).label, wins: 200 - i * 12, losses: 100 - i * 3, games: 300 - i * 15, me: false }; }); return { season: '2026-Q4', season_end: new Date(Date.now() + 12 * 86400000).toISOString(), top, me: await this.myRank(), players: 2184, shares: { Stone: 180, Copper: 220, Iron: 260, Silver: 330, Sapphire: 480, Emerald: 320, Ruby: 200, Amethyst: 120, Diamond: 54, Oreheart: 20 } }; }
+    if (stubMode()) { stubInit(); const names = ['Snagtooth', 'Amvilina', 'ProfessorZap', 'MossQueen', 'SirBonksAlot', 'IronBeardBetty', 'Propellerhead', 'LadyGloom', 'HexyBexy', 'BigBogBrian']; const top = names.map((n, i) => { const rating = 2860 - i * 120; return { place: i + 1, user_id: 'stub-' + i, username: n, avatar: null, rating, label: rankOfRating(rating).label, wins: 200 - i * 12, losses: 100 - i * 3, games: 300 - i * 15, me: false }; }); return { season: '2026-Q4', season_end: new Date(Date.now() + 12 * 86400000).toISOString(), top, me: await this.myRank(), players: 2184, shares: { Stone: 180, Copper: 220, Iron: 260, Silver: 330, Sapphire: 480, Emerald: 320, Ruby: 200, Amethyst: 120, Diamond: 54, Oreheart: 20 } }; }
     return await rpc<any>('leaderboard', { p_limit: limit });
   },
   async myQuests(): Promise<QuestsInfo> {

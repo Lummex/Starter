@@ -4269,7 +4269,8 @@ export class App {
     // rating: before -> after, and the bar inside the division (the 10-step ladder)
     let ratingPanel: El | '' = '';
     if (res && res.rating) {
-      const b = Number(res.rating.before) || 1000, a = Number(res.rating.after) || b, d = a - b;
+      const num = (x: any, dflt: number) => (Number.isFinite(Number(x)) && x !== null && x !== '' ? Number(x) : dflt); // Nov 7: 0 points is a real start (Stone III)
+      const b = num(res.rating.before, 0), a = num(res.rating.after, b), d = a - b;
       const rb = rankOfRating(b), ra = rankOfRating(a);
       const span = Math.max(1, (ra.divNext ?? ra.divFloor + 1) - ra.divFloor);
       const posA = Math.min(100, Math.max(0, ((a - ra.divFloor) / span) * 100)), posB = ra.label === rb.label ? Math.min(100, Math.max(0, ((b - ra.divFloor) / span) * 100)) : (d >= 0 ? 0 : 100);

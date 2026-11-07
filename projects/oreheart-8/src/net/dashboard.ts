@@ -88,14 +88,14 @@ export function topBar(data: Data, extra: El[] = []): El {
 
 function rankPanel(data: Data, mini = false): El {
   const r = data.rank;
-  const rk = r ? r.rank : rankOfRating(1000);
+  const rk = r ? r.rank : rankOfRating(0);
   const charm = ico(ladderCharm(rk.name));
   if (mini) return h('div', { class: 'rkmini' }, charm, h('div', {}, h('b', {}, rk.label), h('small', {}, r ? `${fmt(r.rating)} rating · ${r.games ? `${r.wins}-${r.losses}` : 'no ranked matches yet'}${r.season_end ? ` · season ends in ${untilWords(r.season_end)}` : ''}` : 'play a ranked match to be placed')));
   const pct = Math.round((rk.progress || 0) * 100);
-  const steps = (r && r.ladder && r.ladder.length ? r.ladder : rankOfRating(1000) && []) as { name: string; min: number }[];
+  const steps = (r && r.ladder && r.ladder.length ? r.ladder : rankOfRating(0) && []) as { name: string; min: number }[];
   return h('section', { class: 'panel rankcard', 'data-testid': 'dash-rank', 'aria-label': 'Your rank' },
     h('div', { class: 'ptitle h' }, ico(ladderCharm('diamond')), 'Your rank', h('button', { type: 'button', class: 'more', onclick: () => showRankings(app!) }, 'Rankings ›')),
-    h('div', { class: 'rk' }, charm, h('div', {}, h('b', {}, rk.label), h('small', {}, r ? `Rating ${fmt(r.rating)}${r.place ? ` · #${r.place} on the server` : ''}` : 'Rating 1,000'), h('small', {}, r && r.games ? `${r.wins} win${r.wins === 1 ? '' : 's'} · ${r.losses} loss${r.losses === 1 ? '' : 'es'} this season` : 'No ranked matches yet this season'))),
+    h('div', { class: 'rk' }, charm, h('div', {}, h('b', {}, rk.label), h('small', {}, r ? `Rating ${fmt(r.rating)}${r.place ? ` · #${r.place} on the server` : ''}` : 'Rating 0'), h('small', {}, r && r.games ? `${r.wins} win${r.wins === 1 ? '' : 's'} · ${r.losses} loss${r.losses === 1 ? '' : 'es'} this season` : 'No ranked matches yet this season'))),
     rk.next != null ? h('div', { class: 'prog' }, h('span', {}, `Progress to ${rk.division === 'I' ? (steps[rk.tier + 1] ? steps[rk.tier + 1].name + ' III' : 'the next step') : rk.name + ' ' + (rk.division === 'III' ? 'II' : 'I')}`), h('span', {}, `${r ? r.rating - rk.divFloor : 0} / ${(rk.divNext || 0) - rk.divFloor}`)) : h('div', { class: 'prog' }, h('span', {}, 'The top of the ladder')),
     rk.next != null ? h('div', { class: 'bar rank' }, h('i', { style: `width:${pct}%` })) : null,
     h('div', { class: 'ladder', 'aria-hidden': 'true' }, ...(steps.length ? steps : [{ name: rk.name, min: 0 }]).map((s) => ico(ladderCharm(s.name), s.name === rk.name ? 'on' : ''))),
@@ -143,7 +143,7 @@ function build(root: El, data: Data) {
   const stashN = shop && shop.stash ? Object.values(shop.stash.packs || {}).reduce((s, n) => s + (Number(n) || 0), 0) : 0;
   const doneN = q ? q.quests.filter((x) => x.done).length : 0;
   const deckN = net.decks.length;
-  const rk = data.rank ? data.rank.rank : rankOfRating(1000);
+  const rk = data.rank ? data.rank.rank : rankOfRating(0);
   const cmdName = (() => { try { const p = JSON.parse(localStorage.getItem('oreheart.picks') || '{}'); return (COMMANDERS as any)[p.cmd]?.name || null; } catch { return null; } })();
   const modeChips = () => h('div', { class: 'mode', role: 'group', 'aria-label': 'How to play' }, ...MODES.map(([id, label]) => h('button', { type: 'button', class: 'chip panel' + (dashMode === id ? ' on' : ''), 'aria-pressed': String(dashMode === id), 'data-mode': id, onclick: (e: Event) => { dashMode = id; try { localStorage.setItem('oreheart.playMode', id); } catch { /* fine */ } for (const b of (e.currentTarget as El).parentElement!.querySelectorAll('.chip')) { b.classList.toggle('on', (b as El).dataset.mode === id); b.setAttribute('aria-pressed', String((b as El).dataset.mode === id)); } for (const s of root.querySelectorAll('.play-sub')) s.textContent = playSub(); } }, label)));
   const playSub = () => `${(MODES.find((m) => m[0] === dashMode) || MODES[0])[1]}${dashMode === 'ranked' ? ` · ${rk.label}` : ''}${cmdName ? ` · ${cmdName}` : ''}`;
@@ -227,7 +227,7 @@ export async function showRankings(a: App): Promise<void> {
   if (!root.isConnected) return;
   let lb: any = null;
   try { lb = await api.leaderboard(10); } catch { lb = null; }
-  const me = data.rank, rk = me ? me.rank : rankOfRating(1000);
+  const me = data.rank, rk = me ? me.rank : rankOfRating(0);
   const steps = (me && me.ladder && me.ladder.length ? me.ladder : []) as { name: string; min: number }[];
   const shares: Record<string, number> = (lb && lb.shares) || {};
   const total = (lb && Number(lb.players)) || 0;

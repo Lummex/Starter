@@ -587,10 +587,10 @@ test('AC682: modes: the menu offers Ranked, Unranked and Play a friend with a ra
   const a = await openAs(browser, 'alice' + id), b = await openAs(browser, 'bob' + id);
   await atMenu(a); await atMenu(b);
   for (const t of ['pvp-ranked', 'pvp-unranked', 'pvp-play-friend']) await expect(a.locator(`[data-testid="${t}"]`)).toBeVisible();
-  await expect(a.locator('[data-testid="pvp-rank"]')).toContainText(/Ranked: 1000 Sapphire III/, { timeout: 10000 });
+  await expect(a.locator('[data-testid="pvp-rank"]')).toContainText(/Ranked: 0 Stone III/, { timeout: 10000 });
   // Alice waits in the unranked queue; Bob joins it 3 s later and the server pairs them
   const pa = a.evaluate(() => window.oreheart.pvp.queue('unranked', 'grubnak', 'goblin-warband'));
-  await expect(a.locator('[data-testid="pvp-queue-status"]')).toContainText(/Looking for an opponent \(rating 1000/, { timeout: 10000 });
+  await expect(a.locator('[data-testid="pvp-queue-status"]')).toContainText(/Looking for an opponent/, { timeout: 10000 });
   await a.waitForTimeout(3000);
   const rb = await b.evaluate(() => window.oreheart.pvp.queue('unranked', 'borgo', 'dwarf-warband'));
   expect(rb && rb.ok && rb.matchId, JSON.stringify(rb)).toBeTruthy();
@@ -849,9 +849,9 @@ test('AC695: server regions (Ken, Nov 5): the lobby lists US East, Central and W
   expect(await a.evaluate(() => localStorage.getItem('oreheart.region'))).toBe('us-west');
   // Alice (West) and Bob (East) wait in the same mode and are NOT paired; after the fallback Alice is offered every region
   const pa = a.evaluate(() => window.oreheart.pvp.queue('unranked', 'grubnak', 'goblin-warband', 'us-west'));
-  await expect(a.locator('[data-testid="pvp-queue-status"]')).toContainText(/Looking for an opponent \(rating 1000/, { timeout: 10000 });
+  await expect(a.locator('[data-testid="pvp-queue-status"]')).toContainText(/Looking for an opponent/, { timeout: 10000 });
   const pb = b.evaluate(() => window.oreheart.pvp.queue('unranked', 'borgo', 'dwarf-warband', 'us-east'));
-  await expect(b.locator('[data-testid="pvp-queue-status"]')).toContainText(/Looking for an opponent \(rating 1000/, { timeout: 10000 });
+  await expect(b.locator('[data-testid="pvp-queue-status"]')).toContainText(/Looking for an opponent/, { timeout: 10000 });
   await a.waitForTimeout(2500);
   expect(await a.locator('main.match').count(), 'West and East must not meet by themselves').toBe(0);
   const offer = a.locator('[data-testid="pvp-queue-any"]');

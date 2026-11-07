@@ -671,7 +671,7 @@ async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string
   try { r = await transport().call('queue', { ...bodyNow(), avg: true }); } catch (e) { (go as HTMLButtonElement).disabled = false; err.textContent = friendlyError(e); return { ok: false, error: friendlyError(e) }; }
   if (!r || !r.ok) { (go as HTMLButtonElement).disabled = false; err.textContent = friendlyError(r?.error || 'Could not join the queue'); return { ok: false, error: r?.error }; }
   if (r.matchId) { if (await openMatch(r.matchId, r.view)) return { ok: true, matchId: r.matchId }; err.textContent = `A match started, but the screen did not open${lastOpenError ? ': ' + lastOpenError : ''}.`; return { ok: false }; }
-  waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent (rating ${r.rating})`, dots());
+  waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent`, dots()); // Nov 7: the Elo is hidden (matchmaking only)
   (cancel as HTMLButtonElement).textContent = 'Cancel';
   // the clock counts here, from when the server says the wait began; the average comes with the first answer and then every ~16 s (every 8th poll)
   if (timer) { timer.hidden = false; waitTimer(timer, Date.parse(r.since) || Date.now()); }
@@ -692,7 +692,7 @@ async function startQueue(mode: 'ranked' | 'unranked', pick: { commander: string
           if (!opened && waiting.isConnected) { waiting.textContent = ''; err.textContent = `A match started, but the screen did not open${lastOpenError ? ': ' + lastOpenError : ''}. Go back to the menu and press "Back to your match".`; }
           resolve({ ok: opened, matchId: x.matchId });
         } else if (x && x.ok && x.waiting) {
-          waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent (rating ${x.rating}${x.others ? `, ${x.others} waiting` : ''}${anyRegion ? ', every server' : ''})`, dots());
+          waiting.replaceChildren(`Looking for a${mode === 'ranked' ? ' ranked' : 'n'} opponent${x.others || anyRegion ? ` (${[x.others ? `${x.others} waiting` : '', anyRegion ? 'every server' : ''].filter(Boolean).join(', ')})` : ''}`, dots());
         } else if (x && !x.ok) { err.textContent = friendlyError(x.error); }
       } catch { /* keep polling */ }
     };

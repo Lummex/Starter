@@ -949,7 +949,7 @@ test('AC693: the Main Dashboard (design D, Ken Nov 5) is the signed-in main menu
   await expect(dash.getByTestId('dash-server')).toContainText('online');
   const rank = dash.getByTestId('dash-rank');
   await expect(rank).toContainText('Sapphire III');
-  await expect(rank).toContainText('Rating 1,016');
+  await expect(rank).toContainText('Rating 1,250');
   await expect(rank).toContainText('#84 on the server');
   await expect(rank).toContainText('18 wins · 9 losses');
   await expect(rank).toContainText('Progress to Sapphire II');

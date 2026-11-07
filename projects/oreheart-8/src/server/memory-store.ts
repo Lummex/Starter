@@ -1,6 +1,6 @@
 // An in-memory Store for the PvP service: the unit tests and the local mock server (tools/pvp-mock-server.mjs) use it.
 // Nothing here is used by the real server function.
-import { rankOfRating } from '../content/ladder';
+import { rankOfRating, pointsDelta } from '../content/ladder';
 import type { Store, Room, MoveLog, Summaries, QueueEntry, RankInfo, RegionInfo } from './service';
 import type { MatchRecord, View, Seat, PlayerInfo, DeckChoice } from './referee';
 
@@ -21,7 +21,8 @@ export class MemoryStore implements Store {
   queue = new Map<string, QueueEntry>();
   tiers = new Map<string, Record<string, number>>(); // user -> card id -> tier (the mock's /debug/tier sets it)
   pairings: { mode: string; waitedA: number; waitedB: number; at: number }[] = []; // Nov 5: for the average wait
-  ratings = new Map<string, RankInfo>();
+  ratings = new Map<string, RankInfo>(); // `rating` = the shown ladder points
+  elo = new Map<string, number>(); // the hidden Elo, matchmaking only (private.ratings.rating)
   /** Nov 6 (regions): the three US regions as the admin setting seeds them; fallbackSeconds = when the game offers "Search all regions" */
   regionList: RegionInfo[] = [{ id: 'us-east', name: 'US East', edge: 'us-east-1' }, { id: 'us-central', name: 'US Central', edge: 'us-east-1' }, { id: 'us-west', name: 'US West', edge: 'us-west-1' }];
   fallbackSeconds = 45;
@@ -60,28 +61,31 @@ export class MemoryStore implements Store {
   async finished(m: MatchRecord, summaries: Summaries) {
     if (this.finishedCalls.some((f) => f.matchId === m.id)) return true; // idempotent, like private.pvp_finish
     this.finishedCalls.push({ matchId: m.id, summaries: clone(summaries) });
-    if (m.mode === 'ranked') { // Elo, K 32, like private.rating_apply
-      const a = this.rankRow(m.players.a.userId), b = this.rankRow(m.players.b.userId);
-      const ea = 1 / (1 + Math.pow(10, (b.rating - a.rating) / 400)), sa = m.result?.winner === 'a' ? 1 : m.result?.winner === 'b' ? 0 : 0.5;
-      const d = Math.round(32 * (sa - ea));
-      a.rating = Math.max(0, a.rating + d); b.rating = Math.max(0, b.rating - d);
+    if (m.mode === 'ranked') { // like private.rating_apply: the hidden Elo (K 32) moves, then the shown ladder points (`rating` here) follow it
+      const ua = m.players.a.userId, ub = m.players.b.userId, a = this.rankRow(ua), b = this.rankRow(ub);
+      const ra = this.elo.get(ua) ?? 1000, rb = this.elo.get(ub) ?? 1000;
+      const ea = 1 / (1 + Math.pow(10, (rb - ra) / 400)), sa = m.result?.winner === 'a' ? 1 : m.result?.winner === 'b' ? 0 : 0.5;
+      const d = Math.round(32 * (sa - ea)), na = Math.max(0, ra + d), nb = Math.max(0, rb - d);
+      this.elo.set(ua, na); this.elo.set(ub, nb);
+      const pa = a.rating, pb = b.rating;
+      a.rating = Math.max(0, pa + pointsDelta(pa, na, sa)); b.rating = Math.max(0, pb + pointsDelta(pb, nb, 1 - sa));
       a.games++; b.games++; if (sa === 1) { a.wins++; b.losses++; } else if (sa === 0) { b.wins++; a.losses++; }
       a.peak = Math.max(a.peak, a.rating); b.peak = Math.max(b.peak, b.rating);
       a.name = rankName(a.rating); b.name = rankName(b.rating);
-      return { rating: { a: { before: a.rating - d, after: a.rating }, b: { before: b.rating + d, after: b.rating } } };
+      return { rating: { a: { before: pa, after: a.rating }, b: { before: pb, after: b.rating } } };
     }
     return true;
   }
   private rankRow(userId: string): RankInfo {
     let r = this.ratings.get(userId);
-    if (!r) { r = { season: season(), rating: 1000, name: rankName(1000), games: 0, wins: 0, losses: 0, peak: 1000 }; this.ratings.set(userId, r); }
+    if (!r) { r = { season: season(), rating: 0, name: rankName(0), games: 0, wins: 0, losses: 0, peak: 0 }; this.ratings.set(userId, r); } // Nov 7: everyone starts at Stone III
     return r;
   }
   async regions() { return clone(this.regionList); }
   async queueJoin(user: PlayerInfo, mode: 'ranked' | 'unranked', deck: DeckChoice, now: number, wantAvg = false, region?: string, anyRegion = false) {
     const cur = this.queue.get(user.userId);
     const reg = region && this.regionList.some((r) => r.id === region) ? region : this.regionList[0].id;
-    const e: QueueEntry = { user: clone(user), deck: clone(deck), mode, rating: this.rankRow(user.userId).rating, since: cur && cur.mode === mode && cur.region === reg ? cur.since : now, region: reg, anyRegion };
+    const e: QueueEntry = { user: clone(user), deck: clone(deck), mode, rating: (this.rankRow(user.userId), this.elo.get(user.userId) ?? 1000), since: cur && cur.mode === mode && cur.region === reg ? cur.since : now, region: reg, anyRegion };
     this.queue.set(user.userId, e);
     let others = 0, othersAll = 0;
     for (const q of this.queue.values()) if (q.mode === mode && q.user.userId !== user.userId) { othersAll++; if (q.region === reg || anyRegion || q.anyRegion) others++; }

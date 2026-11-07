@@ -76,6 +76,7 @@ export interface BoardView {
   setFlowMode(m: string): void;
   setTierLookup?(fn: (cardId: string, owner: 'player' | 'opponent', inst?: any) => number): void;
   setFlowTarget?(side: string, el: HTMLElement | null): void;
+  flowLive?(): { owner: string; color: string | null; from: { x: number; y: number }; to: { x: number; y: number } | null; aimed: boolean }[];
   flowDestinations?(): any;
   mineBox?(row: number, col: number): { x: number; y: number; width: number; height: number };
   pulseFlow(side: string): void;
