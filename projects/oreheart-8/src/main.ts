@@ -213,6 +213,8 @@ if (test) {
   const pvpLazy = () => import('./net/pvp').then((m) => m.pvpHooks() as any); // the PvP code stays out of the main bundle; every hook answers a promise
   // Nov 7: friends and the Exit box (lazy, like the PvP hooks)
   hooks.friends = Object.fromEntries(['open', 'overview', 'request', 'respond', 'block', 'watch'].map((k) => [k, (...a: any[]) => import('./net/friends').then((m) => (m.friendsHooks() as any)[k](...a)).catch(() => null)]));
+  hooks.feedback = { sent: () => import('./net/feedback').then((m) => m.feedbackHooks().sent()).catch(() => null), open: () => import('./net/feedback').then((m) => m.openFeedback(app as any)).catch(() => null) };
+  hooks.cosmetics = Object.fromEntries(['mine', 'equip', 'welcome', 'equipped', 'resetWelcome'].map((k) => [k, (...a: any[]) => import('./net/cosmetics').then((m) => (m.cosmeticsHooks() as any)[k](...a)).catch(() => null)]));
   hooks.exit = { open: () => import('./net/exit').then((m) => m.openExit(app as any)).catch(() => null), goodbye: () => import('./net/exit').then((m) => m.goodbye(app as any)).catch(() => null) };
   hooks.pvp = Object.fromEntries(['create', 'join', 'view', 'act', 'forfeit', 'tick', 'seq', 'matchId', 'code', 'actLog', 'queue', 'leave', 'rank', 'region'].map((k) => [k, (...a: any[]) => pvpLazy().then((p) => p[k](...a)).catch(() => null)]));
 }

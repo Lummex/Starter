@@ -43,6 +43,7 @@ const dayWords = (iso: string | null | undefined) => { if (!iso) return ['', '']
 
 export async function showDashboard(a: App): Promise<void> {
   app = a;
+  net.openCardBacks = () => { void import('./cosmetics').then((m) => m.openBackPicker(a)); };
   a.clear();
   const root = h('main', { class: 'screen menu-screen dash', 'data-screen': 'title', 'data-dash': '1', 'aria-label': 'Main menu' });
   a.root.append(root);
@@ -53,6 +54,7 @@ export async function showDashboard(a: App): Promise<void> {
   if (!root.isConnected) return;
   build(root, data);
   if (isTestPage()) (window as any).__dash = { data: () => data, mode: () => dashMode };
+  void import('./cosmetics').then((m) => m.maybeBetaWelcome(a)).catch(() => {}); // Nov 7: the beta welcome, once per account
 }
 
 export function topBar(data: Data, extra: El[] = []): El {
@@ -73,6 +75,12 @@ export function topBar(data: Data, extra: El[] = []): El {
     h('button', { type: 'button', class: 'server panel', 'data-testid': 'dash-server', title: 'Your server: change it in the PvP Lobby', onclick: () => net.openPvp?.('ranked') }, h('span', { class: 'dot' + (data.online ? '' : ' off') }), serverPillText(data.online)),
     ...extra,
     // Nov 7 (Ken): the friends list, and an Exit button near the gear
+    (() => { // Nov 7 (Ken): report a bug or send an idea, always in reach (the box's code loads on the first tap)
+      const ico = h('span', { class: 'fb-ico', 'aria-hidden': 'true' });
+      ico.innerHTML = '<svg viewBox="0 0 24 24" width="100%" height="100%"><g fill="none" stroke="#dfe6f2" stroke-width="1.8" stroke-linecap="round"><ellipse cx="12" cy="14" rx="5.2" ry="6.2" fill="#2b3446"/><path d="M12 8v12M8.6 6.6 7 4.5M15.4 6.6 17 4.5M6.8 12H3.5M17.2 12h3.3M6.9 16.5l-3 1.8M17.1 16.5l3 1.8"/><circle cx="12" cy="7.2" r="2.4" fill="#2b3446"/></g></svg>';
+      return h('button', { type: 'button', class: 'icn panel fb-btn', 'aria-label': 'Report a bug or send an idea', title: 'Report a bug or send an idea', 'data-testid': 'dash-feedback',
+        onclick: () => { if (app) void import('./feedback').then((m) => m.openFeedback(app!)); } }, ico);
+    })(),
     h('button', { type: 'button', class: 'icn panel friends-btn', 'aria-label': 'Friends', title: 'Friends', 'data-testid': 'dash-friends', onclick: () => { void import('./friends').then((m) => m.showFriends()); } }, ico('/art/ui/silver/icon-deck.webp'), h('span', { class: 'fr-badge', 'data-friends-badge': '1', hidden: true })),
     h('button', { type: 'button', class: 'icn panel', 'aria-label': 'Settings', onclick: () => app?.showSettings() }, ico('/art/ui/silver/icon-settings.webp')),
     h('button', { type: 'button', class: 'icn panel exit-btn', 'aria-label': 'Exit', title: 'Exit or sign out', 'data-testid': 'dash-exit', onclick: () => { if (app) void import('./exit').then((m) => m.openExit(app!)); } }, ico('/art/ui/silver/icon-quit.webp')));

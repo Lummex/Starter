@@ -1165,3 +1165,81 @@ test('AC701: the Dashboard has a Tutorial button (Ken, Nov 7) next to Find a mat
   await expect(page.locator('main.match')).toBeVisible({ timeout: 20000 });
   await expect.poll(() => page.evaluate(() => !!(window.oreheart.getState() && window.oreheart.getState().tutorial)), { timeout: 10000 }).toBe(true);
 });
+
+// ---------- Nov 7: feedback, the beta welcome, card backs ----------
+async function signedInDashWith(page, extra) {
+  await openEcon(page, 'shop', extra);
+  await page.getByRole('button', { name: 'Back' }).click();
+  expect(await page.evaluate(() => window.oreheart.packs.setOwned({ 'goblin-grunt': 4 }, [{ name: 'Junk Pile', cards: Array(4).fill('goblin-grunt'), commander: 'grubnak' }]))).toBe(true);
+  await page.evaluate(() => window.__app.showMenu());
+  await expect(page.locator('main.dash[data-dash="1"]')).toBeVisible({ timeout: 10000 });
+}
+
+test('AC702: the bug button (Ken, Nov 7): from the Dashboard top bar a box opens with Bug / Idea / Other, a 1000-character text box with a counter and a picture option; Send saves it with what the game knows and says thanks; Settings has it too', async ({ page }) => {
+  test.setTimeout(90000);
+  await signedInDashWith(page, '');
+  await page.locator('[data-testid=dash-feedback]').click();
+  const box = page.locator('[data-testid=fb-dialog]');
+  await expect(box).toBeVisible();
+  await expect(box.locator('[data-testid=fb-kind-bug]')).toHaveAttribute('aria-checked', 'true');
+  await box.locator('[data-testid=fb-kind-idea]').click();
+  await expect(box.locator('[data-testid=fb-kind-idea]')).toHaveAttribute('aria-checked', 'true');
+  expect(await box.locator('[data-testid=fb-text]').getAttribute('maxlength')).toBe('1000');
+  await box.locator('[data-testid=fb-send]').click();
+  await expect(box.locator('[data-testid=fb-error]')).toContainText('a little more');
+  await box.locator('[data-testid=fb-text]').fill('More goblins with tiny hats, please');
+  await expect(box.locator('[data-testid=fb-count]')).toHaveText('35 / 1000');
+  await box.locator('[data-testid=fb-send]').click();
+  await expect(box).toHaveCount(0);
+  await expect(page.locator('.econ-toast')).toContainText('Thanks!');
+  const sent = await page.evaluate(() => window.oreheart.feedback.sent());
+  expect(sent.length).toBe(1);
+  expect(sent[0]).toMatchObject({ kind: 'idea', message: 'More goblins with tiny hats, please' });
+  expect(sent[0].meta.screen).toBeTruthy();
+  expect(sent[0].meta.device).toMatch(/·/);
+  expect(sent[0].meta.build).toBeTruthy();
+  // a stray click outside never throws away a typed report
+  await page.locator('[data-testid=dash-feedback]').click();
+  await box.locator('[data-testid=fb-text]').fill('half typed');
+  await page.mouse.click(5, 5);
+  await expect(box).toBeVisible();
+  await box.locator('[data-testid=fb-cancel]').click();
+  // Settings has the same button
+  await page.evaluate(() => window.__app.showSettings());
+  await expect(page.locator('[data-testid=set-feedback]')).toBeVisible({ timeout: 10000 });
+});
+
+test('AC703: the beta welcome (Ken, Nov 7) shows once after sign-in with the Founder card back; "Wear it now" puts it on; the Collection\'s Card backs lists Oreheart and Founder and switches between them', async ({ page }) => {
+  test.setTimeout(90000);
+  await signedInDashWith(page, '&beta=1');
+  const w = page.locator('[data-testid=beta-welcome]');
+  await expect(w).toBeVisible({ timeout: 10000 });
+  await expect(w).toContainText('Welcome, brave tester!');
+  await expect(w).toContainText('bug button');
+  await expect(w.locator('img.beta-back')).toHaveAttribute('src', /card-backs\/founder\.webp$/);
+  await page.mouse.click(5, 5); // a choice, not a stray click
+  await expect(w).toBeVisible();
+  await w.locator('[data-testid=beta-wear]').click();
+  await expect(w).toHaveCount(0);
+  expect(await page.evaluate(() => window.oreheart.cosmetics.equipped())).toBe('founder');
+  // only once: the Dashboard again shows no welcome
+  await page.evaluate(() => window.__app.showMenu());
+  await expect(page.locator('main.dash[data-dash="1"]')).toBeVisible();
+  await page.waitForTimeout(800);
+  await expect(page.locator('[data-testid=beta-welcome]')).toHaveCount(0);
+  // Collection -> Card backs: both owned, Founder on; switch to Oreheart and back
+  await page.locator('[data-testid=dash-collection]').click();
+  await expect(page.locator('[data-screen="econ-collection"]')).toBeVisible({ timeout: 10000 });
+  await page.locator('[data-testid=col-card-backs]').click();
+  const pick = page.locator('[data-testid=cb-dialog]');
+  await expect(pick).toBeVisible();
+  await expect(pick.locator('[data-testid=cb-founder]')).toHaveAttribute('aria-checked', 'true');
+  await expect(pick.locator('[data-testid=cb-default]')).toBeVisible();
+  // the picker is above the Collection and takes the click (the Nov 7 pop-up fix)
+  const hit = await page.evaluate(() => { const b = document.querySelector('[data-testid=cb-default]'); const r = b.getBoundingClientRect(); const at = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!at && (at === b || b.contains(at)); });
+  expect(hit).toBe(true);
+  await pick.locator('[data-testid=cb-default]').click();
+  await expect(pick.locator('[data-testid=cb-default]')).toHaveAttribute('aria-checked', 'true');
+  expect(await page.evaluate(() => window.oreheart.cosmetics.equipped())).toBe('default');
+  await pick.locator('[data-testid=cb-close]').click();
+});

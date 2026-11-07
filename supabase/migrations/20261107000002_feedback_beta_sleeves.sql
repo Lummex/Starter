@@ -1,0 +1,338 @@
+-- Feedback, the beta welcome and the Founder card back (Ken, Nov 7: "I want to report a bug and feedback button in the game.
+-- A beta welcome. And yeah, let's give them like a founder card sleeve.").
+-- * feedback: Bug / Idea / Other, up to 1000 characters (blocked words are masked, never refused), an optional small screenshot,
+--   and what the game knows (build, screen, device, region, match). 10 a day per player. Players write only through
+--   submit_feedback and read only their own rows; Ken works the list in the back counter (New / Seen / Fixed / Won't fix).
+-- * beta_mode (admin switch, on by default): every account, new or old, gets the Founder card back once, and sees the beta
+--   welcome once (profiles.flags.beta_welcomed).
+-- * card backs: player_cosmetics already holds the unlocked ones (the chest back from the 99-pack chest); profiles.card_back is
+--   the one equipped (null = the Oreheart default). The PvP gate hands it to the referee, so the opponent sees it in a match.
+-- Safe to run on the real database: new objects only, settings inserted only when missing, grants idempotent.
+
+-- ---------------------------------------------------------------------------
+-- Card backs: the equipped one, and the Founder back for everyone during the beta
+-- ---------------------------------------------------------------------------
+alter table public.profiles add column if not exists card_back text check (card_back is null or card_back ~ '^[a-z][a-z0-9-]{0,29}$');
+
+insert into public.settings (key, value) values ('beta_mode', 'true'::jsonb) on conflict (key) do nothing;
+
+-- the accounts that exist now get the Founder back at once (new ones get it from beta_welcome at their first sign-in)
+insert into public.player_cosmetics (user_id, kind, item, ref)
+  select p.id, 'card_back', 'founder', 'beta' from public.profiles p
+  where coalesce((select (s.value)::boolean from public.settings s where s.key = 'beta_mode'), false)
+on conflict do nothing;
+
+/** The card backs I own (the Oreheart default always) and the one I have on. */
+create function public.my_cosmetics() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare uid uuid := private.assert_player();
+begin
+  return jsonb_build_object(
+    'equipped', coalesce((select card_back from public.profiles where id = uid), 'default'),
+    'card_backs', jsonb_build_array(jsonb_build_object('item', 'default', 'ref', 'everyone'))
+      || coalesce((select jsonb_agg(jsonb_build_object('item', c.item, 'ref', c.ref, 'at', c.created_at) order by c.created_at)
+                   from public.player_cosmetics c where c.user_id = uid and c.kind = 'card_back'), '[]'::jsonb));
+end $$;
+
+/** Put on a card back I own ('default' = the Oreheart back). */
+create function public.set_card_back(p_item text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := private.assert_player();
+begin
+  if p_item is null or p_item = 'default' then
+    update public.profiles set card_back = null where id = uid;
+    return jsonb_build_object('ok', true, 'equipped', 'default');
+  end if;
+  if not exists (select 1 from public.player_cosmetics where user_id = uid and kind = 'card_back' and item = p_item) then
+    raise exception 'You don''t have that card back yet.';
+  end if;
+  update public.profiles set card_back = p_item where id = uid;
+  return jsonb_build_object('ok', true, 'equipped', p_item);
+end $$;
+
+/** At sign-in: during the beta, the Founder back (once) and whether to show the welcome (once). */
+create function public.beta_welcome() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := private.assert_player(); seen boolean;
+begin
+  if not coalesce((private.setting('beta_mode'))::boolean, false) then return jsonb_build_object('show', false, 'beta', false); end if;
+  insert into public.player_cosmetics (user_id, kind, item, ref) values (uid, 'card_back', 'founder', 'beta') on conflict do nothing;
+  seen := coalesce((select flags ? 'beta_welcomed' from public.profiles where id = uid), false);
+  if not seen then update public.profiles set flags = flags || jsonb_build_object('beta_welcomed', now()) where id = uid; end if;
+  return jsonb_build_object('show', not seen, 'beta', true, 'reward', 'founder',
+                            'equipped', coalesce((select card_back from public.profiles where id = uid), 'default'));
+end $$;
+
+-- the PvP gate: the referee also learns the card back this player has on (the opponent sees it)
+create or replace function public.pvp_gate() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare uid uuid := private.assert_player();
+begin
+  return (select jsonb_build_object('user_id', p.id, 'username', p.username, 'avatar', p.avatar, 'card_back', p.card_back) from public.profiles p where p.id = uid);
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Feedback
+-- ---------------------------------------------------------------------------
+create table if not exists public.feedback (
+  id          bigint generated always as identity primary key,
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  kind        text not null check (kind in ('bug', 'idea', 'other')),
+  message     text not null check (length(message) between 3 and 1000),
+  screenshot  text check (screenshot is null or (length(screenshot) <= 600000 and screenshot ~ '^data:image/(jpeg|png|webp);base64,')),
+  meta        jsonb not null default '{}'::jsonb check (jsonb_typeof(meta) = 'object' and length(meta::text) <= 4000),
+  status      text not null default 'new' check (status in ('new', 'seen', 'fixed', 'wontfix')),
+  admin_note  text,
+  handled_by  uuid,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists feedback_status on public.feedback (status, created_at desc);
+create index if not exists feedback_user on public.feedback (user_id, created_at desc);
+revoke all on public.feedback from public, anon, authenticated;
+alter table public.feedback enable row level security;
+-- players may read their own reports (never anyone else's); every write goes through submit_feedback
+grant select on public.feedback to authenticated;
+drop policy if exists feedback_own on public.feedback;
+create policy feedback_own on public.feedback for select to authenticated using (user_id = (select auth.uid()));
+
+/** a message with every blocked word masked by stars (a bug report is never refused for a word) */
+create function private.mask_words(p_text text) returns text
+language plpgsql stable set search_path = '' as $$
+declare w text; t text := p_text;
+begin
+  foreach w in array private.setting_text_list('blocked_words') loop
+    if w ~ '^[a-z]{2,30}$' then t := regexp_replace(t, w, repeat('*', length(w)), 'gi'); end if;
+  end loop;
+  return t;
+end $$;
+
+/** Send a bug report, an idea or anything else. 10 a day. */
+create function public.submit_feedback(p_kind text, p_message text, p_screenshot text, p_meta jsonb) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := private.assert_player(); msg text; m jsonb; fid bigint;
+begin
+  if p_kind is null or p_kind not in ('bug', 'idea', 'other') then raise exception 'Pick Bug, Idea or Other.'; end if;
+  msg := btrim(coalesce(p_message, ''));
+  if length(msg) < 3 then raise exception 'Tell us a little more (at least a few words).'; end if;
+  if length(msg) > 1000 then raise exception 'That''s a long one! Please keep it under 1000 characters.'; end if;
+  if p_screenshot is not null and (length(p_screenshot) > 600000 or p_screenshot !~ '^data:image/(jpeg|png|webp);base64,') then
+    raise exception 'The screenshot is too big. Send it without the picture.';
+  end if;
+  m := case when jsonb_typeof(p_meta) = 'object' then p_meta else '{}'::jsonb end;
+  if length(m::text) > 4000 then m := jsonb_build_object('note', 'meta too long, dropped'); end if;
+  if (select count(*) from public.feedback where user_id = uid and created_at > now() - interval '1 day') >= 10 then
+    raise exception 'Thanks, that''s plenty for today! Send more tomorrow.';
+  end if;
+  insert into public.feedback (user_id, kind, message, screenshot, meta) values (uid, p_kind, private.mask_words(msg), p_screenshot, m) returning id into fid;
+  return jsonb_build_object('ok', true, 'id', fid);
+end $$;
+
+/** My last reports and where they stand. */
+create function public.my_feedback() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare uid uuid := private.assert_player();
+begin
+  return coalesce((select jsonb_agg(jsonb_build_object('id', f.id, 'kind', f.kind, 'message', f.message, 'status', f.status, 'at', f.created_at) order by f.created_at desc, f.id desc)
+                   from (select * from public.feedback where user_id = uid order by created_at desc, id desc limit 20) f), '[]'::jsonb);
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Admin: the Feedback list
+-- ---------------------------------------------------------------------------
+create function public.admin_feedback(p_status text, p_kind text, p_page integer, p_page_size integer) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare sz int := greatest(1, least(coalesce(p_page_size, 50), 200)); pg int := greatest(1, coalesce(p_page, 1));
+begin
+  perform private.assert_admin();
+  return jsonb_build_object(
+    'total', (select count(*) from public.feedback f where (coalesce(p_status, '') = '' or f.status = p_status) and (coalesce(p_kind, '') = '' or f.kind = p_kind)),
+    'counts', (select coalesce(jsonb_object_agg(s, n), '{}'::jsonb) from (select status s, count(*) n from public.feedback group by status) x),
+    'rows', coalesce((select jsonb_agg(jsonb_build_object('id', f.id, 'kind', f.kind, 'message', f.message, 'status', f.status, 'meta', f.meta,
+                                                         'has_screenshot', f.screenshot is not null, 'user_id', f.user_id, 'username', p.username,
+                                                         'admin_note', f.admin_note, 'created_at', f.created_at, 'updated_at', f.updated_at) order by f.created_at desc, f.id desc)
+                      from (select * from public.feedback f where (coalesce(p_status, '') = '' or f.status = p_status) and (coalesce(p_kind, '') = '' or f.kind = p_kind)
+                            order by f.created_at desc, f.id desc limit sz offset (pg - 1) * sz) f
+                      left join public.profiles p on p.id = f.user_id), '[]'::jsonb));
+end $$;
+
+create function public.admin_feedback_screenshot(p_id bigint) returns text
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  perform private.assert_admin();
+  return (select screenshot from public.feedback where id = p_id);
+end $$;
+
+create function public.admin_feedback_set(p_id bigint, p_status text, p_note text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare aid uuid := private.assert_admin(); f public.feedback;
+begin
+  if p_status not in ('new', 'seen', 'fixed', 'wontfix') then raise exception 'status is new, seen, fixed or wontfix'; end if;
+  select * into f from public.feedback where id = p_id for update;
+  if not found then raise exception 'No such report.'; end if;
+  update public.feedback set status = p_status, admin_note = nullif(btrim(coalesce(p_note, '')), ''), handled_by = aid, updated_at = now() where id = p_id;
+  perform private.audit(aid, 'feedback_status', f.user_id, jsonb_build_object('id', f.id, 'status', f.status), jsonb_build_object('id', f.id, 'status', p_status),
+                        coalesce(nullif(btrim(coalesce(p_note, '')), ''), 'status changed'));
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Settings: beta_mode is a true/false switch in the back counter
+-- ---------------------------------------------------------------------------
+create or replace function private.editable_settings() returns text[]
+language sql immutable set search_path = '' as $$
+  select array['signup_bonus_coins', 'max_decks', 'blocked_words', 'reserved_usernames', 'reserved_name_parts',
+               'pvp_win_coins', 'pvp_loss_coins', 'pvp_daily_coin_cap', 'pvp_min_turns',
+               'quest_reward_easy', 'quest_reward_medium', 'quest_reward_hard', 'quest_streak_days',
+               'pvp_phase_seconds', 'pvp_bank_seconds', 'pvp_respond_seconds', 'pvp_timeouts_to_forfeit',
+               'pvp_respond_min_seconds', 'pvp_abandon_seconds', 'pvp_attack_mode',
+               'upgrade_steps', 'upgrade_drop_bp', 'upgrade_drop_tiers',
+               'ranked_k', 'ranked_window', 'ranked_window_step',
+               'pack_miners', 'pack_commons', 'pack_uncommons', 'pack_rare_sure', 'pack_rares',
+               'pack_bundles', 'pack_bundle_promises', 'pack_pity_limit', 'pack_bundles_per_day', 'shop_badges',
+               'ranked_ladder', 'dashboard_counts',
+               'regions', 'region_fallback_seconds', 'region_counts',
+               'oreshard_bundles', 'oreshards_enabled',
+               'friends_max', 'friend_invites_enabled',
+               'beta_mode']
+$$;
+
+-- admin_set_setting: beta_mode is a true/false key (the rest as in 20261107000001)
+create or replace function public.admin_set_setting(p_key text, p_value jsonb, p_reason text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  aid uuid := private.assert_admin();
+  old jsonb := private.setting(p_key);
+  v jsonb := p_value;
+  bad text;
+  lo integer; hi integer;
+  sizes int[];
+begin
+  if p_reason is null or length(btrim(p_reason)) < 3 then raise exception 'reason required'; end if;
+  if p_key is null or not (p_key = any (private.editable_settings())) then raise exception 'that setting can''t be changed here'; end if;
+  select r.lo, r.hi into lo, hi from private.int_setting_range(p_key) r;
+  if lo is not null then
+    if jsonb_typeof(v) <> 'number' or (v #>> '{}')::numeric <> trunc((v #>> '{}')::numeric) then raise exception 'must be a whole number'; end if;
+    if (v #>> '{}')::numeric < lo or (v #>> '{}')::numeric > hi then raise exception 'must be % to %', lo, hi; end if;
+    v := to_jsonb((v #>> '{}')::int);
+  elsif p_key in ('region_counts', 'dashboard_counts', 'oreshards_enabled', 'friend_invites_enabled', 'beta_mode') then
+    if jsonb_typeof(v) <> 'boolean' then raise exception 'must be true or false'; end if;
+  elsif p_key = 'oreshard_bundles' then
+    -- Nov 6: a list of {id, name, usd_cents, oreshards, bonus_pct}: 1 to 8 bundles, ids = letters (2-20) and unique, names 1-40 characters,
+    -- usd_cents 50-99999 (Stripe's minimum is 50 cents), oreshards 1-1000000, bonus_pct 0-100, whole numbers
+    if jsonb_typeof(v) <> 'array' or jsonb_array_length(v) < 1 or jsonb_array_length(v) > 8 then raise exception 'must be a list of 1 to 8 bundles'; end if;
+    select coalesce(x ->> 'id', '?') into bad from jsonb_array_elements(v) e(x)
+      where jsonb_typeof(x) <> 'object' or not (x ->> 'id') ~ '^[a-z][a-z0-9-]{1,19}$' or coalesce(length(btrim(x ->> 'name')), 0) not between 1 and 40
+         or jsonb_typeof(x -> 'usd_cents') <> 'number' or jsonb_typeof(x -> 'oreshards') <> 'number' or jsonb_typeof(x -> 'bonus_pct') <> 'number' limit 1;
+    if found then raise exception 'each bundle needs an id (letters), a name (1-40 characters) and whole numbers usd_cents, oreshards and bonus_pct ("%")', bad; end if;
+    select x ->> 'id' into bad from jsonb_array_elements(v) e(x)
+      where (x ->> 'usd_cents')::numeric <> trunc((x ->> 'usd_cents')::numeric) or (x ->> 'oreshards')::numeric <> trunc((x ->> 'oreshards')::numeric)
+         or (x ->> 'bonus_pct')::numeric <> trunc((x ->> 'bonus_pct')::numeric)
+         or (x ->> 'usd_cents')::numeric not between 50 and 99999 or (x ->> 'oreshards')::numeric not between 1 and 1000000 or (x ->> 'bonus_pct')::numeric not between 0 and 100 limit 1;
+    if found then raise exception 'usd_cents 50-99999, oreshards 1-1000000, bonus_pct 0-100, whole numbers ("%")', bad; end if;
+    if (select count(distinct x ->> 'id') from jsonb_array_elements(v) e(x)) <> jsonb_array_length(v) then raise exception 'two bundles share an id'; end if;
+    v := (select jsonb_agg(jsonb_build_object('id', x ->> 'id', 'name', btrim(x ->> 'name'), 'usd_cents', (x ->> 'usd_cents')::int, 'oreshards', (x ->> 'oreshards')::int, 'bonus_pct', (x ->> 'bonus_pct')::int)
+                           order by (x ->> 'usd_cents')::int) from jsonb_array_elements(v) e(x));
+  elsif p_key = 'regions' then
+    if jsonb_typeof(v) <> 'array' or jsonb_array_length(v) < 1 or jsonb_array_length(v) > 12 then raise exception 'must be a list of 1 to 12 regions'; end if;
+    select coalesce(x ->> 'id', '?') into bad from jsonb_array_elements(v) e(x)
+      where jsonb_typeof(x) <> 'object' or not (x ->> 'id') ~ '^[a-z][a-z0-9-]{1,19}$' or coalesce(length(btrim(x ->> 'name')), 0) not between 1 and 30
+         or not (x ->> 'edge') = any (private.edge_regions()) or jsonb_typeof(x -> 'enabled') <> 'boolean' limit 1;
+    if found then raise exception 'each region needs an id (letters, digits, dashes), a name (1-30 characters), an edge Supabase offers and enabled true/false ("%")', bad; end if;
+    if (select count(distinct x ->> 'id') from jsonb_array_elements(v) e(x)) <> jsonb_array_length(v) then raise exception 'two regions share an id'; end if;
+    if not exists (select 1 from jsonb_array_elements(v) e(x) where (x ->> 'enabled')::boolean) then raise exception 'at least one region must be enabled'; end if;
+    v := (select jsonb_agg(jsonb_build_object('id', x ->> 'id', 'name', btrim(x ->> 'name'), 'edge', x ->> 'edge', 'enabled', (x ->> 'enabled')::boolean)) from jsonb_array_elements(v) e(x));
+  elsif p_key = 'upgrade_steps' then
+    if jsonb_typeof(v) <> 'object' then raise exception 'must be an object: rarity -> four steps'; end if;
+    select r.name into bad from public.rarities r where not (v ? r.name) limit 1;
+    if found then raise exception 'every rarity needs its four steps (missing "%")', bad; end if;
+    select k into bad from jsonb_each(v) e(k, x) where not exists (select 1 from public.rarities r where r.name = k) or jsonb_typeof(x) <> 'array' or jsonb_array_length(x) <> 4
+      or exists (select 1 from jsonb_array_elements(x) y where jsonb_typeof(y) <> 'number' or (y #>> '{}')::numeric <> trunc((y #>> '{}')::numeric) or (y #>> '{}')::numeric < 1 or (y #>> '{}')::numeric > 10000) limit 1;
+    if found then raise exception 'each rarity takes exactly four whole numbers from 1 to 10000 ("%")', bad; end if;
+  elsif p_key in ('upgrade_drop_bp', 'upgrade_drop_tiers') then
+    if jsonb_typeof(v) <> 'object' then raise exception 'must be an object of whole numbers'; end if;
+    select k into bad from jsonb_each(v) e(k, x) where jsonb_typeof(x) <> 'number' or (x #>> '{}')::numeric <> trunc((x #>> '{}')::numeric) or (x #>> '{}')::numeric < 0 limit 1;
+    if found then raise exception 'every value must be a whole number of 0 or more ("%")', bad; end if;
+    if p_key = 'upgrade_drop_tiers' then
+      if not (v ? '2' and v ? '3' and v ? '4' and v ? '5') or (select count(*) from jsonb_object_keys(v)) <> 4 then raise exception 'needs the four tiers 2, 3, 4 and 5'; end if;
+      if (select sum((x #>> '{}')::int) from jsonb_each(v) e(k, x)) <> 10000 then raise exception 'the four tiers must add up to 10000'; end if;
+    else
+      select k into bad from jsonb_each(v) e(k, x) where not exists (select 1 from public.rarities r where r.name = k) or (x #>> '{}')::int > 10000 limit 1;
+      if found then raise exception 'rarity names only, each 0 to 10000 ("%")', bad; end if;
+    end if;
+  elsif p_key = 'pvp_attack_mode' then
+    if jsonb_typeof(v) <> 'string' or not (v #>> '{}') in ('armed', 'window') then raise exception 'must be "armed" or "window"'; end if;
+  elsif p_key = 'pack_bundles' then
+    if jsonb_typeof(v) <> 'array' or jsonb_array_length(v) < 1 or jsonb_array_length(v) > 12 then raise exception 'must be a list of 1 to 12 bundles'; end if;
+    select left(x::text, 60) into bad from jsonb_array_elements(v) e(x)
+      where jsonb_typeof(x) <> 'object' or jsonb_typeof(x -> 'size') <> 'number' or jsonb_typeof(x -> 'bonus') <> 'number' limit 1;
+    if found then raise exception 'each bundle is {"size": n, "bonus": n} with whole numbers (%)', bad; end if;
+    select left(x::text, 60) into bad from jsonb_array_elements(v) e(x)
+      where (x ->> 'size')::numeric <> trunc((x ->> 'size')::numeric) or (x ->> 'bonus')::numeric <> trunc((x ->> 'bonus')::numeric)
+         or (x ->> 'size')::numeric not between 1 and 999 or (x ->> 'bonus')::numeric not between 0 and 999 limit 1;
+    if found then raise exception 'each bundle needs a size from 1 to 999 and a bonus from 0 to 999, whole numbers (%)', bad; end if;
+    if (select count(distinct (x ->> 'size')::int) from jsonb_array_elements(v) e(x)) <> jsonb_array_length(v) then raise exception 'two bundles share a size'; end if;
+    if not exists (select 1 from jsonb_array_elements(v) e(x) where (x ->> 'size')::int = 1) then raise exception 'the single pack (size 1) must stay in the list'; end if;
+    v := (select jsonb_agg(jsonb_build_object('size', (x ->> 'size')::int, 'bonus', (x ->> 'bonus')::int) order by (x ->> 'size')::int) from jsonb_array_elements(v) e(x));
+  elsif p_key = 'shop_badges' then
+    if jsonb_typeof(v) <> 'object' then raise exception 'must be an object: best_value and most_popular, each a bundle size or null'; end if;
+    select k into bad from jsonb_object_keys(v) k where k not in ('best_value', 'most_popular') limit 1;
+    if found then raise exception 'unknown badge "%" (best_value and most_popular only)', bad; end if;
+    select k into bad from jsonb_each(v) e(k, x) where jsonb_typeof(x) not in ('null', 'number') limit 1;
+    if found then raise exception 'each badge is a bundle size or null ("%")', bad; end if;
+    sizes := coalesce((select array_agg((b ->> 'size')::int) from jsonb_array_elements(coalesce(private.setting('pack_bundles'), '[]'::jsonb)) b), '{}'::int[]);
+    select k into bad from jsonb_each(v) e(k, x) where jsonb_typeof(x) = 'number' and not ((x #>> '{}')::numeric = any (sizes::numeric[])) limit 1;
+    if found then raise exception 'each badge is a bundle size from pack_bundles or null ("%")', bad; end if;
+    v := jsonb_build_object('best_value', coalesce(v -> 'best_value', 'null'::jsonb), 'most_popular', coalesce(v -> 'most_popular', 'null'::jsonb));
+  elsif p_key = 'pack_bundle_promises' then
+    if jsonb_typeof(v) <> 'object' then raise exception 'must be an object: bundle size -> promises'; end if;
+    sizes := coalesce((select array_agg((b ->> 'size')::int) from jsonb_array_elements(coalesce(private.setting('pack_bundles'), '[]'::jsonb)) b), '{}'::int[]);
+    select k into bad from jsonb_each(v) e(k, x) where k !~ '^[0-9]{1,3}$' or jsonb_typeof(x) <> 'object' or not (case when k ~ '^[0-9]{1,3}$' then k::int = any (sizes) else false end) limit 1;
+    if found then raise exception 'each key must be a bundle size from pack_bundles, with an object of promises ("%")', bad; end if;
+    select k || '.' || pk into bad from jsonb_each(v) e(k, x), jsonb_each(x) p(pk, pv)
+      where pk not in ('upgraded_min_tier', 'legendary_unowned', 'card_back')
+         or (pk = 'upgraded_min_tier' and jsonb_typeof(pv) <> 'number')
+         or (pk = 'legendary_unowned' and jsonb_typeof(pv) <> 'boolean')
+         or (pk = 'card_back' and (jsonb_typeof(pv) <> 'string' or not (pv #>> '{}') ~ '^[a-z][a-z0-9-]{0,29}$')) limit 1;
+    if found then raise exception 'promises are upgraded_min_tier (2-5), legendary_unowned (true/false) and card_back (a word) ("%")', bad; end if;
+    select k || '.upgraded_min_tier' into bad from jsonb_each(v) e(k, x), jsonb_each(x) p(pk, pv)
+      where pk = 'upgraded_min_tier' and not ((pv #>> '{}')::numeric in (2, 3, 4, 5)) limit 1;
+    if found then raise exception 'upgraded_min_tier is 2, 3, 4 or 5 ("%")', bad; end if;
+  elsif p_key = 'ranked_ladder' then
+    if jsonb_typeof(v) <> 'array' or jsonb_array_length(v) < 1 or jsonb_array_length(v) > 20 then raise exception 'must be a list of 1 to 20 ranks'; end if;
+    select coalesce(x ->> 'name', '?') into bad from jsonb_array_elements(v) e(x)
+      where jsonb_typeof(x) <> 'object' or coalesce(length(btrim(x ->> 'name')), 0) not between 1 and 20 or jsonb_typeof(x -> 'min') <> 'number' limit 1;
+    if found then raise exception 'each rank needs a name (1-20 characters) and a whole-number min ("%")', bad; end if;
+    select x ->> 'name' into bad from jsonb_array_elements(v) e(x)
+      where (x ->> 'min')::numeric <> trunc((x ->> 'min')::numeric) or (x ->> 'min')::numeric not between 0 and 10000 limit 1;
+    if found then raise exception 'each min is a whole number from 0 to 10000 ("%")', bad; end if;
+    if (select count(distinct btrim(x ->> 'name')) from jsonb_array_elements(v) e(x)) <> jsonb_array_length(v) then raise exception 'two ranks share a name'; end if;
+    if (select count(distinct (x ->> 'min')::int) from jsonb_array_elements(v) e(x)) <> jsonb_array_length(v) then raise exception 'two ranks share a min'; end if;
+    if (select min((x ->> 'min')::int) from jsonb_array_elements(v) e(x)) <> 0 then raise exception 'the first rank must start at 0'; end if;
+    v := (select jsonb_agg(jsonb_build_object('name', btrim(x ->> 'name'), 'min', (x ->> 'min')::int) order by (x ->> 'min')::int) from jsonb_array_elements(v) e(x));
+  else
+    if jsonb_typeof(v) <> 'array' then raise exception 'must be a list of words'; end if;
+    select x into bad from jsonb_array_elements(v) e(x) where jsonb_typeof(x) <> 'string' limit 1;
+    if found then raise exception 'every entry must be a word'; end if;
+    v := coalesce((select jsonb_agg(distinct w order by w) from
+                     (select lower(btrim(x #>> '{}')) w from jsonb_array_elements(v) e(x)) t where w <> ''), '[]'::jsonb);
+    select w into bad from jsonb_array_elements_text(v) w where w !~ '^[a-z]{2,30}$' limit 1;
+    if found then raise exception 'not allowed in the list: "%" (use 2-30 letters a-z only)', bad; end if;
+    if jsonb_array_length(v) > 2000 then raise exception 'too many words (max 2000)'; end if;
+  end if;
+  insert into public.settings (key, value, updated_at) values (p_key, v, now())
+    on conflict (key) do update set value = excluded.value, updated_at = now();
+  perform private.audit(aid, 'set_setting', null, jsonb_build_object('key', p_key, 'value', old), jsonb_build_object('key', p_key, 'value', v), p_reason);
+  return v;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Grants
+-- ---------------------------------------------------------------------------
+revoke all on function private.mask_words(text), private.editable_settings() from public, anon, authenticated;
+revoke all on function public.my_cosmetics(), public.set_card_back(text), public.beta_welcome(), public.submit_feedback(text, text, text, jsonb), public.my_feedback(),
+  public.admin_feedback(text, text, integer, integer), public.admin_feedback_screenshot(bigint), public.admin_feedback_set(bigint, text, text) from public, anon, authenticated;
+grant execute on function public.my_cosmetics(), public.set_card_back(text), public.beta_welcome(), public.submit_feedback(text, text, text, jsonb), public.my_feedback(),
+  public.admin_feedback(text, text, integer, integer), public.admin_feedback_screenshot(bigint), public.admin_feedback_set(bigint, text, text) to authenticated;
+revoke all on function public.pvp_gate() from public, anon;
+grant execute on function public.pvp_gate() to authenticated;

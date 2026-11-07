@@ -7,7 +7,7 @@ import { createMatch, applyAction, STARTER_DECKS, COMMANDERS, type Side } from '
 import { presentFor, realAction } from '../engine/view';
 
 export type Seat = 'a' | 'b';
-export interface PlayerInfo { userId: string; username: string; avatar: string | null }
+export interface PlayerInfo { userId: string; username: string; avatar: string | null; cardBack?: string | null /* Nov 7: the equipped card back (null = the Oreheart default) */ }
 export interface DeckChoice { commander: string; cards: string[] | null; deckId: string | null; tiers?: number[] | null /* Nov 5: each slot's copy tier, parallel to cards */; commanderTier?: number | null /* Nov 6: the Commander copy (tier) the player asked to fight as; the store checks he owns one */ }
 export interface Rules { phaseSeconds: number; bankSeconds: number; respondSeconds: number; timeoutsToForfeit: number; mulliganSeconds?: number; respondMinSeconds?: number; attackMode?: 'armed' | 'window' }
 export const DEFAULT_RULES: Rules = { phaseSeconds: 120, bankSeconds: 60, respondSeconds: 12, timeoutsToForfeit: 3, respondMinSeconds: 2 };
@@ -46,7 +46,7 @@ export interface View {
   state: any; events: any[];
   deadline: string | null; respondDeadline: string | null;
   bank: { me: number; them: number }; timeouts: { me: number; them: number };
-  names: { me: string; them: string }; avatars: { me: string | null; them: string | null };
+  names: { me: string; them: string }; avatars: { me: string | null; them: string | null }; backs?: { me: string | null; them: string | null };
   result: null | { won: boolean; reason: string; mode?: string; rating?: { before: number; after: number } };
   tiers?: { me: Record<string, number>; them: Record<string, number> };
 }
@@ -250,6 +250,7 @@ export function viewFor(m: MatchRecord, seat: Seat, events: any[]): View {
     deadline: iso(m.clock.deadline), respondDeadline: iso(m.clock.respondDeadline),
     bank: { me: m.clock.bank[seat], them: m.clock.bank[them] }, timeouts: { me: m.clock.timeouts[seat], them: m.clock.timeouts[them] },
     names: { me: m.players[seat].username, them: m.players[them].username }, avatars: { me: m.players[seat].avatar, them: m.players[them].avatar },
+    backs: { me: m.players[seat].cardBack ?? null, them: m.players[them].cardBack ?? null }, // Nov 7: each player's card back; the other one sees it on the enemy hand
     result: m.result ? { won: m.result.winner === seat, reason: m.result.reason, mode: m.mode || 'friend', ...(m.rating && m.rating[seat] ? { rating: m.rating[seat] } : {}) } : null,
     tiers: { me: (m.tiers && m.tiers[seat]) || {}, them: (m.tiers && m.tiers[them]) || {} },
   };

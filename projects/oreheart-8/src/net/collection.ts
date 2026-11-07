@@ -1,6 +1,7 @@
 // The Collection (contract 4.2): every card in the game, owned ones with "×N", the rest greyed with a small lock.
 // Filters by faction, rarity and owned. Crystal cards are free and unlimited for everyone.
 import { h, pictureOf as pictureOfCard, rarityKey, commanderPortrait } from '../ui/app';
+import { net } from './state';
 const pictureOf = (c: any) => (c && c.type === 'commander' && c.commanderId ? commanderPortrait(c.commanderId) : pictureOfCard(c)); // Nov 5: Commanders in the Collection
 import { ohCardEl, TIER_NAMES } from '../ui/cardfmt';
 import { upgradePanel } from './upgrade-panel';
@@ -32,6 +33,7 @@ export async function showCollection(): Promise<void> {
   econShow('collection',
     h('div', { class: 'econ-head' }, backBtn(),
       h('div', { class: 'econ-titles' }, h('h1', {}, 'Your Collection'), h('p', { class: 'econ-sub' }, 'Every card you own. The grey ones are still out there, hiding in packs.')),
+      net.openCardBacks ? h('button', { type: 'button', class: 'net-btn sbtn panel cb-open', 'data-testid': 'col-card-backs', onclick: () => net.openCardBacks?.() }, 'Card backs') : null, // Nov 7: wear the Founder back
       coinChip()),
     alert,
     h('div', { class: 'col-main' },

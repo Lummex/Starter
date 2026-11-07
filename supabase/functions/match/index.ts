@@ -17,7 +17,7 @@ const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const CORS: Record<string, string> = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type, x-region', 'access-control-allow-methods': 'POST, OPTIONS' };
 const json = (code: number, body: unknown) => new Response(JSON.stringify(body), { status: code, headers: { ...CORS, 'content-type': 'application/json' } });
 
-interface PlayerInfo { userId: string; username: string; avatar: string | null }
+interface PlayerInfo { userId: string; username: string; avatar: string | null; cardBack?: string | null }
 
 /** Storage over the real database with the service role (players never write these tables themselves). */
 class SupabaseStore {
@@ -164,7 +164,7 @@ Deno.serve(async (req: Request) => {
   if (whoErr || !who?.user) return json(401, { ok: false, error: 'not signed in' });
   if (gate.error) return json(200, { ok: false, error: gate.error.message });
   const g: any = gate.data || {};
-  const user: PlayerInfo = { userId: who.user.id, username: String(g.username || 'Player'), avatar: g.avatar ?? null };
+  const user: PlayerInfo = { userId: who.user.id, username: String(g.username || 'Player'), avatar: g.avatar ?? null, cardBack: typeof g.card_back === 'string' ? g.card_back : null }; // Nov 7: the card back this player has on
   const len = Number(req.headers.get('content-length') || 0);
   if (len > 50_000) return json(413, { ok: false, error: 'too big' });
   const text = await req.text();

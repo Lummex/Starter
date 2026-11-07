@@ -2063,3 +2063,22 @@ html body .overlay.e-discard-view>.dialog:not(.viewer3d):not([aria-label=Mulliga
   .tut-legend span{font-size:.8rem}
 }
 /* ===== END tutorial block ===== */
+
+/* Nov 7: the bug button, the feedback box, card backs and the beta welcome (design D: silver dark glass, no gold) */
+.fb-btn{position:relative}.fb-ico{display:inline-block;width:1.6em;height:1.6em}
+.overlay .dialog .fb-kinds{display:flex;gap:.4em;justify-content:center;margin:.3em 0 .5em}
+.overlay .dialog .fb-text{width:100%;min-height:7em;resize:vertical;box-sizing:border-box;font:inherit}
+.overlay .dialog .fb-count{display:block;text-align:right;opacity:.75}
+.overlay .dialog .fb-shot{display:flex;align-items:center;gap:.5em;flex-wrap:wrap;margin:.4em 0;cursor:pointer}
+.overlay .dialog .fb-thumb{width:9em;max-height:5.5em;object-fit:cover;border-radius:6px;box-shadow:0 0 0 1px #8d97a7}
+.overlay .dialog .fb-sub,.overlay .dialog .cb-sub{margin:.2em 0 .5em;opacity:.85;text-align:center}
+.overlay .dialog .cb-grid{display:flex;gap:.8em;flex-wrap:wrap;justify-content:center;margin:.4em 0}
+.overlay .dialog .cb-item{display:flex;flex-direction:column;align-items:center;gap:.25em;width:8.5em;padding:.5em;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid #4a5262;cursor:pointer;color:inherit}
+.overlay .dialog .cb-item img{width:6.4em;height:9.6em;object-fit:cover;border-radius:6px;box-shadow:0 6px 16px #000a}
+.overlay .dialog .cb-item.on{border-color:#7cc8ff;box-shadow:0 0 0 1px #7cc8ff55,0 0 16px rgba(124,200,255,.35)}
+.overlay .dialog .cb-item small{opacity:.75;min-height:1.2em}
+.overlay .dialog .cb-note{min-height:1.3em;text-align:center;color:#9fd8ff}
+.overlay .dialog .beta-box{display:flex;gap:1.2em;align-items:center;max-width:42em}
+.overlay .dialog .beta-back{width:8em;height:12em;object-fit:cover;border-radius:8px;box-shadow:0 0 0 2px #c9d0da,0 0 24px rgba(124,200,255,.45);flex:0 0 auto}
+.overlay .dialog .beta-txt h2{margin:0 0 .4em}.overlay .dialog .beta-txt p{margin:.35em 0}.overlay .dialog .beta-gift{color:#9fd8ff}
+@media (max-width:700px){.overlay .dialog .beta-box{flex-direction:column}.overlay .dialog .beta-back{width:6em;height:9em}}

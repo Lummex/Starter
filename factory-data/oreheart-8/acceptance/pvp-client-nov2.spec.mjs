@@ -994,3 +994,21 @@ test('AC699: Exit (Ken, Nov 7): the box offers Exit Oreheart, Sign out and Stay;
   await page.locator('[data-testid=goodbye-back]').click();
   await expect(page.locator('[data-screen=goodbye]')).toHaveCount(0);
 });
+
+test('AC704: card backs in PvP (Ken, Nov 7): Bob wears the Founder back, so Alice sees it on his hand; Alice wears the default, so Bob sees the Oreheart back', async ({ browser }) => {
+  test.setTimeout(120000);
+  const id = uniq();
+  const a = await openAs(browser, 'alice' + id), b = await openAs(browser, 'bob' + id);
+  await atMenu(a); await atMenu(b);
+  expect((await (await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/back?user=${encodeURIComponent('bob' + id)}&item=founder`)).json()).ok).toBe(true);
+  const made = await hook(a, 'create', 'grubnak', 'goblin-warband');
+  expect(made && made.ok, 'create: ' + JSON.stringify(made)).toBe(true);
+  const joined = await hook(b, 'join', made.code, 'borgo', 'dwarf-warband');
+  expect(joined && joined.ok, 'join: ' + JSON.stringify(joined)).toBe(true);
+  await inMatch(b); await inMatch(a);
+  expect((await view(a)).backs).toEqual({ me: null, them: 'founder' });
+  await expect.poll(() => a.evaluate(() => [...document.querySelectorAll('.enemy-hand .back')].map((e) => e.dataset.back)), { timeout: 15000 }).toContain('founder');
+  expect(await a.evaluate(() => [...document.querySelectorAll('.enemy-hand .back')].every((e) => e.dataset.back === 'founder' && /card-backs\/founder\.webp/.test(e.style.backgroundImage)))).toBe(true);
+  await expect.poll(() => b.evaluate(() => [...document.querySelectorAll('.enemy-hand .back')].map((e) => e.dataset.back)), { timeout: 15000 }).toContain('default');
+  await closeAll(a, b);
+});

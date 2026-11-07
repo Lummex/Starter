@@ -1,5 +1,6 @@
 import { arenaOpts } from './arena-fx';
 import { mineEmblemUrl, ohCardEl, ohBackEl, commanderCard, TIER_NAMES } from './cardfmt';
+import { paintBack } from '../content/card-backs';
 import { chosenCommanderTier, setChosenCommanderTier, setCommanderTiersOwned } from '../net/cmd-tier';
 import { recapLines, type RecapTurn } from './recap';
 import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
@@ -1544,6 +1545,7 @@ export class App {
         { label: 'How to play', run: () => this.matchHowTo() },
         { label: 'Sound Effects', run: () => this.matchVolume('Sound Effects') },
         { label: 'Background music', run: () => this.matchVolume('Background music') },
+        ...(net.active ? [{ label: 'Report a bug', run: () => { void import('../net/feedback').then((m) => m.openFeedback(this)); } }] : []), // Nov 7 (Ken): the bug button in the match menu
         { label: 'Give up match!', run: () => { const c: any = this.dialog('Give up this match?', [h('h2', {}, 'Give up this match?'), h('div', { class: 'row' }, btn('Yes, give up', 'danger', () => { c.close(); this.game.act({ type: 'surrender' }); }), btn('Cancel', '', () => c.close()))]); } },
       ],
     });
@@ -2626,13 +2628,15 @@ export class App {
     // enemy hand arc
     const n = en.hand.length;
     const shown = Math.min(n, 6);
-    if (r.enemyHand.childElementCount !== shown) { // Nov 1: only when the count changes (the backs were rebuilt on every game action)
+    const enemyBack: string | null = (this.netGame as any)?.backs?.them ?? null; // Nov 7: in PvP the opponent's hand wears their card back
+    if (r.enemyHand.childElementCount !== shown || (r.enemyHand.firstElementChild as HTMLElement | null)?.dataset.back !== (enemyBack || 'default')) { // Nov 1: only when the count (or the back) changes
       r.enemyHand.replaceChildren();
       for (let i = 0; i < shown; i++) {
         const ang = (i - (shown - 1) / 2) * 9;
         const b = h('div', { class: 'back', 'data-card-back': '', 'data-fan-angle': String(ang), 'aria-hidden': 'true' });
         b.style.transform = `rotate(${ang}deg)`;
         b.append(ohBackEl());
+        paintBack(b, enemyBack);
         r.enemyHand.append(b);
       }
     }

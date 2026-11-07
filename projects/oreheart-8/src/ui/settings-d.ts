@@ -95,6 +95,8 @@ export function showSettingsD(app: App): void {
   const emailEl = h('b', { 'data-testid': 'settings-email' }, online ? '…' : '—');
   const accountRows: (El | null)[] = online ? [
     row('Email', null, emailEl),
+    row('Report a bug or send an idea', 'Every report is read', btn('Report', 'sbtn panel', () => { void import('../net/feedback').then((m) => m.openFeedback(app)); }, { 'data-testid': 'set-feedback' })), // Nov 7 (Ken)
+    row('Card backs', 'The back your opponent sees in PvP', btn('Choose', 'sbtn panel', () => { void import('../net/cosmetics').then((m) => m.openBackPicker(app)); }, { 'data-testid': 'set-card-backs' })),
     row('Password', 'Change it · coming soon', btn('Change password', 'sbtn panel', undefined, { disabled: '' })),
     row('Show me on the rankings', 'Your name and rank on the leaderboard · always on for now', tog('Show me on the rankings (coming soon)', true, null)),
     row('Allow friend requests', 'coming soon', tog('Allow friend requests (coming soon)', false, null)),

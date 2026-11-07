@@ -16,5 +16,7 @@ export const net = {
   /** Nov 6 (Dashboard): the signed-in avatar id, the Profile screen and the PvP doors (set by flow.ts / pvp.ts) */
   avatar: null as string | null,
   openProfile: null as (() => void) | null,
+  /** Nov 7: the card-back chooser (set by the Dashboard, which has the app) */
+  openCardBacks: null as (() => void) | null,
   openPvp: null as ((mode: 'ranked' | 'unranked' | 'friend') => void) | null,
 };

@@ -163,6 +163,7 @@ export class NetGame {
   timeouts = { me: 0, them: 0 };
   names = { me: '', them: '' };
   avatars: { me: string | null; them: string | null } = { me: null, them: null };
+  backs: { me: string | null; them: string | null } = { me: null, them: null }; // Nov 7: each player's card back
   result: null | { won: boolean; reason: string; coins?: number; mode?: string; rating?: { before: number; after: number } } = null;
   view: any = null;
   /** the screen shows these (a refused move, a lost connection) */
@@ -232,6 +233,7 @@ export class NetGame {
     if (v.timeouts) this.timeouts = { me: +v.timeouts.me || 0, them: +v.timeouts.them || 0 };
     if (v.names) this.names = { me: String(v.names.me ?? ''), them: String(v.names.them ?? '') };
     if (v.avatars) this.avatars = { me: v.avatars.me ?? null, them: v.avatars.them ?? null };
+    if ((v as any).backs) this.backs = { me: (v as any).backs.me ?? null, them: (v as any).backs.them ?? null };
     if (v.mySide === 'a' || v.mySide === 'b') this.mySide = v.mySide;
     if (v.result) this.result = v.result;
     this.status = v.status === 'over' ? 'over' : 'active';

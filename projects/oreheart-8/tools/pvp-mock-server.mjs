@@ -93,6 +93,7 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { ok: true });
   }
   if (url.pathname === '/debug/moves' && req.method === 'GET') return json(res, 200, { ok: true, moves: store.moves.filter((m) => m.matchId === url.searchParams.get('matchId')) });
+  if (url.pathname === '/debug/back' && req.method === 'GET') { const u = userOf(url.searchParams.get('user')); if (!u) return json(res, 200, { ok: false }); u.cardBack = url.searchParams.get('item') || null; return json(res, 200, { ok: true }); } // Nov 7: checks only, the card back a mock player has on
   if (url.pathname === '/debug/expire-invites' && req.method === 'GET') { friends.debugExpire(); return json(res, 200, { ok: true }); }
   if (url.pathname === '/friends' && req.method === 'POST') { // Nov 7: the friends list, requests, blocks and challenges
     const who = userOf(req.headers['x-mock-user'] || url.searchParams.get('user'));
