@@ -105,8 +105,8 @@ begin
 end $$;
 
 -- ========== 5. pvp_gate and my_active_match ==========
-select pg_temp.ok('pvp_gate: returns user_id, username, avatar for a player in good standing',
-  pg_temp.json_as(:PA, 'aal1', 'select public.pvp_gate()') = jsonb_build_object('user_id', 'c0000000-0000-4000-8000-000000000021', 'username', 'Side_A', 'avatar', 'goblin-scrounger'),
+select pg_temp.ok('pvp_gate: returns user_id, username, avatar (and, Nov 7, the card back) for a player in good standing',
+  pg_temp.json_as(:PA, 'aal1', 'select public.pvp_gate()') = jsonb_build_object('user_id', 'c0000000-0000-4000-8000-000000000021', 'username', 'Side_A', 'avatar', 'goblin-scrounger', 'card_back', null),
   pg_temp.json_as(:PA, 'aal1', 'select public.pvp_gate()')::text);
 select pg_temp.refused('pvp_gate: a banned player is refused', :PD, 'aal1', 'select public.pvp_gate()', 'banned');
 select pg_temp.refused('pvp_gate needs a login', null, null, 'select public.pvp_gate()');

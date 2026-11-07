@@ -6,6 +6,7 @@ import { h } from '../ui/app';
 import { econShow, backBtn, coinChip, coinIcon, api, setShop, buyPack, buyBundle, openStash, currentCoins, currentFreePacks, lastShop, STREAK_DAYS, type PackInfo, type ShopInfo, type BundleInfo } from './economy';
 import { sealedPack } from './packopen';
 import { shardChip } from './oreshards';
+import { sleevesPanel } from './cosmetics';
 import { oddsWords } from './quest-summary';
 import { TIER_NAMES, RARITY_LABEL } from '../content/card-labels';
 export { oddsWords };
@@ -31,7 +32,7 @@ export async function showShop(): Promise<void> {
       h('div', { class: 'econ-wallet' }, shardChip(), coinChip())),
     alert,
     h('div', { class: 'shop-main' },
-      h('div', { class: 'shop-left' }, kinds, grid, strip),
+      h('div', { class: 'shop-left' }, kinds, grid, strip, sleevesPanel()), // Nov 7 (Ken): card sleeves for Oreshards
       h('div', { class: 'shop-side' }, stash, odds, streak, pulls, limit)));
   let info: ShopInfo;
   try { info = await api.shopInfo(); } catch (e: any) { grid.replaceChildren(); alert.textContent = 'The shop is closed right now: ' + String(e?.message || e); return; }

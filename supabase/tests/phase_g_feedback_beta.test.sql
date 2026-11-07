@@ -79,6 +79,39 @@ select pg_temp.refused('a player cannot open the Feedback list', :U1, 'aal1', $q
 select pg_temp.works('admin can switch beta_mode off and on', :A1, 'aal2', $q$ select public.admin_set_setting('beta_mode', 'false', 'test: off'), public.admin_set_setting('beta_mode', 'true', 'test: on') $q$);
 select pg_temp.refused('beta_mode takes only true or false', :A1, 'aal2', $q$ select public.admin_set_setting('beta_mode', '"yes"', 'test') $q$, 'true or false');
 
+-- ========== 4. Card sleeves in the store ==========
+create temp table s0 as select pg_temp.json_as(:U2, 'aal1', 'select public.sleeve_shop()') as j;
+select pg_temp.ok('sleeve_shop: the six store sleeves with prices, none owned; never the Oreheart, Founder or chest backs',
+  (select jsonb_array_length(j -> 'sleeves') = 6 and not exists (select 1 from jsonb_array_elements(j -> 'sleeves') e(x) where x ->> 'id' in ('default', 'founder', 'chest') or (x ->> 'owned')::boolean)
+          and (select (x ->> 'price')::int from jsonb_array_elements(j -> 'sleeves') e(x) where x ->> 'id' = 'goblin-junkpile') = 400 from s0), (select j::text from s0));
+select pg_temp.refused('no Oreshards, no sleeve', :U2, 'aal1', $q$ select public.buy_sleeve('goblin-junkpile', 'buy-sleeve-0001') $q$, 'Not enough Oreshards');
+select private.oreshard_apply(:U2, 1000, 'admin_grant', 'test', 'test-grant-sleeves-u2');
+create temp table b1 as select pg_temp.json_as(:U2, 'aal1', $q$ select public.buy_sleeve('goblin-junkpile', 'buy-sleeve-0002') $q$) as j;
+select pg_temp.ok('buying a sleeve takes its price in Oreshards once and it is owned',
+  (select (j ->> 'ok')::boolean and (j ->> 'oreshards')::int = 600 from b1)
+  and exists (select 1 from public.player_cosmetics where user_id = :U2 and item = 'goblin-junkpile' and ref = 'store')
+  and (select count(*) from public.oreshard_ledger where user_id = :U2 and reason = 'sleeve' and delta = -400) = 1, (select j::text from b1));
+create temp table b2 as select pg_temp.json_as(:U2, 'aal1', $q$ select public.buy_sleeve('goblin-junkpile', 'buy-sleeve-0002') $q$) as j;
+select pg_temp.ok('the same click twice is one purchase', (select (j ->> 'repeat')::boolean from b2) and (select count(*) from public.oreshard_ledger where user_id = :U2 and reason = 'sleeve') = 1, (select j::text from b2));
+select pg_temp.refused('a sleeve you own can''t be bought again', :U2, 'aal1', $q$ select public.buy_sleeve('goblin-junkpile', 'buy-sleeve-0003') $q$, 'already have');
+select pg_temp.refused('the Founder back is never for sale', :U2, 'aal1', $q$ select public.buy_sleeve('founder', 'buy-sleeve-0004') $q$, 'not for sale');
+create temp table q1 as select pg_temp.json_as(:U2, 'aal1', $q$ select public.set_card_back('goblin-junkpile') $q$) as j;
+create temp table m2 as select pg_temp.json_as(:U2, 'aal1', 'select public.my_cosmetics()') as j;
+select pg_temp.ok('a bought sleeve can be worn, and my_cosmetics names it from the sleeves table',
+  (select j ->> 'equipped' = 'goblin-junkpile' from q1) and (select exists (select 1 from jsonb_array_elements(j -> 'card_backs') e(x) where x ->> 'item' = 'goblin-junkpile' and x ->> 'name' = 'Goblin Junkpile') from m2),
+  (select j::text from m2));
+select pg_temp.refused('players cannot read the sleeves table directly', :U2, 'aal1', 'select * from public.sleeves', 'permission denied');
+select pg_temp.works('admin changes a price', :A1, 'aal2', $q$ select public.admin_set_sleeve('gnome-arcane', 'Gnome Arcane', null, 500, true, 11, 'test: price') $q$);
+select pg_temp.refused('admin can''t put a price on the Founder back', :A1, 'aal2', $q$ select public.admin_set_sleeve('founder', 'Founder', null, 100, true, 1, 'test') $q$, 'can''t be sold');
+select pg_temp.works('admin adds a new sleeve with no code (a row plus its picture)', :A1, 'aal2', $q$ select public.admin_set_sleeve('winter-frost', 'Winter Frost', 'Brrr.', 300, true, 20, 'test: new sleeve') $q$);
+create temp table s1 as select pg_temp.json_as(:U2, 'aal1', 'select public.sleeve_shop()') as j;
+select pg_temp.ok('the shop shows the new price and the new sleeve, and Tess''s sleeve as owned',
+  (select (select (x ->> 'price')::int from jsonb_array_elements(j -> 'sleeves') e(x) where x ->> 'id' = 'gnome-arcane') = 500
+          and exists (select 1 from jsonb_array_elements(j -> 'sleeves') e(x) where x ->> 'id' = 'winter-frost' and (x ->> 'price')::int = 300)
+          and exists (select 1 from jsonb_array_elements(j -> 'sleeves') e(x) where x ->> 'id' = 'goblin-junkpile' and (x ->> 'owned')::boolean) from s1), (select j::text from s1));
+create temp table as1 as select pg_temp.json_as(:A1, 'aal2', 'select public.admin_sleeves()') as j;
+select pg_temp.ok('admin_sleeves lists all ten with owner counts', (select jsonb_array_length(j) = 10 and (select (x ->> 'owners')::int from jsonb_array_elements(j) e(x) where x ->> 'id' = 'goblin-junkpile') >= 1 from as1), (select left(j::text, 300) from as1));
+
 select n, case when ok then 'PASS' else 'FAIL' end as result, name, detail from results order by n;
 do $$ declare f int := (select count(*) from results where not ok); t int := (select count(*) from results);
 begin

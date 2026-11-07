@@ -1216,7 +1216,7 @@ test('AC703: the beta welcome (Ken, Nov 7) shows once after sign-in with the Fou
   await expect(w).toBeVisible({ timeout: 10000 });
   await expect(w).toContainText('Welcome, brave tester!');
   await expect(w).toContainText('bug button');
-  await expect(w.locator('img.beta-back')).toHaveAttribute('src', /card-backs\/founder\.webp$/);
+  await expect(w.locator('img.beta-back')).toHaveAttribute('src', /sleeves\/founder\.webp$/);
   await page.mouse.click(5, 5); // a choice, not a stray click
   await expect(w).toBeVisible();
   await w.locator('[data-testid=beta-wear]').click();
@@ -1242,4 +1242,43 @@ test('AC703: the beta welcome (Ken, Nov 7) shows once after sign-in with the Fou
   await expect(pick.locator('[data-testid=cb-default]')).toHaveAttribute('aria-checked', 'true');
   expect(await page.evaluate(() => window.oreheart.cosmetics.equipped())).toBe('default');
   await pick.locator('[data-testid=cb-close]').click();
+});
+
+test('AC705: Card Sleeves in the Shop (Ken, Nov 7): six sleeves with Oreshard prices; Preview shows the back at card size; Buy asks first, then takes the Oreshards and the sleeve is owned; Wear puts it on, and Collection → Card backs lists it', async ({ page }) => {
+  test.setTimeout(90000);
+  await openEcon(page, 'shop');
+  const box = page.locator('[data-testid=shop-sleeves]');
+  await expect(box.locator('.sl-item')).toHaveCount(6, { timeout: 10000 });
+  await expect(box.locator('[data-testid=sl-balance]')).toHaveText('1000 Oreshards');
+  expect(await box.locator('.sl-item img').evaluateAll((els) => els.map((e) => e.getAttribute('src')))).toEqual(
+    ['goblin-junkpile', 'gnome-arcane', 'dwarf-deepforge', 'crystal-mine', 'piglet-stampede', 'skullfang-arena'].map((id) => `/art/sleeves/${id}.webp`));
+  // every picture really loads (Brush's art is in the build)
+  expect(await box.locator('.sl-item img').evaluateAll(async (els) => { await Promise.all(els.map((e) => (e.complete ? null : new Promise((r) => { e.onload = e.onerror = r; })))); return els.every((e) => e.naturalWidth > 0); })).toBe(true);
+  // preview
+  await box.locator('[data-testid=sl-preview-piglet-stampede]').click();
+  const pv = page.locator('[data-testid=sl-preview]');
+  await expect(pv).toBeVisible();
+  await expect(pv.locator('img.sl-big').first()).toHaveAttribute('src', '/art/sleeves/piglet-stampede.webp');
+  await pv.locator('[data-testid=sl-preview-close]').click();
+  await expect(pv).toHaveCount(0);
+  // buy: asks first; Cancel changes nothing; Buy takes the price
+  await box.locator('[data-testid=sl-buy-piglet-stampede]').click();
+  await expect(box.locator('.sl-ask')).toContainText('350 of your 1000 Oreshards?');
+  await box.locator('[data-testid=sl-confirm-piglet-stampede]').click();
+  await expect(box.locator('[data-testid=sl-owned-piglet-stampede]')).toHaveText('Owned', { timeout: 10000 });
+  await expect(box.locator('[data-testid=sl-balance]')).toHaveText('650 Oreshards');
+  await expect(box.locator('[data-testid=sl-buy-piglet-stampede]')).toHaveCount(0);
+  // too expensive: 500 > 650? no; buy two more to run out, then the third says not enough
+  await box.locator('[data-testid=sl-buy-skullfang-arena]').click();
+  await box.locator('[data-testid=sl-confirm-skullfang-arena]').click();
+  await expect(box.locator('[data-testid=sl-balance]')).toHaveText('150 Oreshards');
+  await box.locator('[data-testid=sl-buy-gnome-arcane]').click();
+  await box.locator('[data-testid=sl-confirm-gnome-arcane]').click();
+  await expect(box.locator('[data-testid=sl-note]')).toContainText('Not enough Oreshards');
+  // wear it
+  await box.locator('[data-testid=sl-wear-piglet-stampede]').click();
+  await expect(box.locator('[data-testid=sl-owned-piglet-stampede]')).toHaveText('Wearing');
+  expect(await page.evaluate(() => window.oreheart.cosmetics.equipped())).toBe('piglet-stampede');
+  const mine = await page.evaluate(() => window.oreheart.cosmetics.mine());
+  expect(mine.card_backs.map((b) => b.item)).toEqual(expect.arrayContaining(['default', 'piglet-stampede', 'skullfang-arena']));
 });

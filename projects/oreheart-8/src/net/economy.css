@@ -476,3 +476,17 @@ html body .econ-screen .net-btn.pko-leave{position:absolute;left:0;top:50%;trans
 .exit-row{display:flex;gap:.6em;justify-content:center;flex-wrap:wrap}
 .goodbye{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1em;text-align:center}.goodbye h1{font-family:Cinzel,serif;color:#fff;margin:0}.goodbye p{color:var(--soft,#c5ccd8);margin:0}
 @media (max-width:900px){.fr-main{grid-template-columns:1fr}.fr-row{grid-template-columns:auto 1fr;grid-template-areas:"av who" "acts acts" "more more"}}
+
+/* Card Sleeves in the Shop (Nov 7) */
+.sl-panel{padding:.8em 1em;margin-top:.8em;display:flex;flex-direction:column;gap:.5em}.sl-panel .h{display:flex;align-items:baseline;gap:.6em}.sl-bal{font-family:'Alegreya Sans',Arial,sans-serif;font-size:.7em;color:#9fd8ff}
+.sl-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.7em}
+.sl-item{display:flex;flex-direction:column;align-items:center;gap:.3em;text-align:center}.sl-item b{color:#fff;font-size:.9em}
+.sl-art{padding:0;border:0;background:none;cursor:zoom-in;border-radius:8px}.sl-art img{width:100%;max-width:7.5em;aspect-ratio:2/3;object-fit:cover;border-radius:8px;box-shadow:0 6px 16px #000a;display:block}
+.sl-art:hover img{box-shadow:0 0 0 2px #cfd6e4,0 6px 16px #000a}
+.sl-acts{display:flex;flex-wrap:wrap;gap:.3em;justify-content:center;align-items:center}.sl-acts .net-btn{min-height:2em;padding:0 .7em;font-size:.8em}.sl-ask{font-size:.8em;width:100%}
+.sl-owned{font-size:.75em;letter-spacing:.06em;text-transform:uppercase;color:#9fd8ff}.sl-note{min-height:1.2em;margin:0;color:#9fd8ff}
+.sl-preview{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#000a,#000e)}
+.sl-preview-box{display:flex;flex-direction:column;align-items:center;gap:.6em;padding:1.2em 1.4em;border-radius:14px;background:linear-gradient(180deg,rgba(44,48,60,.97),rgba(16,18,26,.98));box-shadow:0 0 0 1px #8d97a7,0 14px 40px #000c;max-width:94vw}
+.sl-pair{display:flex;gap:1.2em;align-items:flex-end}.sl-big{height:min(58vh,26em);aspect-ratio:2/3;object-fit:cover;border-radius:12px;box-shadow:0 10px 30px #000c}.sl-big.face{height:min(40vh,18em);opacity:.85}
+.sl-preview-box p{margin:0;color:var(--soft,#c5ccd8)}
+@media (max-width:900px){.sl-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}

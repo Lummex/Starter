@@ -1008,7 +1008,7 @@ test('AC704: card backs in PvP (Ken, Nov 7): Bob wears the Founder back, so Alic
   await inMatch(b); await inMatch(a);
   expect((await view(a)).backs).toEqual({ me: null, them: 'founder' });
   await expect.poll(() => a.evaluate(() => [...document.querySelectorAll('.enemy-hand .back')].map((e) => e.dataset.back)), { timeout: 15000 }).toContain('founder');
-  expect(await a.evaluate(() => [...document.querySelectorAll('.enemy-hand .back')].every((e) => e.dataset.back === 'founder' && /card-backs\/founder\.webp/.test(e.style.backgroundImage)))).toBe(true);
+  expect(await a.evaluate(() => [...document.querySelectorAll('.enemy-hand .back')].every((e) => e.dataset.back === 'founder' && /sleeves\/founder\.webp/.test(e.style.backgroundImage)))).toBe(true);
   await expect.poll(() => b.evaluate(() => [...document.querySelectorAll('.enemy-hand .back')].map((e) => e.dataset.back)), { timeout: 15000 }).toContain('default');
   await closeAll(a, b);
 });

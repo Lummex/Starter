@@ -11,6 +11,7 @@ import { cardPage } from './pages/cards';
 import { settingsPage } from './pages/settings';
 import { inboxPage } from './pages/inbox';
 import { feedbackPage } from './pages/feedback';
+import { sleevesPage } from './pages/sleeves';
 import { buildKind, mismatch } from './env-guard';
 
 const BUILD_KIND = buildKind(import.meta.env.VITE_OREHEART_ENV as string | undefined);
@@ -76,7 +77,7 @@ function shell(active: string) {
     serverKind === 'test' ? h('div', { class: 'test-banner', 'data-testid': 'test-banner' }, 'TEST SERVER — practice data only, not real players') : h('span', {}),
     h('header', { class: 'top' },
       h('span', { class: 'brand' }, 'Oreheart Back Counter'),
-      h('nav', {}, link('#/players', 'Players', 'players'), link('#/inbox', 'Inbox', 'inbox'), link('#/feedback', 'Feedback', 'feedback'), link('#/card/', 'Card lookup', 'card'),
+      h('nav', {}, link('#/players', 'Players', 'players'), link('#/inbox', 'Inbox', 'inbox'), link('#/feedback', 'Feedback', 'feedback'), link('#/sleeves', 'Sleeves', 'sleeves'), link('#/card/', 'Card lookup', 'card'),
         link('#/settings', 'Settings', 'settings'), link('#/audit', 'Audit log', 'audit')),
       h('span', { class: 'who' }, me),
       h('button', { type: 'button', class: 'link', onclick: () => void signOut(), 'data-testid': 'sign-out' }, 'Sign out')),
@@ -88,7 +89,7 @@ async function route() {
   const [path, query = ''] = location.hash.replace(/^#/, '').split('?');
   const params = new URLSearchParams(query);
   const parts = path.split('/').filter(Boolean);
-  const key = ['audit', 'card', 'settings', 'inbox', 'feedback'].includes(parts[0]) ? parts[0] : 'players';
+  const key = ['audit', 'card', 'settings', 'inbox', 'feedback', 'sleeves'].includes(parts[0]) ? parts[0] : 'players';
   const main = shell(key);
   try {
     if (parts[0] === 'player' && parts[1]) await playerPage(main, parts[1], params);
@@ -96,6 +97,7 @@ async function route() {
     else if (parts[0] === 'settings') await settingsPage(main);
     else if (parts[0] === 'inbox') await inboxPage(main, params);
     else if (parts[0] === 'feedback') await feedbackPage(main, params);
+    else if (parts[0] === 'sleeves') await sleevesPage(main);
     else if (parts[0] === 'audit') await auditPage(main, params);
     else await playersPage(main, params);
   } catch (e) {

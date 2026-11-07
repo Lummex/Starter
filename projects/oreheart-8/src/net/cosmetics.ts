@@ -11,11 +11,13 @@ import { stubMode, toast } from './economy';
 
 type El = HTMLElement;
 import { BACK_NAME, backArt } from '../content/card-backs';
-export { BACK_ART, BACK_NAME, backArt, paintBack } from '../content/card-backs';
-export interface Cosmetics { equipped: string; card_backs: { item: string; ref?: string | null; at?: string }[] }
+export { BACK_NAME, backArt, paintBack } from '../content/card-backs';
+export interface Cosmetics { equipped: string; card_backs: { item: string; ref?: string | null; at?: string; name?: string }[] }
+export interface SleeveShop { oreshards: number; enabled: boolean; sleeves: { id: string; name: string; blurb: string | null; price: number; owned: boolean }[] }
 
 // stand-ins for test pages (no database)
-const STUB = { owned: ['default'] as string[], equipped: 'default', welcomed: false, beta: true };
+const STUB = { owned: ['default'] as string[], equipped: 'default', welcomed: false, beta: true, shards: 1000,
+  store: [['goblin-junkpile', 'Goblin Junkpile', 400], ['gnome-arcane', 'Gnome Arcane', 400], ['dwarf-deepforge', 'Dwarf Deepforge', 400], ['crystal-mine', 'Crystal Mine', 450], ['piglet-stampede', 'Piglet Stampede', 350], ['skullfang-arena', 'Skullfang Arena', 500]] as [string, string, number][] };
 const params = () => new URLSearchParams(location.search);
 
 export const api = {
@@ -26,6 +28,20 @@ export const api = {
   async equip(item: string): Promise<{ ok: boolean; equipped: string }> {
     if (stubMode()) { if (!STUB.owned.includes(item)) throw new Error("You don't have that card back yet."); STUB.equipped = item; return { ok: true, equipped: item }; }
     return await rpc('set_card_back', { p_item: item });
+  },
+  /** Nov 7: the sleeve store (Oreshards only) */
+  async shop(): Promise<SleeveShop> {
+    if (stubMode()) return { oreshards: STUB.shards, enabled: true, sleeves: STUB.store.map(([id, name, price]) => ({ id, name, blurb: null, price, owned: STUB.owned.includes(id) })) };
+    return await rpc<SleeveShop>('sleeve_shop');
+  },
+  async buy(id: string): Promise<{ ok: boolean; oreshards: number }> {
+    if (stubMode()) {
+      const s = STUB.store.find((x) => x[0] === id); if (!s) throw new Error('That sleeve is not for sale.');
+      if (STUB.owned.includes(id)) throw new Error('You already have that sleeve.');
+      if (STUB.shards < s[2]) throw new Error(`Not enough Oreshards (this sleeve costs ${s[2]}, you have ${STUB.shards}).`);
+      STUB.shards -= s[2]; STUB.owned.push(id); return { ok: true, oreshards: STUB.shards };
+    }
+    return await rpc('buy_sleeve', { p_id: id, p_idem_key: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10) });
   },
   async welcome(): Promise<{ show: boolean; beta: boolean; reward?: string; equipped?: string }> {
     if (stubMode()) {
@@ -53,7 +69,7 @@ export async function openBackPicker(app: App): Promise<void> {
         try { const r = await api.equip(b.item); equipped = r.equipped || b.item; note.textContent = `${BACK_NAME[equipped] || equipped} is on. Your opponents will see it in PvP.`; draw(); }
         catch (e: any) { note.textContent = String(e?.message || e); }
       } },
-      h('img', { src: backArt(b.item), alt: '', draggable: 'false' }), h('b', {}, BACK_NAME[b.item] || b.item), h('small', {}, b.item === equipped ? 'Wearing' : b.ref === 'beta' ? 'Beta founder' : b.ref && b.ref.startsWith('bundle') ? 'From the chest' : ''))));
+      h('img', { src: backArt(b.item), alt: '', draggable: 'false' }), h('b', {}, b.name || BACK_NAME[b.item] || b.item), h('small', {}, b.item === equipped ? 'Wearing' : b.ref === 'beta' ? 'Beta founder' : b.ref && b.ref.startsWith('bundle') ? 'From the chest' : ''))));
   };
   draw();
   const d: any = app.dialog('Card backs', [h('h2', {}, 'Card backs'), h('p', { class: 'cb-sub' }, 'The back of your cards: your opponent sees it on your hand in PvP.'), grid, note,
@@ -91,5 +107,60 @@ export async function maybeBetaWelcome(app: App): Promise<void> {
 
 /** test hooks */
 export function cosmeticsHooks() {
-  return { mine: () => api.mine(), equip: (i: string) => api.equip(i), welcome: () => api.welcome(), equipped: () => equipped, resetWelcome: () => { welcomeAsked = false; STUB.welcomed = false; } };
+  return { mine: () => api.mine(), equip: (i: string) => api.equip(i), welcome: () => api.welcome(), equipped: () => equipped, resetWelcome: () => { welcomeAsked = false; STUB.welcomed = false; }, shards: () => STUB.shards };
+}
+
+// ------------------------------------------------------------------ the Shop's Card Sleeves section (Ken, Nov 7)
+/** A panel for the Shop: every sleeve on sale with its price in Oreshards, Preview, and Buy (with a confirm step) or Wear. */
+export function sleevesPanel(): El {
+  const box = h('section', { class: 'econ-panel sl-panel', 'data-testid': 'shop-sleeves', 'aria-label': 'Card Sleeves' }, h('h3', { class: 'h' }, 'Card Sleeves'), h('p', { class: 'net-note' }, 'Unrolling the sleeves…'));
+  const note = h('p', { class: 'sl-note', role: 'status', 'data-testid': 'sl-note' });
+  const draw = async (msg = '') => {
+    let s: SleeveShop;
+    try { s = await api.shop(); } catch { box.replaceChildren(h('h3', { class: 'h' }, 'Card Sleeves'), h('p', { class: 'net-note' }, 'The sleeves are not on sale right now.')); return; }
+    note.textContent = msg;
+    const grid = h('div', { class: 'sl-grid', role: 'list' }, ...s.sleeves.map((x) => {
+      const buy = h('button', { type: 'button', class: 'net-btn sbtn panel primary sl-buy', 'data-testid': 'sl-buy-' + x.id }, `${x.price} Oreshards`) as HTMLButtonElement;
+      const acts = h('div', { class: 'sl-acts' });
+      const reset = () => {
+        if (!x.owned) { acts.replaceChildren(buy); return; }
+        const wear = h('button', { type: 'button', class: 'net-btn sbtn panel', 'data-testid': 'sl-wear-' + x.id,
+          onclick: async () => { try { const r = await api.equip(x.id); equipped = r.equipped; void draw(`${x.name} is on.`); } catch (e: any) { note.textContent = String(e?.message || e); } } }, 'Wear');
+        acts.replaceChildren(h('span', { class: 'sl-owned', 'data-testid': 'sl-owned-' + x.id }, equipped === x.id ? 'Wearing' : 'Owned'), ...(equipped === x.id ? [] : [wear]));
+      };
+      buy.addEventListener('click', () => {
+        if (!s.enabled) { note.textContent = 'Oreshards are not on sale right now.'; return; }
+        const yes = h('button', { type: 'button', class: 'net-btn sbtn panel primary', 'data-testid': 'sl-confirm-' + x.id }, 'Buy') as HTMLButtonElement;
+        const no = h('button', { type: 'button', class: 'net-btn sbtn panel', onclick: reset }, 'Cancel');
+        acts.replaceChildren(h('span', { class: 'sl-ask' }, `${x.price} of your ${s.oreshards} Oreshards?`), yes, no);
+        yes.addEventListener('click', async () => {
+          yes.disabled = true;
+          try { await api.buy(x.id); toast(`${x.name} is yours!`, backArt(x.id)); void draw(`${x.name} is yours. Press Wear to put it on.`); }
+          catch (e: any) { note.textContent = String(e?.message || e).replace(/^.*?: /, ''); reset(); }
+        });
+      });
+      reset();
+      return h('div', { class: 'sl-item', role: 'listitem', 'data-sleeve': x.id },
+        h('button', { type: 'button', class: 'sl-art', 'aria-label': `Preview ${x.name}`, 'data-testid': 'sl-preview-' + x.id, onclick: () => previewSleeve(x.id, x.name, x.blurb) }, h('img', { src: backArt(x.id), alt: '', draggable: 'false' })),
+        h('b', {}, x.name), acts);
+    }));
+    box.replaceChildren(h('h3', { class: 'h' }, 'Card Sleeves', h('small', { class: 'sl-bal', 'data-testid': 'sl-balance' }, `${s.oreshards} Oreshards`)),
+      h('p', { class: 'net-note' }, 'The back of your cards, the side your opponent sees. Looks only, never power. Bought with Oreshards.'), grid, note);
+  };
+  void draw();
+  return box;
+}
+
+/** A big look at a sleeve: the back at full card size next to the Oreheart back, so the size and look are clear. */
+export function previewSleeve(id: string, name: string, blurb?: string | null): void {
+  const ov: El = h('div', { class: 'sl-preview', role: 'dialog', 'aria-modal': 'true', 'aria-label': `${name} sleeve`, 'data-testid': 'sl-preview', tabindex: '-1' });
+  const close = () => ov.remove();
+  ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+  ov.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape') close(); });
+  ov.append(h('div', { class: 'sl-preview-box' },
+    h('div', { class: 'sl-pair' }, h('img', { class: 'sl-big', src: backArt(id), alt: `${name} card back`, draggable: 'false' }), h('img', { class: 'sl-big face', src: backArt('default'), alt: 'The Oreheart back, for comparison', draggable: 'false' })),
+    h('h3', { class: 'h' }, name), ...(blurb ? [h('p', {}, blurb)] : []),
+    h('button', { type: 'button', class: 'net-btn sbtn panel', 'data-testid': 'sl-preview-close', onclick: close }, 'Close')));
+  document.body.append(ov);
+  ov.focus();
 }
