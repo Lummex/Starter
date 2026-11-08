@@ -5,7 +5,9 @@
 import { h } from '../ui/app';
 import { econShow, backBtn, coinChip, coinIcon, api, setShop, buyPack, buyBundle, openStash, currentCoins, currentFreePacks, lastShop, STREAK_DAYS, type PackInfo, type ShopInfo, type BundleInfo } from './economy';
 import { sealedPack, packArt } from './packopen';
-import { shardChip } from './oreshards';
+import { shardChip, shardIcon as shardIconEl } from './oreshards';
+// Nov 7: the Oreshard side of the prices (the server's oreshard_pack_rate and the player's balance), loaded with the shop
+let shardRate = 1, shardBal = 0;
 import { sleevesPanel } from './cosmetics';
 import { oddsWords } from './quest-summary';
 import { TIER_NAMES, RARITY_LABEL } from '../content/card-labels';
@@ -29,13 +31,14 @@ export async function showShop(): Promise<void> {
   econShow('shop',
     h('div', { class: 'econ-head' }, backBtn(),
       h('div', { class: 'econ-titles' }, h('h1', {}, 'The Pack Shop'), h('p', { class: 'econ-sub' }, 'Shiny, crinkly, and only slightly haunted. Every pack holds 11 cards.')),
-      h('div', { class: 'econ-wallet' }, shardChip(), coinChip())),
+      h('div', { class: 'econ-wallet' }, shardChip(), h('button', { type: 'button', class: 'net-btn sbtn panel shop-convert', 'data-testid': 'shop-convert', title: '1 Oreshard = 1 Coin, one way', onclick: () => { void import('./oreshards').then((m) => m.showOreshards('convert')); } }, 'Oreshards → Coins'), coinChip())),
     alert,
     h('div', { class: 'shop-main' },
       h('div', { class: 'shop-left' }, kinds, grid, strip, sleevesPanel()), // Nov 7 (Ken): card sleeves for Oreshards
       h('div', { class: 'shop-side' }, stash, odds, streak, pulls, limit)));
   let info: ShopInfo;
   try { info = await api.shopInfo(); } catch (e: any) { grid.replaceChildren(); alert.textContent = 'The shop is closed right now: ' + String(e?.message || e); return; }
+  try { const o = await (await import('./oreshards')).api.info(); shardRate = Number(o.pack_rate) || 1; shardBal = Number(o.oreshards) || 0; } catch { /* the coin prices still work */ }
   setShop(info);
   render({ alert, stash, kinds, grid, odds, strip, streak, limit }, info);
 }
@@ -211,6 +214,18 @@ function tile(p: PackInfo, b: BundleInfo, info: ShopInfo, parts: Parts): El {
     if (b.size === 1) await buyPack(p, onErr); else await buyBundle(p, b.size, onErr);
   };
   buy.addEventListener('click', () => { void go(); });
+  // Nov 7 (Ken: real money to packs): the same bundle for Oreshards; short of them, the button offers to get more
+  const shardPrice = Math.ceil(price * shardRate);
+  const shardsShort = shardBal < shardPrice;
+  const buyShards = b.size === 1 && free ? null : h('button', { type: 'button', class: 'net-btn shop-buy-shards', 'data-testid': 'buy-shards-' + b.size, 'data-pack': p.id,
+    'aria-label': shardsShort ? `Get more Oreshards (${p.name} costs ${shardPrice.toLocaleString('en-US')})` : `Buy ${total} ${total === 1 ? 'pack' : 'packs'} for ${shardPrice.toLocaleString('en-US')} Oreshards`,
+    onclick: async () => {
+      if (shardsShort) { void import('./oreshards').then((m) => m.showOreshards()); return; }
+      parts.alert.textContent = '';
+      for (const x of document.querySelectorAll<HTMLButtonElement>('.shop-buy, .shop-buy-shards')) x.disabled = true;
+      const onErr = (m: string) => { parts.alert.textContent = m; for (const x of document.querySelectorAll<HTMLButtonElement>('.shop-buy, .shop-buy-shards')) x.disabled = false; };
+      await buyBundle(p, b.size, onErr, 'oreshards');
+    } }, shardIconEl(), shardsShort ? 'Get more Oreshards' : `${shardPrice.toLocaleString('en-US')} Oreshards`) as HTMLButtonElement;
   const art = h('div', { class: 'shop-art' + (chest ? ' shop-chest' : ''), role: 'img', 'aria-label': chest ? `${p.name} treasure chest` : p.name },
     bundleArt(p, b, total),
     countPlaque(total));
@@ -224,9 +239,10 @@ function tile(p: PackInfo, b: BundleInfo, info: ShopInfo, parts: Parts): El {
     art,
     h('h2', {}, b.size === 1 ? 'Single Pack' : chest ? 'Treasure Chest' : b.size >= 24 ? 'Warband Bundle' : 'Pack Bundle'),
     h('p', { class: 'shop-blurb shop-qty' }, ...(b.size === 1 ? ['1 pack \u00b7 11 cards'] : b.bonus > 0 ? [`${b.size} packs `, h('b', { class: 'plus' }, `+${b.bonus} FREE`), ` = ${total} packs`] : [`${b.size} packs \u00b7 ${b.size * 11} cards`])),
-    h('div', { class: 'shop-price', 'aria-label': `${price} coins` }, coinIcon(''), price.toLocaleString('en-US')),
+    h('div', { class: 'shop-price', 'aria-label': `${price} coins or ${Math.ceil(price * shardRate)} Oreshards` }, coinIcon(''), price.toLocaleString('en-US'),
+      h('span', { class: 'shop-or' }, 'or'), shardIconEl(), h('span', { class: 'shop-shards', 'data-testid': 'shard-price' }, Math.ceil(price * shardRate).toLocaleString('en-US'))),
     h('p', { class: 'shop-perpack', 'data-testid': 'per-pack' }, b.bonus > 0 ? `~${Math.round(perPack)} per pack` : `${Math.round(perPack)} per pack`),
     promises.length ? h('p', { class: 'shop-promise', 'data-testid': 'bundle-promise' }, 'Guaranteed: ' + promises.join(', ') + '.') : h('p', { class: 'shop-promise shop-promise-none' }, b.size === 1 ? `${p.opened_today || 0} opened today` : 'No guarantee: just the odds.'),
-    buy,
-    !afford && !soldOut ? h('p', { class: 'shop-hint' }, 'Finish quests to earn coins') : null);
+    h('div', { class: 'shop-buys' }, buy, buyShards),
+    !afford && !soldOut ? h('p', { class: 'shop-hint' }, 'Finish quests to earn coins, or pay with Oreshards') : null);
 }

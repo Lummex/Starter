@@ -171,6 +171,8 @@ select pg_temp.refused('free pack: none left -> refused', :P2, 'aal1', $q$ selec
 -- ========== 8. Odds spread: 1,000 openings ==========
 select private.ledger_apply(:P3, 100000, 'admin_grant', 'test', 'test-setup-p3-100k', null);
 update public.pack_types set max_per_day = 100000 where id = 'standard';
+-- the raw odds only: the bad-luck shield (Nov 7: every 20 packs) would add Legendaries to this sample, so it is off for the run
+update public.settings set value = '100000'::jsonb where key = 'pack_pity_limit';
 do $$ declare i int; r jsonb;
 begin
   for i in 1..1000 loop
@@ -181,6 +183,8 @@ begin
   perform pg_temp.ok('spread: 1,000 openings went through', true);
 end $$;
 update public.pack_types set max_per_day = 50 where id = 'standard';
+update public.settings set value = '20'::jsonb where key = 'pack_pity_limit';
+update public.player_stats set packs_since_legendary = 0 where user_id = :P3;
 create temp table spread as
   select k.rarity, count(*) n from public.pack_openings o, unnest(o.cards) with ordinality u(c, pos) join public.cards k on k.id = u.c
   where o.user_id = 'c0000000-0000-4000-8000-000000000003' and pos = 11 group by k.rarity;

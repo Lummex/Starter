@@ -11,6 +11,7 @@ import { net } from './state';
 type El = HTMLElement;
 export interface Bundle { id: string; name: string; usd_cents: number; oreshards: number; bonus_pct: number }
 export interface OreshardInfo {
+  pack_rate?: number;
   oreshards: number; coins: number; enabled: boolean; can_buy: boolean; blocked: string; bundles: Bundle[];
   purchases: { id: string; bundle: string; oreshards: number; amount_cents: number; currency: string; status: string; at: string; receipt: string | null }[];
   history: { delta: number; reason: string; at: string; balance_after: number }[];
@@ -22,16 +23,18 @@ const params = () => new URLSearchParams(location.search);
 
 // ---- stand-in data for test pages (?test=1&econ=oreshards; &kid=1 = an under-13 account without an approved parent)
 const STUB_BUNDLES: Bundle[] = [
-  { id: 'pouch', name: 'Pouch of Oreshards', usd_cents: 199, oreshards: 200, bonus_pct: 0 },
+  { id: 'pouch', name: 'Pinch of Oreshards', usd_cents: 99, oreshards: 100, bonus_pct: 0 }, // Nov 7 (Ken): "$1 to $100"
   { id: 'sack', name: 'Sack of Oreshards', usd_cents: 499, oreshards: 550, bonus_pct: 10 },
   { id: 'chest', name: 'Chest of Oreshards', usd_cents: 999, oreshards: 1200, bonus_pct: 20 },
   { id: 'hoard', name: 'Hoard of Oreshards', usd_cents: 1999, oreshards: 2600, bonus_pct: 30 },
+  { id: 'vault', name: 'Vault of Oreshards', usd_cents: 4999, oreshards: 7000, bonus_pct: 40 },
+  { id: 'mountain', name: 'Mountain of Oreshards', usd_cents: 9999, oreshards: 15000, bonus_pct: 50 },
 ];
 const STUB = { oreshards: 0, coins: 500, purchases: [] as OreshardInfo['purchases'], history: [] as OreshardInfo['history'], lastCheckout: null as null | { bundle: string; origin: string } };
 const stubInfo = (): OreshardInfo => {
   const kid = params().get('kid') === '1';
   return { oreshards: STUB.oreshards, coins: STUB.coins, enabled: true, can_buy: !kid, blocked: kid ? 'A parent must approve this account before it can buy anything.' : '',
-    bundles: STUB_BUNDLES.map((b) => ({ ...b })), purchases: STUB.purchases.slice(), history: STUB.history.slice() };
+    bundles: STUB_BUNDLES.map((b) => ({ ...b })), pack_rate: 1, purchases: STUB.purchases.slice(), history: STUB.history.slice() };
 };
 
 export const api = {
@@ -59,6 +62,9 @@ export const api = {
   },
 };
 
+/** test pages: pay for packs with the stand-in Oreshards (economy.ts buyPacks with pay = 'oreshards') */
+export function stubSpendShards(n: number): number { if (n > STUB.oreshards) throw new Error(`Not enough Oreshards (this costs ${n}, you have ${STUB.oreshards}).`); STUB.oreshards -= n; STUB.history.unshift({ delta: -n, reason: 'pack', at: new Date().toISOString(), balance_after: STUB.oreshards }); return STUB.oreshards; }
+export const shardsNow = () => STUB.oreshards;
 export const shardIcon = (cls = 'econ-shard-img') => h('img', { class: cls, src: '/art/packs/chest/chest-card-back.webp', alt: '', draggable: 'false' });
 
 /** The Oreshard counter for the Shop header, with the "+" that opens this screen. */
@@ -70,7 +76,7 @@ export function shardChip(): El {
   return c;
 }
 
-export async function showOreshards(): Promise<void> {
+export async function showOreshards(focus: '' | 'convert' = ''): Promise<void> {
   const alert = h('p', { class: 'econ-alert', role: 'alert', 'data-testid': 'oreshards-alert' });
   const grid = h('div', { class: 'shard-bundles', role: 'list', 'aria-label': 'Oreshard bundles', 'data-testid': 'shard-bundles' }, h('p', { class: 'net-note' }, 'Counting the shards…'));
   const balance = h('div', { class: 'shard-balance econ-panel', 'data-testid': 'shard-balance' });
@@ -87,6 +93,7 @@ export async function showOreshards(): Promise<void> {
   let info: OreshardInfo;
   try { info = await api.info(); } catch (e: any) { grid.replaceChildren(); alert.textContent = 'The shop is closed right now: ' + String(e?.message || e); return; }
   render({ alert, grid, balance, convert, history: hist }, info);
+  if (focus === 'convert') { convert.scrollIntoView({ block: 'center' }); (convert.querySelector('input') as HTMLInputElement | null)?.focus(); convert.classList.add('flash'); } // Nov 7: the Shop's Oreshards -> Coins button
   // back from Stripe: the Oreshards come through the webhook, usually within seconds; read the balance again for a while
   const back = params().get('oreshards');
   if (back === 'paid' || back === 'cancel') {
@@ -108,6 +115,7 @@ export async function showOreshards(): Promise<void> {
 interface Parts { alert: El; grid: El; balance: El; convert: El; history: El }
 
 function render(p: Parts, info: OreshardInfo) {
+  bestId = (info.bundles || []).slice().sort((a, c) => c.oreshards / c.usd_cents - a.oreshards / a.usd_cents || c.usd_cents - a.usd_cents)[0]?.id || '';
   p.balance.replaceChildren(h('h3', { class: 'h' }, 'Your Oreshards'), h('p', { class: 'shard-big', 'data-testid': 'shard-count' }, shardIcon('econ-shard-img big'), h('b', {}, fmt(info.oreshards))),
     ...(info.oreshards < 0 ? [h('p', { class: 'shard-owe', 'data-testid': 'shard-owe' }, 'A refund took Oreshards back: nothing can be spent until the balance is back to zero.')] : []));
   setCoins(info.coins);
@@ -119,10 +127,13 @@ function render(p: Parts, info: OreshardInfo) {
   renderHistory(p, info);
 }
 
+let bestId = '';
 function bundleCard(b: Bundle, p: Parts): El {
   const busy = h('span', { class: 'shard-busy', hidden: true }, 'Opening Stripe…');
   const btn = h('button', { type: 'button', class: 'net-btn primary shard-buy', 'data-testid': 'shard-buy-' + b.id, 'aria-label': `Buy ${b.name} for ${usd(b.usd_cents)}` }, usd(b.usd_cents)) as HTMLButtonElement;
-  const card = h('div', { class: 'shard-bundle shard-' + b.id, role: 'listitem', 'data-bundle': b.id },
+  const best = b.id === bestId; // Nov 7 (Ken): the biggest gets "Best value" and the chest treatment
+  const card = h('div', { class: 'shard-bundle shard-' + b.id + (best ? ' shard-best' : ''), role: 'listitem', 'data-bundle': b.id },
+    best ? h('span', { class: 'ohb ohb-ribbon shard-best-badge', 'data-testid': 'shard-best' }, h('span', {}, 'BEST VALUE')) : null,
     h('div', { class: 'shard-art' }, h('img', { class: 'chest-closed', src: '/art/packs/chest/chest-closed.webp', alt: '', draggable: 'false' }), h('img', { class: 'chest-glow', src: '/art/packs/chest/chest-glow.webp', alt: '', draggable: 'false' })),
     h('h3', { class: 'h shard-name' }, b.name),
     h('p', { class: 'shard-amount' }, shardIcon(), h('b', {}, fmt(b.oreshards)), ' Oreshards'),

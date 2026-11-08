@@ -28,13 +28,13 @@ create function pg_temp.wallet_text(p_user uuid) returns text language sql as $$
                 (select jsonb_agg(jsonb_build_array(l.delta, l.reason, l.amount_cents, l.balance_after) order by l.id) from public.oreshard_ledger l where l.user_id = p_user)) $$;
 
 -- ========== 1. Settings and the page ==========
-select pg_temp.ok('oreshards: the four bundles are the plan''s (Pouch 199/200, Sack 499/550, Chest 999/1200, Hoard 1999/2600) and the shop is on',
+select pg_temp.ok('oreshards: the six bundles (Ken, Nov 7: $0.99 to $99.99) and the shop is on',
   (select jsonb_agg(jsonb_build_array(x ->> 'id', (x ->> 'usd_cents')::int, (x ->> 'oreshards')::int, (x ->> 'bonus_pct')::int)) from jsonb_array_elements(private.setting('oreshard_bundles')) e(x))
-    = '[["pouch",199,200,0],["sack",499,550,10],["chest",999,1200,20],["hoard",1999,2600,30]]'::jsonb
+    = '[["pouch",99,100,0],["sack",499,550,10],["chest",999,1200,20],["hoard",1999,2600,30],["vault",4999,7000,40],["mountain",9999,15000,50]]'::jsonb
   and (private.setting('oreshards_enabled'))::boolean, private.setting('oreshard_bundles')::text);
 create temp table m1 as select pg_temp.json_as(:P1, 'aal1', 'select public.my_oreshards()') as j;
 select pg_temp.ok('my_oreshards: a new player has 0 Oreshards, may buy, sees the bundles and no purchases',
-  (select (j ->> 'oreshards')::int = 0 and (j ->> 'can_buy')::boolean and jsonb_array_length(j -> 'bundles') = 4 and j -> 'purchases' = '[]'::jsonb from m1), (select j::text from m1));
+  (select (j ->> 'oreshards')::int = 0 and (j ->> 'can_buy')::boolean and jsonb_array_length(j -> 'bundles') = 6 and (j ->> 'pack_rate')::numeric = 1 and j -> 'purchases' = '[]'::jsonb from m1), (select j::text from m1));
 select pg_temp.refused('anon cannot ask my_oreshards', null, 'aal1', 'select public.my_oreshards()', 'permission denied');
 
 -- ========== 2. Who may buy ==========
@@ -170,6 +170,24 @@ select pg_temp.refused('a bundle under Stripe''s 50-cent minimum is refused', :A
 select pg_temp.refused('two bundles with one id are refused', :A1, 'aal2', $q$ select public.admin_set_setting('oreshard_bundles', '[{"id": "pouch", "name": "A", "usd_cents": 199, "oreshards": 200, "bonus_pct": 0}, {"id": "pouch", "name": "B", "usd_cents": 299, "oreshards": 300, "bonus_pct": 0}]', 'test') $q$, 'share an id');
 select pg_temp.works('admin can switch the shop off and on', :A1, 'aal2', $q$ select public.admin_set_setting('oreshards_enabled', 'false', 'test: off'), public.admin_set_setting('oreshards_enabled', 'true', 'test: on') $q$);
 select pg_temp.refused('oreshards_enabled takes only true or false', :A1, 'aal2', $q$ select public.admin_set_setting('oreshards_enabled', '"yes"', 'test') $q$, 'true or false');
+
+-- ========== 6b. Nov 7: packs paid in Oreshards (Ken: "so they can actually buy packs") ==========
+select private.oreshard_apply(:P1, 5000, 'admin_grant', 'test', 'test-grant-packs-aaaaaaaa');
+create temp table ob0 as select (select oreshards from public.oreshard_wallets where user_id = :P1) as s, (select coins from public.wallets where user_id = :P1) as c;
+create temp table ob1 as select pg_temp.json_as(:P1, 'aal1', $q$ select public.buy_packs('standard', 6, 'ob-aaaaaaaa-0006', 'oreshards') $q$) as j;
+select pg_temp.ok('buy_packs in Oreshards: the 6-bundle costs 600 Oreshards (rate 1), no coins, 6 sealed packs, a pack ledger row',
+  (select j ->> 'paid_with' = 'oreshards' and (j ->> 'oreshards_paid')::int = 600 and (j ->> 'price_paid')::int = 0 and (j ->> 'packs')::int = 6 from ob1)
+  and (select oreshards from public.oreshard_wallets where user_id = :P1) = (select s - 600 from ob0)
+  and (select coins from public.wallets where user_id = :P1) = (select c from ob0)
+  and exists (select 1 from public.oreshard_ledger where user_id = :P1 and reason = 'pack' and delta = -600),
+  (select j::text from ob1));
+select pg_temp.ok('buy_packs in Oreshards: the same key again charges nothing twice',
+  (select (j ->> 'repeat')::boolean from pg_temp.json_as(:P1, 'aal1', $q$ select public.buy_packs('standard', 6, 'ob-aaaaaaaa-0006', 'oreshards') $q$) j)
+  and (select oreshards from public.oreshard_wallets where user_id = :P1) = (select s - 600 from ob0));
+select pg_temp.refused('buy_packs in Oreshards: not enough Oreshards is refused', :P1, 'aal1', $q$ select public.buy_packs('standard', 99, 'ob-aaaaaaaa-0099', 'oreshards') $q$, 'Not enough Oreshards');
+select pg_temp.refused('buy_packs: only coins or Oreshards', :P1, 'aal1', $q$ select public.buy_packs('standard', 1, 'ob-aaaaaaaa-0001', 'gold') $q$, 'coins or Oreshards');
+select pg_temp.works('admin can set oreshard_pack_rate', :A1, 'aal2', $q$ select public.admin_set_setting('oreshard_pack_rate', '1', 'test: rate') $q$);
+select pg_temp.refused('oreshard_pack_rate is 0.1 to 100', :A1, 'aal2', $q$ select public.admin_set_setting('oreshard_pack_rate', '0', 'test') $q$, '0.1 to 100');
 
 -- ========== 7. Locks ==========
 select pg_temp.ok('RLS is on for the Oreshard tables and players have no privilege on them',

@@ -267,7 +267,7 @@ test('AC651: buying in the Shop plays the opening for that pack (the free pack f
   const buy = page.locator('.shop-bundle[data-size="1"] .shop-buy');
   await expect(buy).toBeDisabled();
   await expect(buy).toHaveText('Need 100 coins');
-  await expect(page.locator('.shop-bundle[data-size="1"] .shop-hint')).toHaveText('Finish quests to earn coins');
+  await expect(page.locator('.shop-bundle[data-size="1"] .shop-hint')).toHaveText('Finish quests to earn coins, or pay with Oreshards'); // Nov 7
   await expect(page.locator('.shop-bundle[data-size="1"] .shop-promise')).toHaveText('6 opened today'); // the free pack and the five bought ones
 });
 
@@ -1070,14 +1070,17 @@ test('AC697: Buy Oreshards (Ken, Nov 6, Stripe): the four bundles at the plan\'s
   test.setTimeout(60000);
   await openEcon(page, 'oreshards');
   const cards = page.locator('[data-testid="shard-bundles"] .shard-bundle');
-  await expect(cards).toHaveCount(4);
+  await expect(cards).toHaveCount(6); // Nov 7 (Ken): "$1 to $100"
   const seen = await cards.evaluateAll((els) => els.map((e) => ({ id: e.dataset.bundle, price: e.querySelector('.shard-buy').textContent.trim(), amount: e.querySelector('.shard-amount b').textContent.trim(), bonus: (e.querySelector('[data-testid="shard-bonus"]') || {}).textContent || '' })));
   expect(seen).toEqual([
-    { id: 'pouch', price: '$1.99', amount: '200', bonus: '' },
+    { id: 'pouch', price: '$0.99', amount: '100', bonus: '' },
     { id: 'sack', price: '$4.99', amount: '550', bonus: '+10% bonus' },
     { id: 'chest', price: '$9.99', amount: '1,200', bonus: '+20% bonus' },
     { id: 'hoard', price: '$19.99', amount: '2,600', bonus: '+30% bonus' },
+    { id: 'vault', price: '$49.99', amount: '7,000', bonus: '+40% bonus' },
+    { id: 'mountain', price: '$99.99', amount: '15,000', bonus: '+50% bonus' },
   ]);
+  await expect(page.locator('.shard-bundle[data-bundle="mountain"] [data-testid="shard-best"]')).toHaveText('BEST VALUE');
   await expect(page.locator('[data-testid="shard-fine"]')).toContainText('not refundable');
   await expect(page.locator('[data-testid="shard-count"] b')).toHaveText('0');
   // a tap asks the server (stand-in) for the Stripe page for THAT bundle, from this page's own origin; the game never builds a payment itself
@@ -1357,4 +1360,27 @@ test('AC707: Deck Builder (Ken, Nov 7): a click only picks a card; + adds the BE
   await expect(name).toHaveValue('Junk Lords of the Big Pi');
   await name.press('Enter');
   await expect(page.locator('[data-part="deck-name"]')).toHaveText('Junk Lords of the Big Pi');
+});
+
+// ---------- Nov 7 (Ken): "they can purchase the currency ... so they can actually buy packs" ----------
+test('AC709: every bundle shows coins OR Oreshards; short of Oreshards the button offers to get more; with enough, a bundle is bought with Oreshards (coins untouched); the Shop has an Oreshards -> Coins button', async ({ page }) => {
+  test.setTimeout(60000);
+  await openEcon(page, 'shop');
+  const six = page.locator('.shop-bundle[data-size="6"]');
+  await expect(six.getByTestId('shard-price')).toHaveText('600');
+  await expect(six.getByTestId('buy-shards-6')).toContainText('Get more Oreshards');
+  await expect(page.getByTestId('shop-convert')).toBeVisible();
+  // get 1,000 stand-in Oreshards, back to the shop: the button buys
+  expect(await page.evaluate(() => window.oreheart.oreshards.give(1000))).not.toBe(false);
+  await page.getByTestId('shop-convert').click();
+  await expect(page.locator('[data-testid="shard-convert"]')).toBeVisible();
+  await page.evaluate(() => window.oreheart.packs.screen('shop')); // back to the shop without a reload (the stand-in Oreshards live in the page)
+  await expect(page.locator('[data-screen="econ-shop"] .shop-bundle[data-size="6"]')).toBeVisible();
+  const coins0 = await page.evaluate(() => window.oreheart.oreshards.state().coins);
+  const btn = page.locator('.shop-bundle[data-size="6"]').getByTestId('buy-shards-6');
+  await expect(btn).toContainText('600 Oreshards');
+  await btn.click();
+  await expect(page.locator('.econ-toast')).toContainText('6 packs are waiting in My Packs');
+  expect(await page.evaluate(() => window.oreheart.oreshards.state().oreshards)).toBe(400);
+  expect(await page.evaluate(() => window.oreheart.oreshards.state().coins)).toBe(coins0);
 });

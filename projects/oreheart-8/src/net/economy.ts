@@ -156,20 +156,21 @@ export const api = {
     return await retryOnce(() => rpc<OpenResult>('open_pack', { p_pack_type: packType, p_idem_key: idemKey, p_use_free: useFree }));
   },
   /** Nov 5 (Ken): buy a bundle; the packs go to My Packs */
-  async buyPacks(packType: string, size: number, idemKey: string): Promise<BuyResult> {
+  async buyPacks(packType: string, size: number, idemKey: string, pay: 'coins' | 'oreshards' = 'coins'): Promise<BuyResult> {
     if (stubMode()) {
       stubInit();
       const pack = STUB.packs.find((p) => p.id === packType) || STUB.packs[0];
       const b = STUB.bundles.find((x) => x.size === size);
       if (!b) throw new Error('That bundle is not for sale.');
-      const price = pack.price_coins * b.size;
-      if (STUB.coins < price) throw new Error('not enough coins');
+      let price = pack.price_coins * b.size;
+      if (pay === 'oreshards') { (await import('./oreshards')).stubSpendShards(price); price = 0; } // Nov 7: rate 1 on test pages
+      else if (STUB.coins < price) throw new Error('not enough coins');
       STUB.coins -= price;
       const id = 'stub-b' + (++stubUid);
       STUB.stashBundles.push({ id, type: pack.id, left: b.size + b.bonus, promises: { ...b.promises }, best: 1, newLeg: false });
       return { bundle_id: id, pack_type: pack.id, size: b.size, bonus: b.bonus, packs: b.size + b.bonus, price_paid: price, promises: { ...b.promises }, coins_after: STUB.coins, stash: stubStash(), repeat: false };
     }
-    return await retryOnce(() => rpc<BuyResult>('buy_packs', { p_pack_type: packType, p_size: size, p_idem_key: idemKey }));
+    return await retryOnce(() => rpc<BuyResult>('buy_packs', { p_pack_type: packType, p_size: size, p_idem_key: idemKey, ...(pay === 'oreshards' ? { p_pay: 'oreshards' } : {}) }));
   },
   /** Nov 5 (Ken): open up to `count` sealed packs of one kind from My Packs (oldest bundle first, then the free quest packs) */
   async openStash(packType: string, count: number, idemKey: string): Promise<StashResult> {
@@ -416,11 +417,12 @@ export async function buyPack(pack: PackInfo, onErr?: (msg: string) => void, for
 }
 
 /** Nov 5 (Ken): buy a bundle of 6, 24 or 99; the packs wait in My Packs. */
-export async function buyBundle(pack: PackInfo, size: number, onErr?: (msg: string) => void): Promise<void> {
+export async function buyBundle(pack: PackInfo, size: number, onErr?: (msg: string) => void, pay: 'coins' | 'oreshards' = 'coins'): Promise<void> {
   const key = (globalThis.crypto && 'randomUUID' in crypto) ? crypto.randomUUID() : 'k' + Date.now() + Math.random().toString(36).slice(2);
   let res: BuyResult;
-  try { res = await api.buyPacks(pack.id, size, key); } catch (e: any) {
+  try { res = await api.buyPacks(pack.id, size, key, pay); } catch (e: any) {
     const m = String(e?.message || e);
+    if (/not enough oreshards/i.test(m)) { const msg = m.replace(/^.*?(Not enough Oreshards)/i, '$1'); if (onErr) onErr(msg + ' Get more Oreshards with the + at the top.'); else toast(msg); return; }
     const msg = /not enough coins|insufficient|below zero/i.test(m) ? `You need ${(pack.price_coins * size).toLocaleString('en-US')} coins for that bundle. Finish quests to earn coins!` : /enough of those|per day|daily|limit/i.test(m) ? 'That bundle is sold out for today. The goblins are restocking.' : m;
     if (onErr) onErr(msg); else toast(msg);
     return;
