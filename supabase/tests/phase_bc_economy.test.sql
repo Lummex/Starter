@@ -568,7 +568,9 @@ select pg_temp.refused('open_stash: nothing sealed left is refused', :P2, 'aal1'
 update public.player_stats set packs_since_legendary = 19 where user_id = :P2;
 create temp table pity1 as select pg_temp.json_as(:P2, 'aal1', $q$ select public.open_pack('standard', 'pity-aaaaaaaa-0001', false) $q$) as j;
 select pg_temp.ok('bad-luck shield: the 20th pack carries a Legendary (marked pity) and the counter is back to 0',
-  (select (j ->> 'pity')::boolean and (select bool_or(c ->> 'rarity' = 'Collector' and (c ->> 'pity')::boolean) from jsonb_array_elements(j -> 'cards') c) from pity1)
+  -- (about 2 % of the time the 20th pack holds a natural Legendary: then the guarantee is not needed and nothing is marked pity)
+  (select ((j ->> 'pity')::boolean and (select bool_or(c ->> 'rarity' = 'Collector' and (c ->> 'pity')::boolean) from jsonb_array_elements(j -> 'cards') c))
+       or (not (j ->> 'pity')::boolean and (select bool_or(c ->> 'rarity' = 'Collector') from jsonb_array_elements(j -> 'cards') c)) from pity1)
   and (select packs_since_legendary from public.player_stats where user_id = :P2) = 0, (select j::text from pity1));
 select pg_temp.ok('bad-luck shield: a pack without a Legendary counts up (or a lucky one resets)',
   (select not (j ->> 'pity')::boolean from pg_temp.json_as(:P2, 'aal1', $q$ select public.open_pack('standard', 'pity-aaaaaaaa-0002', false) $q$) j)
