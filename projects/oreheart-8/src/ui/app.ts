@@ -1,3 +1,4 @@
+import "./choose-v2.css"; // Nov 7: Choose Your Commander v2 (Brush, Ken approved)
 import { arenaOpts } from './arena-fx';
 import { mineEmblemUrl, ohCardEl, ohBackEl, commanderCard, TIER_NAMES } from './cardfmt';
 import { paintBack } from '../content/card-backs';
@@ -775,7 +776,7 @@ export class App {
     const setHall = () => { const s = this.root.querySelector('.screen.setup') as El | null; const f = COMMANDERS[hallOver || cmd]?.faction; const hall = f === 'goblins' || f === 'gnomes' || f === 'dwarves' ? f : 'neutral'; if (s && s.dataset.hall !== hall) s.dataset.hall = hall; };
     const sel = () => {
       setHall();
-      cmdBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === cmd)));
+      cmdBtns.forEach((b) => { const on = b.dataset.id === cmd; b.setAttribute('aria-pressed', String(on)); const pl = b.querySelector('.cc-plaque') as El | null; if (pl) { const fc = COMMANDERS[String(b.dataset.id)]?.faction || ''; pl.dataset.pl = on ? 'chosen' : fc; (pl.firstElementChild as El).textContent = on ? 'CHOSEN' : String((FACTIONS as any)[fc]?.name || fc).toUpperCase(); } }); // Nov 7 (Ken approved Brush's v2): one top plaque, CHOSEN or the faction
       modeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === mode)));
       diffBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === diff)));
       stacks.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.key === deckSel)));
@@ -784,13 +785,14 @@ export class App {
       const f = FACTIONS[c.faction];
       const [cName, cTitle] = String(c.name).split(/,\s*/);
       const looks = h('span', { class: 'cmd-looks', 'aria-hidden': 'true' }, ...[1, 2, 3, 4, 5].map((t) => h('span', { class: 'cmd-look' + (t === 1 ? ' on' : ''), 'data-t': String(t), style: `background-image:url(${t === 1 ? commanderPortrait(c.id) : `/art/upgrades/commander-${c.id}/${t}.webp`})` })));
-      const tierTag = h('span', { class: 'cmd-tier', 'data-tier': '1', 'aria-hidden': 'true' }, 'Original \u2605');
+      const tierTag = h('span', { class: 'cmd-tier', 'data-tier': '1', 'aria-hidden': 'true' }, h('span', {}, 'ORIGINAL')); // Nov 7: a tier plaque in the tier's colour
       cmdBtns.push(h('button', { type: 'button', class: `cmd-card f-${c.faction}`, 'data-id': c.id, 'aria-label': c.name, onclick: () => { if (picked && cmd === c.id) return; cmd = c.id; onCmd(); pick(); },
         onpointerenter: () => { hallOver = c.id; setHall(); }, onpointerleave: () => { if (hallOver === c.id) { hallOver = ''; setHall(); } }, onfocus: () => { hallOver = c.id; setHall(); }, onblur: () => { if (hallOver === c.id) { hallOver = ''; setHall(); } } },
+        h('span', { class: 'cc-plaque', 'data-pl': c.faction, 'data-testid': 'cmd-plaque', 'aria-hidden': 'true' }, h('span', {}, String(f.name).toUpperCase())),
         h('span', { class: 'portrait-img oh-cmd', 'aria-hidden': 'true' }, h('img', { class: 'cmd-pic', src: commanderPortrait(c.id), alt: '', draggable: 'false' }),
-          h('span', { class: 'cmd-tags' }, h('span', { class: 'cmd-fac' }, h('i', {}), f.name), h('span', { class: 'cmd-chosen' }, 'Chosen'), h('span', { class: 'cmd-hp' }, h('b', {}, String(c.health || 20)), 'Health')), tierTag),
+          h('span', { class: 'cmd-tags' }, h('span', { class: 'cmd-fac' }, h('i', {}), f.name), h('span', { class: 'cmd-chosen' }, 'Chosen'), h('span', { class: 'cmd-hp' }, h('span', {}, h('b', {}, String(c.health || 20)), h('small', {}, 'HEALTH')))), tierTag),
         h('span', { class: 'cmd-win' },
-          h('span', { class: 'nm' }, cName), h('span', { class: 'ttl' }, cTitle || `${f.name} · ${f.faith}`),
+          h('span', { class: 'nm' }, cName), h('span', { class: 'ttl' }, cTitle ? `${cTitle} · ${f.faith}` : `${f.name} · ${f.faith}`),
           h('span', { class: 'fa' }, `${f.name} · ${f.faith}`),
           h('span', { class: 'ab' }, h('small', {}, 'Commander ability'), h('span', { class: 'ds' }, c.abilityText)),
           h('span', { class: 'bl' }, c.blurb || ''),
@@ -807,7 +809,7 @@ export class App {
         setCommanderTiersOwned(id, [1, 2, 3, 4, 5].filter(owned));
         const show = () => {
           const t = chosenCommanderTier(id);
-          const tg = b.querySelector('.cmd-tier') as El | null; if (tg) { tg.dataset.tier = String(t); tg.textContent = `${TIER_NAMES[t]} ${'\u2605'.repeat(t)}`; }
+          const tg = b.querySelector('.cmd-tier') as El | null; if (tg) { tg.dataset.tier = String(t); ((tg.firstElementChild as El | null) ?? tg).textContent = String(TIER_NAMES[t]).toUpperCase(); }
           (b.querySelector('.cmd-lkn') as El | null)!.textContent = TIER_NAMES[t];
           b.querySelectorAll('.cmd-look').forEach((l) => { const lt = Number((l as El).dataset.t); l.classList.toggle('on', lt <= best); l.classList.toggle('own', owned(lt)); l.classList.toggle('picked', lt === t); });
         };
@@ -965,7 +967,7 @@ export class App {
     // the old Menu Builder zones (cTitle / cCards / cDecks / cStart / cBack, owner-layout.json) are not used by this screen any more: Ledger's editor needs a note (see the report)
     const mainEl = h('main', { class: 'screen setup-d dash' + (online ? '' : ' offline'), 'data-screen': 'select' }, // (not .setup: the older sheet's !important sizes for that class would fight the D layout)
       top, h('div', { class: 'logo', 'aria-hidden': 'true' }),
-      h('div', { class: 'hdr' }, back, h('h1', { class: 'h ttl cs-title' }, 'Choose Your Commander'), h('div', { class: 'info' }, 'Your Commander leads the deck and has 20 Health. Bring the enemy to 0 to win.')),
+      h('div', { class: 'hdr' }, back, h('div', { class: 'cs-head' }, h('h1', { class: 'h ttl cs-title' }, 'Choose Your Commander'), h('div', { class: 'info' }, 'Your Commander leads the deck and has 20 Health. Bring the enemy Commander to 0 to win.'))),
       h('div', { class: 'main' },
         h('div', { class: 'cs-cards' }, pager),
         h('div', { class: 'side' },

@@ -1,0 +1,114 @@
+/* Choose Your Commander v2 (Brush's mockup studio/choose-commander-mockup-nov7-v2.jpg, Ken: "Just get it done", Nov 7).
+   Sizes in em of this screen's font (about 15.7 px at 1080 high), taken from the mockup at 1920 x 1080. */
+/* ---- top: the bigger logo centred, the title under it, the rule line under that ---- */
+@media (min-width:901px){
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d>.logo{left:50%;top:.25em;width:26.8em;height:7.7em;transform:translateX(-50%);right:auto;z-index:3}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .hdr{left:1.9em;right:1.9em;top:7.1em;height:4.6em;display:block}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d.offline .hdr{top:7.1em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .hdr .back-btn{position:absolute;left:0;top:-5.2em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d:not(.offline) .hdr .back-btn{top:.2em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-head{position:absolute;left:0;right:0;top:0;text-align:center;pointer-events:none}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-head .ttl{display:block!important;margin:0!important;font-size:2.17em!important;letter-spacing:.12em!important;text-align:center!important;font-style:normal!important;white-space:nowrap!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-head .info{display:block!important;margin:.35em 0 0!important;font-size:1.2em!important;color:var(--soft)!important;font-style:normal!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .main{top:16.1em;bottom:1.66em;left:1.9em;right:1.9em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d.offline .main{top:16.1em}
+}
+/* ---- the cards: one plaque on the top edge (CHOSEN or the faction), Health medallion, tier plaque ---- */
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmds{gap:1.53em;overflow:visible}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-card{position:relative;overflow:visible!important;border-radius:14px;border:2px solid #4b5361!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-card[aria-pressed="true"]{border-color:#a9dcff!important;box-shadow:0 0 0 1px #000,0 0 36px rgba(124,200,255,.55),inset 0 0 40px rgba(124,200,255,.12),0 12px 40px rgba(0,0,0,.55)!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-card .portrait-img{border-radius:12px 12px 0 0}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-card .portrait-img::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,7,12,0) 62%,rgba(10,11,17,.96) 100%);pointer-events:none;z-index:1}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cc-plaque{position:absolute;left:50%;top:-3.96em;width:14.7em;aspect-ratio:480/194;transform:translateX(-50%);background:url(/art/ui-plaques/plaque-blue.webp) center/contain no-repeat;z-index:6;pointer-events:none;--g:rgba(110,170,255,.9)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cc-plaque[data-pl="goblins"]{background-image:url(/art/ui-plaques/plaque-green.webp);--g:rgba(110,240,130,.85)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cc-plaque[data-pl="gnomes"]{background-image:url(/art/ui-plaques/plaque-violet.webp);--g:rgba(180,130,255,.9)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cc-plaque[data-pl="dwarves"]{background-image:url(/art/ui-plaques/plaque-blue.webp);--g:rgba(110,170,255,.9)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.cc-plaque,.cmd-tier)>span{position:absolute;left:0;right:0;top:64.5%;transform:translateY(-50%);text-align:center;font-family:Cinzel,serif!important;font-weight:800;font-style:normal;letter-spacing:.15em;white-space:nowrap;color:#f2f6fb!important;-webkit-text-fill-color:#f2f6fb!important;text-shadow:0 1px 0 #000,0 0 9px var(--g)!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cc-plaque>span{font-size:1.02em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-tags{left:auto;right:.77em;top:.9em;z-index:3}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.cmd-fac,.cmd-chosen){display:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-hp{position:relative!important;display:block!important;width:5em!important;height:auto!important;aspect-ratio:158/200!important;margin:0!important;padding:0!important;border-radius:0!important;border:0!important;background:url(/art/ui-plaques/medallion-white.webp) center/contain no-repeat!important;box-shadow:none!important;filter:drop-shadow(0 4px 8px rgba(0,0,0,.7))!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-hp>span{position:absolute;left:0;right:0;top:56.6%;transform:translateY(-50%);text-align:center;font-family:Cinzel,serif!important;font-weight:800;font-style:normal;line-height:.95;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 0 #000,0 0 8px rgba(220,230,255,.7)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-hp b{display:block;font-size:1.53em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-hp small{display:block;font-size:.55em;letter-spacing:.12em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-tier{position:absolute;left:50%;right:auto;bottom:.26em;top:auto;width:13.4em;aspect-ratio:480/194;height:auto;padding:0;border:0!important;border-radius:0;transform:translateX(-50%);background:url(/art/ui-plaques/plaque-white.webp) center/contain no-repeat!important;box-shadow:none!important;z-index:3;font-size:1em;--g:rgba(220,230,255,.7)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-tier>span{font-size:.9em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-tier[data-tier="2"]{background-image:url(/art/ui-plaques/plaque-green.webp)!important;--g:rgba(110,240,130,.85)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-tier[data-tier="3"]{background-image:url(/art/ui-plaques/plaque-blue.webp)!important;--g:rgba(110,170,255,.9)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-tier[data-tier="4"]{background-image:url(/art/ui-plaques/plaque-violet.webp)!important;--g:rgba(180,130,255,.9)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-tier[data-tier="5"]{background-image:url(/art/ui-plaques/plaque-orange.webp)!important;--g:rgba(255,150,60,.9)}
+/* the words under the picture */
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-win .nm{font-family:Cinzel,serif!important;font-weight:800!important;font-style:normal!important;font-size:1.72em!important;letter-spacing:.04em!important;line-height:1.05!important;color:#e9edf3!important;text-shadow:0 2px 0 #000!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-win .ttl{font-size:1.08em!important;font-style:normal!important;color:var(--soft)!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-win .fa{display:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-win .bl{font-style:italic;color:var(--dim)}
+/* ---- D-style buttons everywhere (dark glass, silver hairline, Cinzel, centred); the chosen one blue ---- */
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions){display:grid!important;grid-template-columns:1fr 1fr;gap:.5em;margin:.4em 0 .7em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .setup-actions{grid-template-columns:1fr 1fr 1fr}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .mode-row .mode-btn[data-id="compvscomp"]{grid-column:1/-1}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions) .btn{all:unset!important;box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:center!important;height:2.7em!important;padding:0 .6em!important;border-radius:10px!important;cursor:pointer!important;font-family:Cinzel,serif!important;font-weight:700!important;font-size:.86em!important;letter-spacing:.08em!important;text-transform:uppercase!important;text-align:center!important;white-space:nowrap!important;color:#e9edf3!important;text-shadow:0 1px 0 #000!important;background:linear-gradient(180deg,rgba(28,31,44,.95),rgba(10,11,17,.96))!important;box-shadow:0 0 0 1px #000,inset 0 0 0 1px #8d97a7,inset 0 1px 0 rgba(255,255,255,.12)!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions) .btn::before,html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions) .btn::after{content:none!important;display:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions) .btn[aria-pressed="true"]{background:linear-gradient(180deg,rgba(40,70,120,.95),rgba(14,24,48,.96))!important;box-shadow:0 0 0 1px #000,inset 0 0 0 1px #a9dcff,0 0 14px rgba(110,180,255,.35)!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions) .btn:hover{filter:brightness(1.2)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions,.cs-extra,.ptitle) :is(.btn,button):focus-visible{outline:2px solid #ffd76a;outline-offset:2px}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-label{font-family:Cinzel,serif!important;font-weight:800!important;font-style:normal!important;font-size:1.08em!important;letter-spacing:.1em!important;text-transform:uppercase!important;color:#e9edf3!important}
+/* Restore starter decks and Edit deck: quiet Cinzel links */
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.cs-extra .sbtn,.ptitle .more){all:unset!important;box-sizing:border-box!important;display:block!important;cursor:pointer!important;font-family:Cinzel,serif!important;font-size:.83em!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:var(--dim)!important;text-align:center!important;padding:.3em .4em!important;border-radius:6px!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .ptitle .more{margin-left:auto}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.cs-extra .sbtn,.ptitle .more)::before,html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.cs-extra .sbtn,.ptitle .more)::after{content:none!important;display:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.cs-extra .sbtn,.ptitle .more):hover{color:#e9edf3}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-build{display:none!important}
+/* START: one big blue glass button, "Standard · Normal" under the word */
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap{position:relative!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:0!important;min-height:6.1em!important;padding:0!important;border-radius:14px!important;background:linear-gradient(180deg,rgba(40,70,120,.95),rgba(14,24,48,.96))!important;box-shadow:0 0 0 1px #000,inset 0 0 0 1px #9fc0ef,0 0 26px rgba(110,180,255,.45),inset 0 0 30px rgba(140,200,255,.2)!important;cursor:pointer!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .fight-btn{all:unset!important;position:absolute!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:center!important;padding-bottom:1.1em!important;cursor:pointer!important;border-radius:14px!important;font-family:Cinzel,serif!important;font-weight:800!important;font-size:2.4em!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:#fff!important;text-shadow:0 2px 0 #000,0 0 14px rgba(160,200,255,.35)!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .fight-btn::before,html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .fight-btn::after{content:none!important;display:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .fight-btn img{display:none}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .fight-btn:focus-visible{outline:2px solid #ffd76a;outline-offset:2px}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap:hover{filter:brightness(1.15)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .start-sub{position:absolute!important;left:0!important;right:0!important;bottom:.9em!important;text-align:center!important;font-family:'Alegreya Sans',Arial,sans-serif!important;font-style:normal!important;font-weight:500!important;font-size:1.02em!important;color:#cfe6ff!important;pointer-events:none!important}
+/* ---- deck tiles: the deck's top card fills the face of the deck box, a thin silver edge ---- */
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .dstack .dk-art{aspect-ratio:800/1000;height:auto}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .dstack :is(.dk-sleeve,.dk-cmd){display:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .dstack .dk-face{left:6.5%!important;right:9%!important;top:3.2%!important;bottom:15.5%!important;width:auto!important;height:auto!important;border-radius:6px;background-position:center 20%;background-size:cover;box-shadow:0 0 0 2px #cfd6e2,inset 0 0 0 1px #000!important;z-index:3}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .dstack[aria-pressed="true"] .dk-art{filter:drop-shadow(0 0 10px rgba(124,200,255,.8))}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .dstack .ds-name{font-family:Cinzel,serif!important;font-weight:700;font-style:normal;color:#e9edf3}
+
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-tags{font-size:1em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-win :is(.ab,.ab *, .ttl){font-style:normal!important}
+/* Back: a small D-style panel button */
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .hdr .back-btn{all:unset;box-sizing:border-box!important;position:absolute!important;display:flex!important;align-items:center!important;justify-content:center!important;height:3.45em!important;padding:0 1.4em!important;border-radius:12px!important;cursor:pointer!important;font-family:Cinzel,serif!important;font-weight:700!important;font-size:1.15em!important;letter-spacing:.08em!important;color:#e9edf3!important;text-shadow:0 1px 0 #000!important;background:linear-gradient(180deg,rgba(28,31,44,.95),rgba(10,11,17,.96))!important;box-shadow:0 0 0 1px #000,inset 0 0 0 1px #8d97a7!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .hdr .back-btn::before,html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .hdr .back-btn::after{content:none!important;display:none!important}
+/* fixes after the first look */
+@media (min-width:901px){html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-head{left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:max-content!important;max-width:calc(100% - 22em)!important}}
+@media (min-width:901px){html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-head .info{white-space:normal!important}}
+@media (min-width:901px){html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .hdr .back-btn{top:-5.2em!important}}
+@media (min-width:901px){html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d:has(.top .who) .hdr .back-btn{top:.2em!important}}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .mode-row .mode-btn[data-id="compvscomp"]{grid-column:1/-1!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions) .btn,html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions) .btn *{font-style:normal!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .ptitle .more{margin-left:auto!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-hp{font-size:clamp(12px,1.45vh,16px)!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .dstack.dk-tile{height:auto!important;max-height:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .dstack.dk-tile .dk-art{flex:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .dstack.dk-tile :is(.ds-name,.ds-n){position:static!important;transform:none!important}
+
+/* phones: the same look, smaller; the header stays a single row as before */
+@media (max-width:900px){
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .hdr .back-btn{position:static!important;height:2.4em!important;font-size:.95em!important;padding:0 .9em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .hdr{display:flex!important;align-items:center!important;gap:.8em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-head{position:static!important;transform:none!important;text-align:left!important;width:auto!important;max-width:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-head .ttl{font-size:1.4em!important;letter-spacing:.06em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmds{gap:.7em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .main{top:7.4em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cc-plaque{width:9.4em;top:-2.45em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cc-plaque>span{font-size:.72em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-hp{width:3.4em;font-size:clamp(10px,2.6vh,13px)!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-tier{width:8.6em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-tier>span{font-size:.62em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-card .portrait-img{flex:1 1 34%!important;min-height:5.6em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-win .nm{font-size:1.15em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-win .ttl{font-size:.82em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap{min-height:3.6em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .fight-btn{font-size:1.5em!important;padding-bottom:.9em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .start-sub{font-size:.8em!important;bottom:.45em!important}
+}
+@media (max-width:900px){html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-card .cmd-lk{display:none!important}} /* phones: the tier plaque on the picture says it; the small line ran under the looks */
