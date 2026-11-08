@@ -569,7 +569,6 @@ function showProfile() {
       h('div', { class: 'col' },
         h('section', { class: 'panel idc', 'data-testid': 'profile-identity', 'aria-label': 'Who you are' },
           framed(h('img', { class: 'bigav net-avatar-big', src: avatarPicture(s.avatar), alt: avatarName(s.avatar) }), net.frame),
-          net.title ? h('div', { class: 'o-title', 'data-testid': 'profile-title' }, net.title) : null,
           h('div', { class: 'uname' }, h('b', { class: 'net-username' }, s.username)), rkLabel, joined,
           nbtn('Change avatar', () => avatarScreen(s, showProfile), 'btn panel play avatar-btn'),
           (() => { const code = h('b', { 'data-testid': 'profile-friend-code' }, '\u2026'); void import('./friends').then((m) => m.overview()).then((o: any) => { code.textContent = o && o.code ? o.code : '\u2014'; }).catch(() => {}); return h('div', { class: 'acc' }, h('span', {}, 'Friend code'), code); })(),

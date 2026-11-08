@@ -234,7 +234,7 @@ export async function showRankings(a: App): Promise<void> {
   const shares: Record<string, number> = (lb && lb.shares) || {};
   const total = (lb && Number(lb.players)) || 0;
   const rows: El[] = (lb && lb.top ? lb.top : []).map((p: any) => h('tr', { class: p.me ? 'me' : '', 'data-testid': 'rank-row' },
-    h('td', {}, String(p.place)), h('td', {}, h('div', { class: 'pl' }, framed(h('img', { src: avatarPicture(p.avatar), alt: '' }), p.frame), h('span', {}, p.username), p.title ? h('em', { class: 'o-title' }, p.title) : null)),
+    h('td', {}, String(p.place)), h('td', {}, h('div', { class: 'pl' }, framed(h('img', { src: avatarPicture(p.avatar), alt: '' }), p.frame), h('span', {}, p.username))),
     h('td', {}, h('span', { class: 'lab' }, ico(ladderCharm(rankOfRating(p.rating, steps.length ? steps : undefined).name)), p.label)), h('td', {}, fmt(p.rating)), h('td', {}, `${p.wins}-${p.losses}`), h('td', {}, p.games ? `${Math.round((p.wins / p.games) * 100)}%` : '')));
   if (me && me.place && !(lb && lb.top && lb.top.some((p: any) => p.me))) rows.push(h('tr', { class: 'me', 'data-testid': 'rank-row' }, h('td', {}, String(me.place)), h('td', {}, h('div', { class: 'pl' }, framed(h('img', { src: avatarPicture(net.avatar), alt: '' }), net.frame), h('span', {}, getPlayerName()))), h('td', {}, h('span', { class: 'lab' }, ico(ladderCharm(rk.name)), rk.label)), h('td', {}, fmt(me.rating)), h('td', {}, `${me.wins}-${me.losses}`), h('td', {}, me.games ? `${Math.round((me.wins / me.games) * 100)}%` : '')));
   root.append(topBar(data), h('div', { class: 'logo', 'aria-hidden': 'true' }),

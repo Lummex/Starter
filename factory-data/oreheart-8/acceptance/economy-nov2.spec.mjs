@@ -1514,11 +1514,53 @@ async function auditScrolled(page) {
     return { buttons: all.buttons, overlaps: [...all.overlaps], offCentre: [...all.offCentre] };
   }, LAYOUT_AUDIT.toString());
 }
-test('AC715: Shop and Dashboard layout (Ken, Nov 7): no overlapping buttons and every button label centred, at 1920x1080, 1366x768, 1024x768 and 812x375, scrolled through the whole Shop; the Shop panel frame never cuts through its content', async ({ page }) => {
+// Nov 7 (Ken: "anytime any information is being covered up, that's a fail"): every word or number on the screen on top (and open dialogs) that
+// another element is painted over; full-screen layers (the board) and a control's own pieces don't count; measured twice, only what stays covered counts.
+const COVERED_AUDIT = () => {
+  const st = document.createElement('style'); st.textContent = '*{pointer-events:auto!important}'; document.head.append(st);
+  const vw = innerWidth, vh = innerHeight, big = (e) => { const q = e.getBoundingClientRect(); return q.width * q.height > vw * vh * 0.45; };
+  // only the screen on top (and any open dialog): screens left underneath are covered on purpose
+  const stTop = (() => { const all = [...document.querySelectorAll('main')].filter((m) => { const q = m.getBoundingClientRect(); const c = getComputedStyle(m); return q.width > vw * 0.5 && c.display !== 'none' && c.visibility !== 'hidden'; }); const at = document.elementFromPoint(vw / 2, vh / 2); return (at && at.closest('main')) || all[all.length - 1] || document.body; })();
+  const roots = [stTop, ...document.querySelectorAll('.overlay:not([hidden]), [role=dialog]:not([hidden])')].filter((r, i, a) => r && !a.slice(0, i).some((o) => o.contains(r)));
+  const inRoots = (el) => roots.some((r) => r.contains(el));
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode: (n) => n.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
+  const out = new Set(), rg = document.createRange();
+  for (let n; (n = walker.nextNode());) {
+    const el = n.parentElement; if (!el || !inRoots(el) || el.closest('[aria-hidden=true],.sr-only,script,style,title')) continue;
+    const cs = getComputedStyle(el); if (cs.visibility === 'hidden' || +cs.opacity === 0) continue;
+    // the part of the screen this text can show in: clipped by every scrolling or clipping box around it
+    let clip = { l: 0, t: 0, r: vw, b: vh };
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) { const ps = getComputedStyle(p); if (/(hidden|auto|scroll|clip)/.test(ps.overflow + ps.overflowX + ps.overflowY)) { const pq = p.getBoundingClientRect(); clip = { l: Math.max(clip.l, pq.left), t: Math.max(clip.t, pq.top), r: Math.min(clip.r, pq.right), b: Math.min(clip.b, pq.bottom) }; } }
+    rg.selectNodeContents(n);
+    for (const q0 of rg.getClientRects()) {
+      const q = { left: Math.max(q0.left, clip.l), top: Math.max(q0.top, clip.t), right: Math.min(q0.right, clip.r), bottom: Math.min(q0.bottom, clip.b) }; q.width = q.right - q.left; q.height = q.bottom - q.top;
+      if (q.height < q0.height * 0.6) continue; // mostly scrolled out of its box: not on show
+      if (q.width < 4 || q.height < 6 || q.right < 0 || q.bottom < 0 || q.left > vw || q.top > vh) continue;
+      let covered = 0, by = '';
+      const pts = [[.2, .5], [.5, .5], [.8, .5]];
+      for (const [fx, fy] of pts) { const x = q.left + q.width * fx, y = q.top + q.height * fy; if (x < 0 || y < 0 || x >= vw || y >= vh) continue; const at = document.elementFromPoint(x, y); if (!at || at === el || el.contains(at) || at.contains(el) || big(at)) continue;
+        // the same control (a label inside a button, an icon beside its text) is not a cover
+        const ctl = el.closest('button,[role=button],label,a,li,.o-plate,.panel,.cos-item,.cos-emote,.sl-item,.shop-bundle,.hand-card,.cardc,.tut-card,.overlay'); if (ctl && ctl.contains(at)) continue;
+        if (getComputedStyle(at).opacity < 0.05) continue;
+        if (el.closest('.hand-card,.enemy-hand') && at.closest('.hand-card,.enemy-hand')) continue; // a fanned hand overlaps its own cards by design
+        { const c2 = getComputedStyle(at); const paints = /^(IMG|CANVAS|SVG|svg|VIDEO|PICTURE)$/.test(at.tagName) || c2.backgroundImage !== 'none' || !/rgba\(0, 0, 0, 0\)|transparent/.test(c2.backgroundColor) || c2.boxShadow !== 'none' || (parseFloat(c2.borderTopWidth) > 0 && c2.borderTopStyle !== 'none') || [...at.childNodes].some((k) => k.nodeType === 3 && k.textContent.trim()); if (!paints) continue; } // an invisible hit area paints nothing
+        covered++; by = at.tagName + '.' + String(at.className && at.className.baseVal !== undefined ? at.className.baseVal : at.className).slice(0, 40) + (at.tagName === 'IMG' ? '[' + (at.getAttribute('src') || '').split('/').pop() + ' in ' + (at.parentElement ? at.parentElement.className : '') + ']' : ''); }
+      if (covered) out.add(`"${n.textContent.trim().slice(0, 24)}" under ${by}`);
+    }
+  }
+  st.remove();
+  return [...out];
+};
+async function coveredNow(page) {
+  const a = await page.evaluate(COVERED_AUDIT); await page.waitForTimeout(700); const b = new Set(await page.evaluate(COVERED_AUDIT));
+  return a.filter((x) => b.has(x));
+}
+test('AC715: Shop and Dashboard layout (Ken, Nov 7): no overlapping buttons, no covered text, and every button label centred, at 1920x1080, 1366x768, 1024x768 and 812x375, scrolled through the whole Shop; the Shop panel frame never cuts through its content', async ({ page }) => {
   test.setTimeout(240000);
   for (const [w, h] of [[1920, 1080], [1366, 768], [1024, 768], [812, 375]]) {
     await page.setViewportSize({ width: w, height: h });
     await signedInDashWith(page, '');
+    expect(await coveredNow(page), `${w}x${h} Dashboard: covered text`).toEqual([]);
     const dash = await auditScrolled(page);
     expect(dash.overlaps, `${w}x${h} Dashboard: overlapping buttons`).toEqual([]);
     expect(dash.offCentre, `${w}x${h} Dashboard: off-centre labels`).toEqual([]);
@@ -1531,6 +1573,8 @@ test('AC715: Shop and Dashboard layout (Ken, Nov 7): no overlapping buttons and 
     expect(shop.buttons, `${w}x${h}: the Shop's buttons were measured`).toBeGreaterThan(15);
     expect(shop.overlaps, `${w}x${h} Shop: overlapping buttons`).toEqual([]);
     expect(shop.offCentre, `${w}x${h} Shop: off-centre labels`).toEqual([]);
+    const sc = await page.evaluate(() => { const b = document.querySelector('.dash.skin .skin-body'); return b ? b.scrollHeight : 0; });
+    for (let y = 0; y <= sc; y += 400) { await page.evaluate((y) => { const b = document.querySelector('.dash.skin .skin-body'); if (b) b.scrollTop = y; }, y); await page.waitForTimeout(200); expect(await coveredNow(page), `${w}x${h} Shop at ${y}px: covered text`).toEqual([]); }
     // the frame of the Shop panel is the panel's own border: nothing drawn inside the scrolling box can slice through the sleeves
     const frameLayer = await page.evaluate(() => { const b = document.querySelector('.dash.skin .skin-body'); const cs = getComputedStyle(b, '::before'); return cs.content !== 'none' && cs.display !== 'none' && cs.position === 'absolute'; });
     expect(frameLayer, `${w}x${h}: no frame layer scrolling inside the Shop panel`).toBe(false);

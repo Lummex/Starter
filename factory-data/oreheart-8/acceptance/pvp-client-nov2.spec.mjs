@@ -1027,7 +1027,7 @@ test('AC712: emotes in PvP (Ken, Nov 7): a click on your avatar opens the dial; 
   await keepHands(a, b);
   // the frame and title Bob wears, on Alice's screen
   await expect(a.locator('.o-plate.o-enemy .o-av img.av-frame')).toHaveAttribute('src', /frames\/producer\.webp$/, { timeout: 15000 });
-  await expect(a.locator('[data-testid=title-them]')).toHaveText('Producer');
+  await expect(a.locator('[data-testid=title-them]'), 'Ken, Nov 7: no title text, the frame art says it').toHaveCount(0);
   // the dial: up to 8, on screen, no overlaps
   await a.locator('[data-testid=emote-avatar]').click();
   const dial = a.locator('[data-testid=emote-dial]');
@@ -1067,4 +1067,73 @@ test('AC712: emotes in PvP (Ken, Nov 7): a click on your avatar opens the dial; 
   await a.waitForTimeout(3000);
   await expect(a.locator('[data-testid=emote-pop][data-from=them][data-emote="free-starter/nice"]')).toHaveCount(0);
   await closeAll(a, b);
+});
+
+// Nov 7 (Ken: "anytime any information is being covered up, that's a fail"): every word or number on the screen on top (and open dialogs) that
+// another element is painted over; full-screen layers (the board) and a control's own pieces don't count; measured twice, only what stays covered counts.
+const COVERED_AUDIT = () => {
+  const st = document.createElement('style'); st.textContent = '*{pointer-events:auto!important}'; document.head.append(st);
+  const vw = innerWidth, vh = innerHeight, big = (e) => { const q = e.getBoundingClientRect(); return q.width * q.height > vw * vh * 0.45; };
+  // only the screen on top (and any open dialog): screens left underneath are covered on purpose
+  const stTop = (() => { const all = [...document.querySelectorAll('main')].filter((m) => { const q = m.getBoundingClientRect(); const c = getComputedStyle(m); return q.width > vw * 0.5 && c.display !== 'none' && c.visibility !== 'hidden'; }); const at = document.elementFromPoint(vw / 2, vh / 2); return (at && at.closest('main')) || all[all.length - 1] || document.body; })();
+  const roots = [stTop, ...document.querySelectorAll('.overlay:not([hidden]), [role=dialog]:not([hidden])')].filter((r, i, a) => r && !a.slice(0, i).some((o) => o.contains(r)));
+  const inRoots = (el) => roots.some((r) => r.contains(el));
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode: (n) => n.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
+  const out = new Set(), rg = document.createRange();
+  for (let n; (n = walker.nextNode());) {
+    const el = n.parentElement; if (!el || !inRoots(el) || el.closest('[aria-hidden=true],.sr-only,script,style,title')) continue;
+    const cs = getComputedStyle(el); if (cs.visibility === 'hidden' || +cs.opacity === 0) continue;
+    // the part of the screen this text can show in: clipped by every scrolling or clipping box around it
+    let clip = { l: 0, t: 0, r: vw, b: vh };
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) { const ps = getComputedStyle(p); if (/(hidden|auto|scroll|clip)/.test(ps.overflow + ps.overflowX + ps.overflowY)) { const pq = p.getBoundingClientRect(); clip = { l: Math.max(clip.l, pq.left), t: Math.max(clip.t, pq.top), r: Math.min(clip.r, pq.right), b: Math.min(clip.b, pq.bottom) }; } }
+    rg.selectNodeContents(n);
+    for (const q0 of rg.getClientRects()) {
+      const q = { left: Math.max(q0.left, clip.l), top: Math.max(q0.top, clip.t), right: Math.min(q0.right, clip.r), bottom: Math.min(q0.bottom, clip.b) }; q.width = q.right - q.left; q.height = q.bottom - q.top;
+      if (q.height < q0.height * 0.6) continue; // mostly scrolled out of its box: not on show
+      if (q.width < 4 || q.height < 6 || q.right < 0 || q.bottom < 0 || q.left > vw || q.top > vh) continue;
+      let covered = 0, by = '';
+      const pts = [[.2, .5], [.5, .5], [.8, .5]];
+      for (const [fx, fy] of pts) { const x = q.left + q.width * fx, y = q.top + q.height * fy; if (x < 0 || y < 0 || x >= vw || y >= vh) continue; const at = document.elementFromPoint(x, y); if (!at || at === el || el.contains(at) || at.contains(el) || big(at)) continue;
+        // the same control (a label inside a button, an icon beside its text) is not a cover
+        const ctl = el.closest('button,[role=button],label,a,li,.o-plate,.panel,.cos-item,.cos-emote,.sl-item,.shop-bundle,.hand-card,.cardc,.tut-card,.overlay'); if (ctl && ctl.contains(at)) continue;
+        if (getComputedStyle(at).opacity < 0.05) continue;
+        if (el.closest('.hand-card,.enemy-hand') && at.closest('.hand-card,.enemy-hand')) continue; // a fanned hand overlaps its own cards by design
+        { const c2 = getComputedStyle(at); const paints = /^(IMG|CANVAS|SVG|svg|VIDEO|PICTURE)$/.test(at.tagName) || c2.backgroundImage !== 'none' || !/rgba\(0, 0, 0, 0\)|transparent/.test(c2.backgroundColor) || c2.boxShadow !== 'none' || (parseFloat(c2.borderTopWidth) > 0 && c2.borderTopStyle !== 'none') || [...at.childNodes].some((k) => k.nodeType === 3 && k.textContent.trim()); if (!paints) continue; } // an invisible hit area paints nothing
+        covered++; by = at.tagName + '.' + String(at.className && at.className.baseVal !== undefined ? at.className.baseVal : at.className).slice(0, 40) + (at.tagName === 'IMG' ? '[' + (at.getAttribute('src') || '').split('/').pop() + ' in ' + (at.parentElement ? at.parentElement.className : '') + ']' : ''); }
+      if (covered) out.add(`"${n.textContent.trim().slice(0, 24)}" under ${by}`);
+    }
+  }
+  st.remove();
+  return [...out];
+};
+async function coveredNow(page) {
+  const a = await page.evaluate(COVERED_AUDIT); await page.waitForTimeout(700); const b = new Set(await page.evaluate(COVERED_AUDIT));
+  return a.filter((x) => b.has(x));
+}
+
+test('AC716: in a match the framed avatars (Producer, Founder) cover no name, Commander name or HUD number on either side, at PC and phone sizes; no title text is shown', async ({ browser }) => {
+  test.setTimeout(180000);
+  for (const size of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
+    const id = uniq();
+    const a = await openAs(browser, 'alice' + id, size), b = await openAs(browser, 'bob' + id, size);
+    await atMenu(a); await atMenu(b);
+    await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/frame?user=${encodeURIComponent('alice' + id)}&item=producer&title=Producer`);
+    await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/frame?user=${encodeURIComponent('bob' + id)}&item=founder`);
+    const made = await hook(a, 'create', 'grubnak', 'goblin-warband');
+    await hook(b, 'join', made.code, 'borgo', 'dwarf-warband');
+    await inMatch(b); await inMatch(a);
+    await keepHands(a, b);
+    await expect(a.locator('.o-plate.o-you .av-frame')).toHaveCount(1, { timeout: 15000 });
+    await expect(a.locator('.o-plate.o-enemy .av-frame')).toHaveCount(1);
+    await expect(a.locator('.o-title')).toHaveCount(0);
+    await a.waitForTimeout(1500); // the deal settles
+    await expect(a.locator('.match .banner:visible, .match .banner-img:visible')).toHaveCount(0, { timeout: 15000 }); // a turn banner covers the HUD on purpose while it shows
+    const geo = await a.evaluate(() => { const R = (e) => e && e.getBoundingClientRect(); const hit = (p, q) => p && q && p.left < q.right - 1 && q.left < p.right - 1 && p.top < q.bottom - 1 && q.top < p.bottom - 1;
+      const out = [];
+      for (const pl of document.querySelectorAll('.match .o-plate')) { const f = R(pl.querySelector('.av-frame')); for (const t of pl.querySelectorAll('.o-pn, .o-cm')) if (hit(f, R(t))) out.push('frame over ' + t.textContent.trim().slice(0, 20)); }
+      return out; });
+    expect(geo, `${size.width}: frames clear of the names`).toEqual([]);
+    expect(await coveredNow(a), `${size.width}: covered text in the match`).toEqual([]);
+    await closeAll(a, b);
+  }
 });

@@ -2027,7 +2027,7 @@ html body .overlay.e-discard-view>.dialog:not(.viewer3d):not([aria-label=Mulliga
 .tut-legend svg{width:120px;height:90px;overflow:visible}
 .tut-legend span{font-size:1.05rem;color:#fff!important;-webkit-text-fill-color:#fff!important}
 /* the pointing hand, the target ring, the archer's lines */
-.tut-layer{position:absolute;inset:0;pointer-events:none;z-index:35;overflow:hidden}
+.tut-layer{position:absolute;inset:0;pointer-events:none;z-index:9000;overflow:hidden} /* Nov 7 (Ken: the finger was a layer below the Start button): the finger and its ring draw over everything; pointer-events stay off */
 .tut-hand{position:absolute;left:0;top:0;width:clamp(96px,11vh,150px);height:auto;pointer-events:none;user-select:none;filter:drop-shadow(0 4px 6px #000a);will-change:transform}
 .tut-ring{position:absolute;width:64px;height:40px;margin:-20px 0 0 -32px;border-radius:50%;border:4px solid #7dff8e;box-shadow:0 0 14px #54ff6a,inset 0 0 10px #54ff6a;animation:tutRing 1.1s ease-in-out infinite}
 .tut-ring.tap{border-color:#fff;box-shadow:0 0 14px #fff;animation:tutBlink .8s ease-in-out infinite}
@@ -2146,7 +2146,7 @@ button.cos-item{cursor:pointer}
 .overlay .dialog .beta-frame{width:5.5em;height:5.5em;flex:none}
 @media (max-width:700px){.overlay .dialog .beta-founder{flex-direction:column;align-items:center}}
 /* Nov 7 (Ken): "the deck card count ... on the card deck image ... top center": a silver badge at the top centre of each draw pile */
-.match .o-deck .pile-n:not(#_w):not(#_x){border-radius:999px;background:linear-gradient(180deg,#9aa4ae 0%,#5d6772 45%,#3c444d 100%);border:max(1.5px,.22vh) solid #e9eef3;box-shadow:0 .25vh .8vh rgba(0,0,0,.75),0 0 0 max(1px,.1vh) #2a3037,inset 0 .2vh 0 rgba(255,255,255,.55);text-shadow:0 1px 2px #000,0 0 3px #000!important;line-height:1;box-sizing:border-box;z-index:3} /* white numbers (the owner text style) on a steel pill with a bright silver rim */
+.match .o-deck .pile-n:not(#_w):not(#_x){background:none;border:0;box-shadow:none;text-shadow:0 1px 3px #000,0 0 6px #000,0 0 10px rgba(0,0,0,.7)!important;line-height:1;z-index:3} /* Nov 7 (Ken: "I just want that to be a number ... no border, no button"): just the number, top centre */
 /* Nov 7 (Ken: no overlapping buttons, labels centred): sleeve tiles stack their pills; the Dashboard logo never takes taps; header Back fits its bar */
 .sl-panel .sl-acts{flex-direction:column;flex-wrap:nowrap;align-items:stretch;width:100%;max-width:11em}
 .sl-panel .sl-acts .sl-ask{text-align:center}
@@ -2160,3 +2160,31 @@ html body:not(#_a):not(#_b):not(#_c) :is(.shop-bundle,.shop-stash,.econ-panel) .
 @media (min-width:901px) and (max-width:1180px){.dash.skin[data-screen="econ-shop"] .skin-body .shop-bundles:not(#_w){grid-template-columns:repeat(2,minmax(0,1fr))}} /* Nov 7: four bundles in a row left 88 px for a button label at 1024 wide; two by two they fit */
 @media (max-width:900px){.dash.skin[data-screen="econ-shop"] .skin-body .shop-bundles:not(#_w){grid-template-columns:repeat(4,minmax(12.5em,1fr))}}
 @media (max-width:900px){html body:not(#_a):not(#_b):not(#_c) .shop-bundle .shop-buy-shards .econ-shard-img{display:none}}
+/* Nov 7 (Ken: "the emotes need to be like twice the size in the shop. You can barely see them, maybe even 3 times the size"): about 2.6x, in the Shop and the Collection wheel */
+.cos-panel .cos-emotes{gap:.7em}
+.cos-panel .cos-emote{width:10.6em;padding:.45em .45em .55em;gap:.35em}
+.cos-panel .cos-emote img:not(.cos-ico){width:9.4em;height:9.4em}
+.cos-panel .cos-emote small{font-size:.82em;line-height:1.15;min-height:2.3em;display:flex;align-items:center;justify-content:center}
+.overlay .cos-wheel{gap:.6em;max-height:min(52vh,30em);overflow:auto;padding:.2em}
+.overlay .cos-wheel .cos-emote{width:auto;padding:.3em}
+.overlay .cos-wheel .cos-emote img{width:7.6em;height:7.6em}
+@media (max-width:900px){.cos-panel .cos-emote{width:8.4em}.cos-panel .cos-emote img:not(.cos-ico){width:7.4em;height:7.4em}.overlay .cos-wheel .cos-emote img{width:5.6em;height:5.6em}}
+/* Nov 7 (Ken: "The avatar frame is over my name ... It's also covering the my shard points ... anytime any information is being covered up, that's a fail"):
+   a framed avatar keeps the frame's width clear on both sides, yours sits a little higher, the opponent's a little lower (on screen) */
+html body:not(#_a):not(#_b) #app .match .o-plate .o-av.has-frame{margin-inline:1.25em}
+html body:not(#_a):not(#_b) #app .match .o-plate.o-you .o-av.has-frame{translate:0 -1.5em}
+html body:not(#_a):not(#_b) #app .match .o-plate.o-enemy .o-av.has-frame{translate:0 1.6em}
+@media (max-height:500px){html body:not(#_a):not(#_b) #app .match .o-plate .o-av.has-frame{margin-inline:.25em 1.1em}html body:not(#_a):not(#_b) #app .match .o-plate.o-enemy .o-av.has-frame{translate:0 1.1em}
+  html body:not(#_a):not(#_b) #app .match .o-plate .o-pl{justify-content:flex-start;overflow:hidden}
+  html body:not(#_a):not(#_b) #app .match .o-plate.o-enemy .o-pl{justify-content:flex-end}
+  html body:not(#_a):not(#_b) #app .match .o-plate .o-pn{flex:0 1 auto;min-width:2.5em}}
+/* Nov 7: on a phone the sound button covered the banked-crystal number: it sits beside the Menu button instead */
+@media (max-height:500px){html body #app .match .spk-btn{left:max(54px,calc(env(safe-area-inset-left) + 54px))!important;top:6px!important;bottom:auto!important}}
+/* Nov 7 (Ken: covered info is a fail): on a phone the Collection's columns stack without squeezing (the left panels spilled over the card list) */
+@media (max-width:900px){html body .dash.skin[data-screen="econ-collection"] .skin-body .col-main>*{flex:none!important;min-height:auto!important}}
+/* My Packs: the name on its own line, the open controls under it (they crushed each other in the narrow side column) */
+html body .dash.skin[data-screen="econ-shop"] .skin-body .shop-stash-row{flex-wrap:wrap}
+html body .dash.skin[data-screen="econ-shop"] .skin-body .shop-stash-row .shop-stash-text{flex:1 1 8em;min-width:0}
+html body .dash.skin[data-screen="econ-shop"] .skin-body .shop-stash-row .shop-stash-actions{width:100%;margin-left:0;flex-direction:row;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+/* Nov 7: the copy-count plaque covered the card's Health gem and rules text: it sits on the top-right corner (art only there) */
+html body .col-grid .col-badge{top:-4px!important;bottom:auto!important;right:-4px!important}

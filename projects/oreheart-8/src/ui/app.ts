@@ -1745,7 +1745,7 @@ export class App {
     if (src) { av.classList.add('has-img'); av.style.backgroundImage = `url(${src})`; av.dataset.avatar = avatar; av.dataset.shown = shownAvatar(avatar); }
     if (rank) av.append(this.charmEl(rank));
     if (frame) { const fi = h('img', { class: 'av-frame', src: `/art/avatar-frames/${frame}.webp`, alt: '', draggable: 'false', 'aria-hidden': 'true', 'data-frame': frame }); av.append(fi); av.classList.add('has-frame'); } // Nov 7 (Ken): the avatar frame
-    if (title) { words.append(h('span', { class: 'o-title', 'data-testid': side === 'enemy' ? 'title-them' : 'title-me' }, title)); }
+    void title; // Nov 7 (Ken: "I don't want it to say producer on it"): no title text; the frame art says it
     if (side === 'enemy') el.replaceChildren(words, av); else el.replaceChildren(av, words);
     this.emoteMod?.bindAvatar();
     el.setAttribute('aria-label', `${side === 'enemy' ? 'Opponent' : 'You'}: ${player}, Commander ${commander}${rank ? `, rank ${rank.label}` : ''}`);
