@@ -8,6 +8,7 @@ import { plowMount } from './plow';
 import { CARDS } from '../engine';
 import animSlotsJson from '../content/anim-slots.json';
 import unitHeightsJson from '../content/unit-heights.json';
+import modelTurnJson from '../content/model-turn.json';
 /** Ken (Oct 30): every unit at the height he saved in Oreheart Studio (Ledger's table, board squares; mounts = rider + mount); beats LOOKS and the faction defaults */
 export const HEIGHTS: Record<string, number> = Object.fromEntries(Object.entries(unitHeightsJson as Record<string, unknown>).filter(([k, v]) => !k.startsWith('_') && typeof v === 'number')) as Record<string, number>;
 /** Ken (Oct 31, Ledger's table `_table` in unit-heights.json): real-world heights in board squares (mine = 5 ft = 1.31 squares). A unit's standing body
@@ -567,7 +568,9 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   let heightSpaces = TABLE_H[id] ?? studioH; const kk = k0;
   const st = look ? look.stretch : [1, 1, 1];
   sc.scale.set(k * st[0], k * st[1], k * st[2]);
-  sc.add(ch); root.add(sc);
+  // Ken, Nov 7: a model built facing backwards is turned to face forward. The turn sits OUTSIDE `sc`, so the centring below (done in sc's own space) stays right
+  const turnDeg = Number((modelTurnJson as any)[id]) || 0;
+  if (turnDeg) { const turn = new THREE.Group(); turn.rotation.y = (turnDeg * Math.PI) / 180; turn.add(sc); root.add(turn); sc.add(ch); } else { sc.add(ch); root.add(sc); }
   for (const pc of PARTS[id]) {
     const src = a.parts[pc.name]; if (!pc.crew || !src) continue;
     const body = skeletonClone(src) as THREE.Object3D; prep(body);
