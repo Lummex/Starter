@@ -84,7 +84,7 @@ export async function showOreshards(focus: '' | 'convert' = ''): Promise<void> {
   const hist = h('div', { class: 'shard-history econ-panel', 'data-testid': 'shard-history' });
   econShow('oreshards',
     h('div', { class: 'econ-head' }, backBtn(),
-      h('div', { class: 'econ-titles' }, h('h1', {}, 'Buy Oreshards'), h('p', { class: 'econ-sub' }, 'Oreshards buy packs and cosmetics, never rank or power. Paid for on Stripe’s own secure page.')),
+      h('div', { class: 'econ-titles' }, h('h1', {}, 'Buy Oreshards'), h('p', { class: 'econ-sub' }, 'Packs and cosmetics. Payment on Stripe’s secure page.')),
       h('div', { class: 'econ-wallet' }, coinChip())),
     alert,
     h('div', { class: 'shard-main' },

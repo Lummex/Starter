@@ -157,7 +157,7 @@ export function sleevesPanel(): El {
         h('b', {}, x.name), acts);
     }));
     box.replaceChildren(h('h3', { class: 'h' }, 'Card Sleeves', h('small', { class: 'sl-bal', 'data-testid': 'sl-balance' }, `${s.oreshards} Oreshards`)),
-      h('p', { class: 'net-note' }, 'The back of your cards, the side your opponent sees. Looks only, never power. Bought with Oreshards.'), grid, note);
+      grid, note); // Ken, Nov 7: no behind-the-scenes lines
   };
   void draw();
   return box;

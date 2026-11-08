@@ -13,13 +13,13 @@ export const rarityLabel = (r: string) => RARITY_LABEL[r] || r;
 export function commanderCard(c: any) {
   return { id: 'cmd:' + c.id, type: 'commander', faction: c.faction, name: c.name, text: c.abilityText, health: c.health, cost: '', rarity: 'Collector', artPos: c.artPos };
 }
-/** Nov 5 (Ken: Commanders in packs at Rare): the pack / collection card for a Commander, by its pack id 'commander-<id>'. */
+/** Nov 5 (Ken: Commanders in packs; Nov 7: "Set them at ultra rare"): the pack / collection card for a Commander, by its pack id 'commander-<id>'. */
 export const COMMANDER_PACK_IDS = ['commander-grubnak', 'commander-sproingle', 'commander-borgo'];
 export const isCommanderPackId = (id: string) => typeof id === 'string' && id.startsWith('commander-');
 export function commanderPackCard(id: string): any | null {
   if (!isCommanderPackId(id)) return null;
   const c = COMMANDERS[id.slice(10)];
-  return c ? { ...commanderCard(c), id, commanderId: c.id, rarity: 'Rare', cost: 0 } : null;
+  return c ? { ...commanderCard(c), id, commanderId: c.id, rarity: 'Ultra Rare', cost: 0 } : null;
 }
 /** A card by id, pack Commanders included (null when unknown). */
 export const cardFor = (id: string): any | null => (CARDS as any)[id] || commanderPackCard(id);

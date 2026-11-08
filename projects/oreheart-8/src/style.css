@@ -2157,8 +2157,6 @@ html body:not(#_a):not(#_b):not(#_c) .dash.skin .hdr .back-btn{padding:0 1em!imp
 @media (max-width:900px){.dash .top .coins{padding-left:.55em;padding-right:.55em}}
 html body:not(#_a):not(#_b):not(#_c) :is(.shop-bundle,.shop-stash,.econ-panel) .net-btn{text-align:center!important}
 @media (max-width:900px){html body .dash.skin .skin-body{top:8.7em}}
-@media (min-width:901px) and (max-width:1180px){.dash.skin[data-screen="econ-shop"] .skin-body .shop-bundles:not(#_w){grid-template-columns:repeat(2,minmax(0,1fr))}} /* Nov 7: four bundles in a row left 88 px for a button label at 1024 wide; two by two they fit */
-@media (max-width:900px){.dash.skin[data-screen="econ-shop"] .skin-body .shop-bundles:not(#_w){grid-template-columns:repeat(4,minmax(12.5em,1fr))}}
 @media (max-width:900px){html body:not(#_a):not(#_b):not(#_c) .shop-bundle .shop-buy-shards .econ-shard-img{display:none}}
 /* Nov 7 (Ken: "the emotes need to be like twice the size in the shop. You can barely see them, maybe even 3 times the size"): about 2.6x, in the Shop and the Collection wheel */
 .cos-panel .cos-emotes{gap:.7em}

@@ -9,6 +9,7 @@ import { shardChip, shardIcon as shardIconEl } from './oreshards';
 // Nov 7: the Oreshard side of the prices (the server's oreshard_pack_rate and the player's balance), loaded with the shop
 let shardRate = 1, shardBal = 0;
 import { sleevesPanel } from './cosmetics';
+import './shop-v2.css'; // Nov 7: Brush's approved shop v2 (option C)
 import { framesPanel, emotesPanel } from './frames';
 import { oddsWords } from './quest-summary';
 import { TIER_NAMES, RARITY_LABEL } from '../content/card-labels';
@@ -85,8 +86,9 @@ function render(parts: Parts, info: ShopInfo) {
   const pity = info.pity;
   parts.odds.replaceChildren(
     h('p', { class: 'shop-odds' }, oddsWords(pack.slots)),
-    pity ? h('p', { class: 'shop-shield', 'data-testid': 'shop-shield' }, `Bad-luck shield: ${pity.limit} packs in a row without a Legendary, and the ${ordinal(pity.limit)} brings one. You are at ${pity.since}.`) : null,
-    h('p', { class: 'shop-fair' }, 'Odds are the same for every pack, bundle or not. Guarantees come on top: natural drops count, and only when luck falls short does the last pack of a bundle top it up.'));
+    // Ken, Nov 7 (approved wording, exactly): two lines, nothing more
+    pity ? h('p', { class: 'shop-shield', 'data-testid': 'shop-shield' }, `Bad Luck Guarantee: no Legendary in ${pity.limit} packs? The ${ordinal(pity.limit)} pack will guarantee a hit.`) : null,
+    h('p', { class: 'shop-fair' }, 'Bundle guarantees: every Legendary you find counts toward your bundle’s total.'));
   // Nov 6 (design D): what's in a pack (one chip per slot), the quest streak to the next free pack, the daily limit
   if (parts.strip) parts.strip.replaceChildren(h('div', { class: 'shop-strip-h' }, h('b', { class: 'h' }, "What's in a pack"), h('small', {}, 'Any card can arrive upgraded, up to Mythic')), ...slotChips(pack.slots));
   if (parts.limit) { const max = pack.max_per_day || 0, n = pack.opened_today || 0; parts.limit.replaceChildren(h('div', { class: 'shop-limit-l' }, h('span', {}, 'Opened today'), h('span', {}, max > 0 ? `${n} of ${max}` : String(n))), h('div', { class: 'bar' }, h('i', { style: `width:${max > 0 ? Math.min(100, Math.round((n / max) * 100)) : 0}%` }))); }
@@ -148,42 +150,45 @@ export function countPlaque(n: number): El {
 // of what you're actually getting"): the bundles drawn from the one pack picture: a fan of 6, a tower of 24 with the 3 free ones apart
 // (glowing, with their badge), and the chest with a spill of packs in front and its 16 free ones apart. No new pictures.
 const packImg = (p: PackInfo, cls: string, style = '') => h('img', { class: `shop-stk ${cls}`, src: packArt(p), alt: '', draggable: 'false', 'aria-hidden': 'true', style });
+// Nov 7 (Ken approved Brush's shop v2, option C): every bundle drawn on one stage of the same shape (380 x 310 in the mockup), positions in
+// percent of it: 1 pack centred; an even fan of 6; a 3-deep stack of 24 with the 3 free packs glowing in a column; the chest centred with an arc of 5.
+const pct = (v: number, of: number) => `${((v / of) * 100).toFixed(2)}%`;
+const SW = 380, SH = 310;
+const at = (x: number, y: number, w: number, rot = 0, z = 1) => `left:${pct(x, SW)};top:${pct(y, SH)};width:${pct(w, SW)};transform:rotate(${rot}deg);z-index:${z}`;
 function bundleArt(p: PackInfo, b: BundleInfo, total: number): El {
-  if (b.size === 1) return sealedPack(p);
   if (b.size >= 99) return chestBundleArt(p, b, total);
-  const n = b.size, shown = n <= 6 ? n : 12; // a tower of 24 reads as many: 12 visible layers
-  const layers: El[] = [];
-  for (let i = 0; i < shown - 1; i++) {
-    const k = i / Math.max(1, shown - 2);
-    const style = n <= 6
-      ? `--r:${(-14 + 28 * k).toFixed(1)}deg;--x:${(-34 + 68 * k).toFixed(1)}%;--y:${(Math.abs(k - 0.5) * 10).toFixed(1)}%;z-index:${i + 1}`
-      : `--r:${(((i * 37) % 11) - 5).toFixed(1)}deg;--x:${(((i * 53) % 13) - 6).toFixed(1)}%;--y:${(-1.4 * (shown - 2 - i)).toFixed(1)}%;z-index:${i + 1}`;
-    layers.push(packImg(p, n <= 6 ? 'fan' : 'tower', style));
+  const kids: El[] = [];
+  if (b.size === 1) {
+    const one = sealedPack(p); one.classList.add('shop-v2-one'); one.setAttribute('style', at(SW / 2 - 90, 22, 180)); kids.push(one);
+  } else if (b.size <= 6) {
+    const n = b.size, w = 138;
+    for (let i = 0; i < n; i++) { const k = i - (n - 1) / 2; kids.push(packImg(p, 'fan', at(SW / 2 - w / 2 + k * 26, 26 + k * k * 3, w, k * 8, 10 - Math.round(Math.abs(k) * 2)))); }
+    const front = sealedPack(p); front.classList.add('shop-stk-front'); front.setAttribute('style', 'display:none'); kids.push(front); // kept for the pack opening's picture
+  } else {
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) kids.push(packImg(p, 'tower', at(18 + c * 58 + r * 12, 34 + r * 40, 112, 0, 10 + r)));
+    if (b.bonus > 0) kids.push(h('div', { class: 'shop-bonus-packs', 'data-testid': 'bonus-packs', 'aria-hidden': 'true' },
+      ...Array.from({ length: Math.min(b.bonus, 3) }, (_, k) => packImg(p, 'bonus', at(SW - 104, 40 + k * 76, 80, 0, 20)))));
   }
-  const front = sealedPack(p); front.classList.add('shop-stk-front');
-  const bonus = b.bonus > 0 ? h('div', { class: 'shop-bonus-packs', 'data-testid': 'bonus-packs', 'aria-hidden': 'true' },
-    ...Array.from({ length: Math.min(b.bonus, 3) }, (_, i) => packImg(p, 'bonus', `--i:${i}`))) : null;
-  return h('div', { class: `shop-stack ${n <= 6 ? 'is-fan' : 'is-tower'}`, 'data-packs': String(total) }, ...layers, front, bonus);
+  return h('div', { class: `shop-stack shop-v2 ${b.size === 1 ? 'is-one' : b.size <= 6 ? 'is-fan' : 'is-tower'}`, 'data-packs': String(total) }, ...kids);
 }
-/** the chest: a spill of packs in front, the free ones apart; hover (or a long press) opens it, heaped with packs */
+/** the chest centred, an arc of 5 packs in front; hover (or a long press) opens it, heaped with packs */
 function chestBundleArt(p: PackInfo, b: BundleInfo, total: number): El {
+  void b;
   const heap = h('div', { class: 'chest-heap', 'aria-hidden': 'true' },
     ...Array.from({ length: 22 }, (_, i) => packImg(p, 'heap', `--hx:${(((i * 47) % 100) - 50).toFixed(0)}%;--hy:${(Math.floor(i / 5) * -9).toFixed(0)}%;--hr:${(((i * 29) % 40) - 20).toFixed(0)}deg;--i:${i}`)));
-  const spill = h('div', { class: 'chest-spill', 'aria-hidden': 'true' },
-    ...Array.from({ length: 7 }, (_, i) => packImg(p, 'spill', `--sx:${(-42 + i * 14).toFixed(0)}%;--sr:${(((i * 31) % 36) - 18).toFixed(0)}deg;--i:${i}`)));
-  const bonus = b.bonus > 0 ? h('div', { class: 'shop-bonus-packs chest-bonus', 'data-testid': 'bonus-packs', 'aria-hidden': 'true' },
-    ...Array.from({ length: 4 }, (_, i) => packImg(p, 'bonus', `--i:${i}`))) : null;
-  const box = h('div', { class: 'chest-box', 'data-testid': 'chest-box' },
+  const arc = h('div', { class: 'chest-spill', 'aria-hidden': 'true' },
+    ...Array.from({ length: 5 }, (_, i) => { const k = i - 2; return packImg(p, 'spill', at(SW / 2 - 44 + k * 56, 170 - Math.abs(k) * 6, 88, k * 7, 6 + (2 - Math.abs(k)))); }));
+  const box = h('div', { class: 'chest-box', 'data-testid': 'chest-box', style: at(SW / 2 - 150, -14, 280, 0, 3) },
     h('img', { class: 'chest-open', src: '/art/packs/chest/chest-open.webp', alt: '', draggable: 'false', 'aria-hidden': 'true' }),
     heap,
     chestArt(),
     h('img', { class: 'chest-lid', src: '/art/packs/chest/chest-lid.webp', alt: '', draggable: 'false', 'aria-hidden': 'true' }),
     h('span', { class: 'chest-total', 'aria-hidden': 'true' }, `${total} packs`));
-  const el = h('div', { class: 'shop-stack is-chest', 'data-packs': String(total) }, box, spill, bonus);
+  const el = h('div', { class: 'shop-stack shop-v2 is-chest', 'data-packs': String(total) }, box, arc);
   // a long press on a phone opens it as a hover would; letting go closes it
-  let t: any = null;
-  el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType === 'mouse') return; t = setTimeout(() => el.classList.add('open'), 350); });
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, () => { clearTimeout(t); el.classList.remove('open'); });
+  let tm: any = null;
+  el.addEventListener('pointerdown', (e: PointerEvent) => { if (e.pointerType === 'mouse') return; tm = setTimeout(() => el.classList.add('open'), 350); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, () => { clearTimeout(tm); el.classList.remove('open'); });
   return el;
 }
 
@@ -228,22 +233,21 @@ function tile(p: PackInfo, b: BundleInfo, info: ShopInfo, parts: Parts): El {
       await buyBundle(p, b.size, onErr, 'oreshards');
     } }, shardIconEl(), shardsShort ? 'Get more Oreshards' : `${shardPrice.toLocaleString('en-US')} Oreshards`) as HTMLButtonElement;
   const art = h('div', { class: 'shop-art' + (chest ? ' shop-chest' : ''), role: 'img', 'aria-label': chest ? `${p.name} treasure chest` : p.name },
-    bundleArt(p, b, total),
-    countPlaque(total));
+    bundleArt(p, b, total));
   art.addEventListener('click', () => { void go(); });
   const promises = promiseWords(b.promises);
-  return h('div', { class: `shop-pack shop-bundle econ-panel${b.size === 24 ? ' shop-big' : ''}${chest ? ' shop-bundle-chest' : ''}`, role: 'listitem', 'data-pack': p.id, 'data-size': String(b.size), 'data-packs': String(total) },
-    Number(badges.best_value) === b.size ? ribbonBadge('BEST VALUE', false, { class: 'ohb ohb-ribbon shop-badge shop-best', 'data-testid': 'best-value' }) : null,
-    Number(badges.most_popular) === b.size ? ribbonBadge('MOST POPULAR', true, { class: 'ohb ohb-ribbon popular shop-badge shop-popular' }) : null,
-    b.size === 1 && free ? burstBadge('FREE', '', true, { class: 'ohb ohb-burst free shop-free', 'aria-label': 'Free pack available' }) : null,
-    b.bonus > 0 ? burstBadge(`+${b.bonus}`, 'FREE', false, { class: 'ohb ohb-burst shop-bonus', 'data-testid': 'bundle-bonus' }) : null,
+  return h('div', { class: `shop-pack shop-bundle econ-panel shop-v2-card${chest ? ' shop-bundle-chest' : ''}`, role: 'listitem', 'data-pack': p.id, 'data-size': String(b.size), 'data-packs': String(total) },
+    Number(badges.best_value) === b.size ? h('span', { class: 'ohs-plaque blue', 'data-testid': 'best-value' }, h('span', {}, 'BEST VALUE')) : null,
+    Number(badges.most_popular) === b.size ? h('span', { class: 'ohs-plaque violet', 'data-testid': 'most-popular' }, h('span', {}, 'MOST POPULAR')) : null,
+    // Ken, Nov 7: "+3" big, FREE / PACKS under it, on Brush's green shield tag; the number is live text
+    b.bonus > 0 ? h('span', { class: 'ohs-tag', 'data-testid': 'bundle-bonus', 'aria-label': `${b.bonus} free packs` }, h('span', {}, h('b', {}, `+${b.bonus}`), ' ', h('small', {}, 'FREE'), ' ', h('small', {}, 'PACKS'))) : null,
     art,
     h('h2', {}, b.size === 1 ? 'Single Pack' : chest ? 'Treasure Chest' : b.size >= 24 ? 'Warband Bundle' : 'Pack Bundle'),
-    h('p', { class: 'shop-blurb shop-qty' }, ...(b.size === 1 ? ['1 pack \u00b7 11 cards'] : b.bonus > 0 ? [`${b.size} packs `, h('b', { class: 'plus' }, `+${b.bonus} FREE`), ` = ${total} packs`] : [`${b.size} packs \u00b7 ${b.size * 11} cards`])),
+    h('p', { class: 'shop-blurb shop-qty' }, ...(b.size === 1 ? ['1 pack \u00b7 11 cards'] : b.bonus > 0 ? [`${b.size} packs `, h('b', { class: 'plus' }, `+ ${b.bonus} free`), ` = ${total}`] : [`${b.size} packs \u00b7 ${b.size * 11} cards`])),
     h('div', { class: 'shop-price', 'aria-label': `${price} coins or ${Math.ceil(price * shardRate)} Oreshards` }, coinIcon(''), price.toLocaleString('en-US'),
       h('span', { class: 'shop-or' }, 'or'), shardIconEl(), h('span', { class: 'shop-shards', 'data-testid': 'shard-price' }, Math.ceil(price * shardRate).toLocaleString('en-US'))),
-    h('p', { class: 'shop-perpack', 'data-testid': 'per-pack' }, b.bonus > 0 ? `~${Math.round(perPack)} per pack` : `${Math.round(perPack)} per pack`),
-    promises.length ? h('p', { class: 'shop-promise', 'data-testid': 'bundle-promise' }, 'Guaranteed: ' + promises.join(', ') + '.') : h('p', { class: 'shop-promise shop-promise-none' }, b.size === 1 ? `${p.opened_today || 0} opened today` : 'No guarantee: just the odds.'),
-    h('div', { class: 'shop-buys' }, buy, buyShards),
-    !afford && !soldOut ? h('p', { class: 'shop-hint' }, 'Finish quests to earn coins, or pay with Oreshards') : null);
+    h('p', { class: 'shop-perpack', 'data-testid': 'per-pack' }, ...(b.bonus > 0 ? [h('s', {}, (p.price_coins * total).toLocaleString('en-US')), ' \u00b7 ', h('b', {}, `~${Math.round(perPack)} per pack`)] : [`${Math.round(perPack)} per pack`])),
+    promises.length ? h('p', { class: 'shop-promise', 'data-testid': 'bundle-promise' }, 'Guaranteed: ' + promises.join(', ') + '.') : h('p', { class: 'shop-promise shop-promise-none' }, b.size === 1 ? `${p.opened_today || 0} opened today` : ''),
+    h('i', { class: 'shop-divider', 'aria-hidden': 'true' }),
+    h('div', { class: 'shop-buys' }, buy, buyShards));
 }

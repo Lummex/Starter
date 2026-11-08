@@ -75,7 +75,7 @@ export function framesPanel(): El {
     let m: MyFrames; try { m = await api.mine(); } catch { box.replaceChildren(h('h3', { class: 'h' }, 'Avatar Frames'), h('p', { class: 'net-note' }, 'The frames are not on sale right now.')); return; }
     note.textContent = msg;
     const avPic = (net.avatar ? `/art/avatars/${net.avatar}.webp` : '/art/avatars/goblin-goggle-rogue.webp');
-    box.replaceChildren(h('h3', { class: 'h' }, 'Avatar Frames'), h('p', { class: 'net-note' }, 'A frame around your avatar, where your opponents and friends see you. Looks only, never power.'),
+    box.replaceChildren(h('h3', { class: 'h' }, 'Avatar Frames'),
       h('div', { class: 'cos-grid', role: 'list' }, ...m.frames.filter((f) => f.kind === 'store' || f.owned).map((f) => {
         const av = h('span', { class: 'cos-av', style: `background-image:url(${avPic})` }); decorate(av, f.id);
         const acts = f.owned ? (m.equipped === f.id ? h('span', { class: 'cos-owned' }, 'Wearing') : h('button', { type: 'button', class: 'cos-price cp-wear', 'data-testid': 'frame-wear-' + f.id, onclick: async () => { try { await api.setFrame(f.id); net.frame = f.id; void draw(`${f.name} is on.`); } catch (e: any) { note.textContent = String(e?.message || e); } } }, 'Wear'))
@@ -95,7 +95,7 @@ export function emotesPanel(): El {
     let s: any; try { s = await emoteApi.shop(); } catch { box.replaceChildren(h('h3', { class: 'h' }, 'Emotes'), h('p', { class: 'net-note' }, 'The emotes are not on sale right now.')); return; }
     note.textContent = msg;
     const buy = async (what: 'pack' | 'emote', id: string, name: string, p: 'coins' | 'oreshards') => { try { await emoteApi.buy(what, id, p); toast(`${name} ${what === 'pack' ? 'are' : 'is'} yours!`, what === 'emote' ? emoteUrl(id) : '/art/emotes/free-starter/wow.webp'); void draw(`${name}: put them on your wheel in Collection.`); } catch (e: any) { note.textContent = String(e?.message || e).replace(/^.*?: /, ''); } };
-    box.replaceChildren(h('h3', { class: 'h' }, 'Emotes'), h('p', { class: 'net-note' }, 'Click your avatar in a match to send one. Ten are free for everyone; the packs are cheaper than six singles.'),
+    box.replaceChildren(h('h3', { class: 'h' }, 'Emotes'), h('p', { class: 'net-note' }, 'Click your avatar in a match to send one.'),
       ...s.packs.map((p: any) => h('div', { class: 'cos-pack', 'data-pack': p.id },
         h('div', { class: 'cos-pack-head' }, h('b', {}, p.name), p.free ? h('span', { class: 'cos-owned' }, 'Free for everyone') : p.owned ? h('span', { class: 'cos-owned' }, 'All yours') : pay2(p.price_coins, p.price_oreshards, (pay) => buy('pack', p.id, p.name, pay), 'emote-pack-' + p.id)),
         h('div', { class: 'cos-emotes' }, ...p.emotes.map((e: any) => h('div', { class: 'cos-emote' + (e.owned ? ' owned' : ''), 'data-emote': e.id, title: e.label },

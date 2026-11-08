@@ -243,7 +243,7 @@ test('AC650: the Shop sells the one Oreheart pack (Ken, Nov 6: no Junkpile, Gizm
   await expect(tiles.first().locator('.shop-promise')).toHaveText(/^\d+ opened today$/);
   await expect(page.locator('.shop-odds')).toHaveText('11 cards: 3 Standard Miners, 4 Common, 2 Uncommon, 1 Rare, 1 Rare or better: Rare 78%, Ultra Rare 20%, Legendary 2%');
   await expect(page.getByTestId('coin-chip').first()).toContainText('500');
-  await expect(tiles.first().locator('.shop-free'), 'the free pack ribbon').toHaveText('FREE');
+  await expect(tiles.first().locator('.shop-buy'), 'the free pack: a green Open FREE button (shop v2, Nov 7)').toHaveText('Open FREE');
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.locator('.econ-screen')).toHaveCount(0);
 });
@@ -267,7 +267,7 @@ test('AC651: buying in the Shop plays the opening for that pack (the free pack f
   const buy = page.locator('.shop-bundle[data-size="1"] .shop-buy');
   await expect(buy).toBeDisabled();
   await expect(buy).toHaveText('Need 100 coins');
-  await expect(page.locator('.shop-bundle[data-size="1"] .shop-hint')).toHaveText('Finish quests to earn coins, or pay with Oreshards'); // Nov 7
+  await expect(page.locator('.shop-hint'), 'Ken, Nov 7: no behind-the-scenes lines').toHaveCount(0);
   await expect(page.locator('.shop-bundle[data-size="1"] .shop-promise')).toHaveText('6 opened today'); // the free pack and the five bought ones
 });
 
@@ -844,15 +844,15 @@ test('AC690: the shop sells bundles (Ken, Nov 5): 1, 6, 24 (+3 free, the big one
   await expect(tiles).toHaveCount(4);
   expect(await tiles.evaluateAll((els) => els.map((e) => e.dataset.size))).toEqual(['1', '6', '24', '99']);
   expect(await tiles.evaluateAll((els) => els.map((e) => e.dataset.packs))).toEqual(['1', '6', '27', '115']);
-  await expect(tiles.nth(2)).toHaveClass(/shop-big/);
-  await expect(tiles.nth(2).locator('[data-testid="bundle-bonus"]')).toHaveText('+3 FREE');
-  await expect(tiles.nth(3).locator('[data-testid="bundle-bonus"]')).toHaveText('+16 FREE');
+  await expect(tiles.nth(2)).toHaveClass(/shop-v2-card/); // shop v2 (Nov 7): four equal cards
+  await expect(tiles.nth(2).locator('[data-testid="bundle-bonus"]')).toHaveText('+3 FREE PACKS'); // Ken, Nov 7: "it's free packs"
+  await expect(tiles.nth(3).locator('[data-testid="bundle-bonus"]')).toHaveText('+16 FREE PACKS');
   await expect(tiles.nth(3).locator('[data-testid="best-value"]')).toHaveText('BEST VALUE');
   await expect(tiles.nth(3)).toHaveClass(/shop-bundle-chest/);
-  expect(await tiles.locator('[data-testid="per-pack"]').evaluateAll((els) => els.map((e) => e.textContent))).toEqual(['100 per pack', '100 per pack', '~89 per pack', '~86 per pack']);
+  expect(await tiles.locator('[data-testid="per-pack"]').evaluateAll((els) => els.map((e) => e.textContent))).toEqual(['100 per pack', '100 per pack', '2,700 · ~89 per pack', '11,500 · ~86 per pack']); // shop v2: the full price struck through, then the per-pack price
   await expect(tiles.nth(2).locator('[data-testid="bundle-promise"]')).toContainText('one upgraded card at Overcharged or better, at least 2 Legendaries'); // Nov 7 (Ken)
   await expect(tiles.nth(3).locator('[data-testid="bundle-promise"]')).toContainText('one upgraded card at Radiant or better, at least 10 Legendaries, one of them new to you, the chest card back'); // Nov 7 (Ken)
-  await expect(page.getByTestId('shop-shield')).toContainText('20 packs in a row without a Legendary, and the 20th brings one'); // Nov 7 (Ken: every 20 packs)
+  await expect(page.getByTestId('shop-shield')).toHaveText('Bad Luck Guarantee: no Legendary in 20 packs? The 20th pack will guarantee a hit.'); // Nov 7 (Ken's approved wording)
   await expect(page.locator('.shop-odds')).toContainText('Rare 78%');
   // 500 coins: only the single pack is affordable; the stand-in player gets coins for the 24
   await expect(tiles.nth(2).locator('.shop-buy')).toBeDisabled();
@@ -1059,11 +1059,11 @@ test('AC668: the Collection keeps Back on screen however far it scrolls; a doubl
 
 test('AC669: FREE, NEW and the shop text are readable (white on a dark or painted chip), and the odds never split a number from its percent sign', async ({ page }) => {
   await openEcon(page, 'shop');
-  const fill = await page.locator('.shop-free').first().evaluate((e) => getComputedStyle(e).webkitTextFillColor);
-  expect(fill).toBe('rgb(255, 255, 255)');
+  const fill = await page.locator('[data-testid=bundle-bonus] > span').first().evaluate((e) => getComputedStyle(e).webkitTextFillColor);
+  expect(fill).toBe('rgb(234, 255, 240)'); // shop v2 (Nov 7): pale green on Brush's green tag
   await expect(page.locator('.shop-odds').first()).toContainText('78%');
-  const pale = await page.locator('.shop-free').first().evaluate((e) => getComputedStyle(e).backgroundImage);
-  expect(pale).toContain('/art/shop-badges/badge-burst-green.webp'); // Nov 7 (Ken): Brush's painted badge, the word written on it (no pale chip)
+  const pale = await page.locator('[data-testid=bundle-bonus]').first().evaluate((e) => getComputedStyle(e).backgroundImage);
+  expect(pale).toContain('/art/shop-badges/v2/tag-green.webp'); // shop v2 (Nov 7): Brush's silver shield tag, the words written on it
 });
 
 test('AC697: Buy Oreshards (Ken, Nov 6, Stripe): the four bundles at the plan\'s prices with their bonuses, the no-refund line, a tap asks the server for Stripe\'s page (never the game), the one-way convert, the Shop\'s shard counter with its +, and an under-13 account without a parent sees a message instead', async ({ page }) => {

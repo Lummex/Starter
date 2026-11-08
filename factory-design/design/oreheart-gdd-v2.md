@@ -169,6 +169,7 @@ Three factions, each with its own color: Goblins green, Gnomes blue, Dwarves pur
 
 You pick your Commander before each match. Each faction has one starter Commander and more to unlock, and every Commander has one special ability that's always on. Commanders have 20 Health unless their ability says otherwise.
 
+- **Commander cards in packs (Ken, 2026-11-07):** the three starter Commanders are Ultra Rare pack cards (about 1 pack in 33 deals one); everyone owns one of each from the start, and extra copies upgrade them on the Ultra Rare steps (1, 2, 3, 4 copies).
 - **Unlocking:** extra Commanders come as very rare Commander cards in booster packs (their drop chance is in the owner's rarity settings file). Duplicate Commanders turn into shards, like duplicate cards.
 - **Choosing:** a Commander screen shows all Commanders, locked ones as dark silhouettes. There's no separate faction choice: your faction comes from the Commander you pick and the cards in your deck. Your Commander appears in your Stronghold, and has its own emotes and voice lines.
 

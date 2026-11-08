@@ -83,14 +83,14 @@ select pg_temp.refused('beta_mode takes only true or false', :A1, 'aal2', $q$ se
 create temp table s0 as select pg_temp.json_as(:U2, 'aal1', 'select public.sleeve_shop()') as j;
 select pg_temp.ok('sleeve_shop: the six store sleeves with prices, none owned; never the Oreheart, Founder or chest backs',
   (select jsonb_array_length(j -> 'sleeves') = 6 and not exists (select 1 from jsonb_array_elements(j -> 'sleeves') e(x) where x ->> 'id' in ('default', 'founder', 'chest') or (x ->> 'owned')::boolean)
-          and (select (x ->> 'price')::int from jsonb_array_elements(j -> 'sleeves') e(x) where x ->> 'id' = 'goblin-junkpile') = 400 from s0), (select j::text from s0));
+          and (select (x ->> 'price')::int from jsonb_array_elements(j -> 'sleeves') e(x) where x ->> 'id' = 'goblin-junkpile') = 300 from s0), (select j::text from s0));
 select pg_temp.refused('no Oreshards, no sleeve', :U2, 'aal1', $q$ select public.buy_sleeve('goblin-junkpile', 'buy-sleeve-0001') $q$, 'Not enough Oreshards');
 select private.oreshard_apply(:U2, 1000, 'admin_grant', 'test', 'test-grant-sleeves-u2');
 create temp table b1 as select pg_temp.json_as(:U2, 'aal1', $q$ select public.buy_sleeve('goblin-junkpile', 'buy-sleeve-0002') $q$) as j;
 select pg_temp.ok('buying a sleeve takes its price in Oreshards once and it is owned',
-  (select (j ->> 'ok')::boolean and (j ->> 'oreshards')::int = 600 from b1)
+  (select (j ->> 'ok')::boolean and (j ->> 'oreshards')::int = 700 from b1)
   and exists (select 1 from public.player_cosmetics where user_id = :U2 and item = 'goblin-junkpile' and ref = 'store')
-  and (select count(*) from public.oreshard_ledger where user_id = :U2 and reason = 'sleeve' and delta = -400) = 1, (select j::text from b1));
+  and (select count(*) from public.oreshard_ledger where user_id = :U2 and reason = 'sleeve' and delta = -300) = 1, (select j::text from b1));
 create temp table b2 as select pg_temp.json_as(:U2, 'aal1', $q$ select public.buy_sleeve('goblin-junkpile', 'buy-sleeve-0002') $q$) as j;
 select pg_temp.ok('the same click twice is one purchase', (select (j ->> 'repeat')::boolean from b2) and (select count(*) from public.oreshard_ledger where user_id = :U2 and reason = 'sleeve') = 1, (select j::text from b2));
 select pg_temp.refused('a sleeve you own can''t be bought again', :U2, 'aal1', $q$ select public.buy_sleeve('goblin-junkpile', 'buy-sleeve-0003') $q$, 'already have');

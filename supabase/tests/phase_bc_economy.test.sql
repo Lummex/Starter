@@ -379,10 +379,10 @@ create temp table o6 as select pg_temp.json_as(:P1, 'aal1', $q$ select public.op
 select pg_temp.ok('packs v2: the admin counts rule: 5 Miners + 4 Common + 0 Uncommon + 1 Rare + 1 Rare-or-better = 11, goblin Miners only',
   (select jsonb_array_length(j -> 'cards') = 11 and (select bool_and(c ->> 'card_id' in ('goblin-scrounger', 'goblin-smith-miner')) from jsonb_array_elements(j -> 'cards') with ordinality x(c, o) where o <= 5)
           and (select count(*) from jsonb_array_elements(j -> 'odds') s where (s ->> 'count')::int > 0) = 4 from o6), (select j::text from o6));
-select pg_temp.ok('packs v2: the three Commanders are pack cards at Rare (a goblin pack can deal Grubnak, not Borgo); Meteor Strike is top rarity',
-  'commander-grubnak' = any (private.pack_pool('goblins', 'Rare')) and not ('commander-borgo' = any (private.pack_pool('goblins', 'Rare'))) and 'commander-borgo' = any (private.pack_pool(null, 'Rare'))
+select pg_temp.ok('packs v2: the three Commanders are pack cards at Ultra Rare (Ken, Nov 7; a goblin pack can deal Grubnak, not Borgo); Meteor Strike is top rarity',
+  'commander-grubnak' = any (private.pack_pool('goblins', 'Ultra Rare')) and not ('commander-borgo' = any (private.pack_pool('goblins', 'Ultra Rare'))) and 'commander-borgo' = any (private.pack_pool(null, 'Ultra Rare')) and not ('commander-grubnak' = any (private.pack_pool(null, 'Rare')))
   and (select rarity from public.cards where id = 'meteor-strike') = 'Collector' and not exists (select 1 from public.cards where id like 'commander-%' and id not in ('commander-grubnak', 'commander-sproingle', 'commander-borgo')),
-  'goblins Rare=' || array_to_string(private.pack_pool('goblins', 'Rare'), ',') || ' | all Rare=' || array_to_string(private.pack_pool(null, 'Rare'), ',') || ' | meteor=' || (select rarity from public.cards where id = 'meteor-strike'));
+  'goblins UR=' || array_to_string(private.pack_pool('goblins', 'Ultra Rare'), ',') || ' | all Rare=' || array_to_string(private.pack_pool(null, 'Rare'), ',') || ' | meteor=' || (select rarity from public.cards where id = 'meteor-strike'));
 select pg_temp.ok('packs v2: every player owns the three Commanders from the start (the one-off grant covered the test players)',
   (select count(distinct card_id) from public.card_instances where owner_id = :P2 and status = 'owned' and card_id like 'commander-%') = 3
   and private.setting('starter_collection') ? 'commander-grubnak');
