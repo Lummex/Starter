@@ -112,3 +112,38 @@ html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight
 html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .start-sub{font-size:.8em!important;bottom:.45em!important}
 }
 @media (max-width:900px){html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cmd-card .cmd-lk{display:none!important}} /* phones: the tier plaque on the picture says it; the small line ran under the looks */
+/* START: the word and the line under it stacked inside the button (the label keeps its padding), sized to fit shorter screens */
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap{min-height:clamp(3.6em,8.5vh,6.1em)!important;padding:.35em .6em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .fight-btn{position:static!important;inset:auto!important;width:100%!important;padding:.12em .4em!important;line-height:1.05!important;font-size:clamp(1.5em,3.3vh,2.4em)!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .start-sub{position:static!important;bottom:auto!important;margin-top:.05em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .fight-btn{padding:max(7px,.3em) .4em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions) .btn{height:clamp(1.9em,4.1vh,2.7em)!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions){gap:.35em!important;margin:.25em 0 .45em!important}
+@media (max-height:820px){html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-locked{display:none!important}}
+@media (max-width:900px){
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-modebox .cs-label{display:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-modebox .cs-extra{display:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .side{gap:.35em!important}
+}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .fight-btn{padding:max(12px,.42em) .4em!important}
+@media (max-width:900px){
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .dstack.dk-tile .dk-art{width:auto!important;height:4.4em!important;aspect-ratio:800/1000!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap{min-height:2.9em!important;padding:.1em .4em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .fight-btn{font-size:1.3em!important;padding:9px .4em 10px!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .start-sub{display:none!important}
+}
+@media (min-width:901px){html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .cs-head .ttl{font-size:max(28px,2.17em)!important}}
+@media (max-width:900px){
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .dstack.dk-tile .dk-art{height:3.6em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .side .panel{padding:.4em .55em!important;gap:.25em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions) .btn{height:1.9em!important}
+}
+@media (max-width:900px){
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap{min-height:0!important;padding:0!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .fight-wrap .fight-btn{font-size:1.2em!important;padding:12px .4em!important}
+}
+@media (max-width:900px){
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .side .fight-wrap.panel{padding:0!important;min-height:0!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d .dstack.dk-tile .dk-art{height:3.2em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) #app .dash.setup-d :is(.mode-row,.setup-actions){gap:.25em!important;margin:.1em 0 .2em!important}
+}

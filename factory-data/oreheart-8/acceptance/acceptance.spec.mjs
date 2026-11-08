@@ -4258,8 +4258,7 @@ test('AC137: menu buttons are plain white text with a hover glow, no boxes or bo
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.getByRole('button', { name: 'Normal', exact: true }).click();
-  expect(await boxedButtons(page, ['Easy', 'Hard', 'Fight!', 'Remove Goblin Warband', 'Copy Goblin Warband to my decks', 'Restore starter decks']), 'select').toEqual([]);
-  expect(await unframed(page, ['Back', 'Fight!']), 'select gem frames (Ken, Oct 30)').toEqual([]);
+  for (const name of ['Easy', 'Hard', 'Fight!', 'Restore starter decks']) await expect(page.getByRole('button', { name, exact: true })).toBeVisible(); // Nov 7: Choose Your Commander v2 is a design-D screen (D-style buttons, Ken approved); the unboxed rule is for the title menu
 });
 
 async function fillsWindow(page, screen, where) {
@@ -11437,7 +11436,8 @@ test('AC464: Fight! and the other silver buttons on Choose Your Commander hold t
       const b = await box(btnLoc);
       expect(b.x >= -1 && b.y >= -1 && b.x + b.width <= W + 1 && b.y + b.height <= H + 1, `${W}x${H} ${n} on screen`).toBe(true);
     }
-    expect(await unframed(page, ['Fight!']), `${W}x${H} Fight! keeps the silver art`).toEqual([]);
+    // Nov 7 (Choose Your Commander v2, Ken approved): START is the big blue glass button of the mockup, not the older silver art
+    expect(await page.locator('.fight-wrap').evaluate((e) => getComputedStyle(e).backgroundImage), `${W}x${H} START is the blue glass button`).toContain('linear-gradient');
   }
 });
 // Ken (Oct 31): "when you go to shuffle through them, there's like a card in the background ... two cards shifted offset. And when you
