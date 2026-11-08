@@ -6,6 +6,21 @@
 
 \ir _helpers.sql
 
+-- Nov 7 (Ken): the live economy, before this file pins the older numbers for its arithmetic
+select pg_temp.ok('Nov 7: packs cost 400 coins, 1 Oreshard = 4 coins (pack rate 0.25), daily quests 75 / 125 / 200',
+  not exists (select 1 from public.pack_types where price_coins = 100) and exists (select 1 from public.pack_types where price_coins = 400)
+  and (private.setting('oreshard_pack_rate'))::numeric = 0.25
+  and (private.setting('quest_reward_easy'))::int = 75 and (private.setting('quest_reward_medium'))::int = 125 and (private.setting('quest_reward_hard'))::int = 200,
+  (select string_agg(id || '=' || price_coins, ',') from public.pack_types) || ' rate ' || private.setting('oreshard_pack_rate')::text);
+
+-- Nov 7 (migration 11): live prices are 400 coins a pack, 1 Oreshard = 4 coins, quests 75/125/200. The arithmetic in this file was
+-- written for 100 / 1 / 25-50-75, so it pins those here (inside this file's rolled-back transaction); phase_d checks the live values.
+update public.pack_types set price_coins = 100 where price_coins = 400;
+update public.settings set value = '1'::jsonb where key = 'oreshard_pack_rate';
+update public.settings set value = '25'::jsonb where key = 'quest_reward_easy';
+update public.settings set value = '50'::jsonb where key = 'quest_reward_medium';
+update public.settings set value = '75'::jsonb where key = 'quest_reward_hard';
+
 insert into auth.users (id, aud, role, email, raw_user_meta_data, email_confirmed_at) values
   ('f0000000-0000-4000-8000-000000000009', 'authenticated', 'authenticated', 'shardkeeper@test.local', '{"username":"ShardKeeper"}', now()),
   ('f0000000-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'd1@test.local', '{"username":"Shard_Buyer"}', now()),
@@ -194,6 +209,13 @@ select pg_temp.ok('RLS is on for the Oreshard tables and players have no privile
   (select bool_and(c.relrowsecurity) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname in ('oreshard_wallets', 'oreshard_ledger', 'purchases', 'stripe_events'))
   and not exists (select 1 from information_schema.role_table_grants g where g.table_schema = 'public' and g.table_name in ('oreshard_wallets', 'oreshard_ledger', 'purchases', 'stripe_events') and g.grantee in ('anon', 'authenticated')));
 
+-- ========== Nov 7: 1 Oreshard = 4 coins (Ken) ==========
+update public.settings set value = '0.25'::jsonb where key = 'oreshard_pack_rate';
+select private.oreshard_apply(:P1, 10, 'admin_grant', 'test', 'test-quarter-rate');
+create temp table q4 as select (select coins from public.wallets where user_id = :P1) as c0;
+create temp table q4b as select pg_temp.json_as(:P1, 'aal1', $q$ select public.oreshards_to_coins(10, 'conv-quarter-0001') $q$) as j;
+select pg_temp.ok('at the live rate 10 Oreshards become 40 coins', (select (j ->> 'coins_got')::int = 40 and (j ->> 'coins_per_oreshard')::int = 4 from q4b)
+  and (select coins from public.wallets where user_id = :P1) = (select c0 from q4) + 40, (select j::text from q4b));
 select n, case when ok then 'PASS' else 'FAIL' end as result, name, detail from results order by n;
 do $$ declare f int := (select count(*) from results where not ok); t int := (select count(*) from results);
 begin

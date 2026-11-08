@@ -4,6 +4,14 @@
 
 \ir _helpers.sql
 
+-- Nov 7 (migration 11): live prices are 400 coins a pack, 1 Oreshard = 4 coins, quests 75/125/200. The arithmetic in this file was
+-- written for 100 / 1 / 25-50-75, so it pins those here (inside this file's rolled-back transaction); phase_d checks the live values.
+update public.pack_types set price_coins = 100 where price_coins = 400;
+update public.settings set value = '1'::jsonb where key = 'oreshard_pack_rate';
+update public.settings set value = '25'::jsonb where key = 'quest_reward_easy';
+update public.settings set value = '50'::jsonb where key = 'quest_reward_medium';
+update public.settings set value = '75'::jsonb where key = 'quest_reward_hard';
+
 insert into auth.users (id, aud, role, email, raw_user_meta_data, email_confirmed_at) values
   ('e7000000-0000-4000-8000-000000000009', 'authenticated', 'authenticated', 'e7k@test.local', '{"username":"Em_Keeper"}', now()),
   ('e7000000-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'e71@test.local', '{"username":"Emo_Ellie"}', now()),

@@ -53,7 +53,7 @@ export const api = {
     }
     return typeof data === 'string' ? JSON.parse(data) : data;
   },
-  async convert(n: number): Promise<{ oreshards: number; coins: number; converted: number }> {
+  async convert(n: number): Promise<{ oreshards: number; coins: number; converted: number; coins_got?: number }> {
     if (stubMode()) {
       if (n > STUB.oreshards) throw new Error('not enough Oreshards');
       STUB.oreshards -= n; STUB.coins += n; STUB.history.unshift({ delta: -n, reason: 'convert', at: new Date().toISOString(), balance_after: STUB.oreshards });
@@ -161,12 +161,13 @@ function renderConvert(p: Parts, info: OreshardInfo) {
     const k = Math.floor(Number(n.value) || 0);
     if (k < 1) { p.alert.textContent = 'How many Oreshards?'; return; }
     if (k > info.oreshards) { p.alert.textContent = `You have ${fmt(info.oreshards)} Oreshards.`; return; }
-    if (!confirmBox(`Turn ${fmt(k)} Oreshards into ${fmt(k)} Coins? This can’t be undone.`)) return;
+    const per = Math.max(1, Math.round(1 / (Number(info.pack_rate) || 1))); // Nov 7 (Ken): 1 Oreshard = 4 coins (1 / pack rate)
+    if (!confirmBox(`Turn ${fmt(k)} Oreshards into ${fmt(k * per)} Coins? This can’t be undone.`)) return;
     go.disabled = true;
-    try { const r = await api.convert(k); p.alert.textContent = `${fmt(r.converted)} Oreshards became ${fmt(r.converted)} Coins.`; render(p, await api.info()); }
+    try { const r = await api.convert(k); p.alert.textContent = `${fmt(r.converted)} Oreshards became ${fmt(Number(r.coins_got) || r.converted * per)} Coins.`; render(p, await api.info()); }
     catch (e: any) { p.alert.textContent = String(e?.message || e); go.disabled = false; }
   });
-  p.convert.replaceChildren(h('h3', { class: 'h' }, 'Turn Oreshards into Coins'), h('p', { class: 'shard-note' }, '1 Oreshard = 1 Coin. Coins buy packs in the Pack Shop.'),
+  p.convert.replaceChildren(h('h3', { class: 'h' }, 'Turn Oreshards into Coins'), h('p', { class: 'shard-note' }, `1 Oreshard = ${Math.max(1, Math.round(1 / (Number(info.pack_rate) || 1)))} Coin${Math.round(1 / (Number(info.pack_rate) || 1)) === 1 ? '' : 's'}. Coins buy packs in the Pack Shop.`),
     h('div', { class: 'shard-convert-row' }, n, go), note);
 }
 

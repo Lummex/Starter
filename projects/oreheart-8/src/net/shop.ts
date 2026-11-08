@@ -33,7 +33,7 @@ export async function showShop(): Promise<void> {
   econShow('shop',
     h('div', { class: 'econ-head' }, backBtn(),
       h('div', { class: 'econ-titles' }, h('h1', {}, 'The Pack Shop'), h('p', { class: 'econ-sub' }, 'Shiny, crinkly, and only slightly haunted. Every pack holds 11 cards.')),
-      h('div', { class: 'econ-wallet' }, shardChip(), h('button', { type: 'button', class: 'net-btn sbtn panel shop-convert', 'data-testid': 'shop-convert', title: '1 Oreshard = 1 Coin, one way', onclick: () => { void import('./oreshards').then((m) => m.showOreshards('convert')); } }, 'Oreshards → Coins'), coinChip())),
+      h('div', { class: 'econ-wallet' }, shardChip(), h('button', { type: 'button', class: 'net-btn sbtn panel shop-convert', 'data-testid': 'shop-convert', title: 'Oreshards into Coins, one way', onclick: () => { void import('./oreshards').then((m) => m.showOreshards('convert')); } }, 'Oreshards → Coins'), coinChip())),
     alert,
     h('div', { class: 'shop-main' },
       h('div', { class: 'shop-left' }, kinds, grid, strip, sleevesPanel(), framesPanel(), emotesPanel()), // Nov 7 (Ken): frames and emote packs // Nov 7 (Ken): card sleeves for Oreshards
