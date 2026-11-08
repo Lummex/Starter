@@ -2201,3 +2201,11 @@ html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) :is(.cos-panel,.sl-panel,
 /* Ken, Nov 7: "Strike: not available ..." was hidden behind the timer bar at the top. The board's short messages sit lower, in front of the HUD, and easy to read */
 html body:not(#_a):not(#_b):not(#_c):not(#_d) .match .hint:not(.hint-pic){top:clamp(40px,16vh,190px)!important;z-index:250!important;font-size:clamp(14px,1.6vw,22px);padding:.4em 1em;max-width:min(80vw,760px);text-align:center;box-shadow:0 4px 18px #000c}
 html body:not(#_a):not(#_b):not(#_c):not(#_d) .match .hint.hint-pic{top:clamp(40px,16vh,190px)!important;z-index:250!important}
+/* Nov 7: the frame ring over each player's medal on the Match End (same 1.88x ring as everywhere) */
+html body:not(#_a):not(#_b):not(#_c) .dash.matchend .side .med{position:relative}
+html body:not(#_a):not(#_b):not(#_c) .dash.matchend .side .med .av-frame{position:absolute;left:50%;top:50%;width:188%;height:188%;transform:translate(-50%,-50%);pointer-events:none;z-index:2;max-width:none}
+html body:not(#_a):not(#_b):not(#_c) .dash.matchend .side .med.has-frame{box-shadow:none;width:4.6em!important;height:4.6em!important;margin:2.2em auto 2.2em}
+html body:not(#_a):not(#_b):not(#_c) .dash.matchend .acts .end-friend{margin:0;display:flex;align-items:center}
+html body:not(#_a):not(#_b):not(#_c) .dash.matchend .acts .end-friend button{white-space:nowrap}
+/* Nov 7: on 901-1180 px screens the bigger coin / Oreshard icons pushed "1 free pack" under the logo: a little smaller there (still equal) */
+@media (min-width:901px) and (max-width:1180px){html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e):not(#_f) .dash .top .coins img{width:1.8em!important;height:1.8em!important}html body:not(#_a):not(#_b):not(#_c) .dash:not(.setup-d)>.logo{width:12em!important;height:4em!important}}

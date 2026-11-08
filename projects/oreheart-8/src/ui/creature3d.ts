@@ -560,6 +560,17 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
     const bn = attachPart(ch, pc, src, H, prep);
     if (bn) { addItem(pc.name, bn, false, ch.getObjectByName(bn)?.children[ch.getObjectByName(bn)!.children.length - 1] || null); (/Hand/.test(bn) ? held : worn).push(pc.name); }
   }
+  // Ken, Nov 7 ("the catapult is facing backwards"): a held item can be turned about the vertical through its own centre (content/model-turn.json:
+  // { "<unit>": { "item": "<part name>", "deg": 180 } }); the goblins keep facing the enemy like every unit
+  { const mt = (modelTurnJson as any)[id]; const it = mt && objs.get(mt.item); const deg = Number(mt?.deg) || 0;
+    if (it && deg && it.parent) {
+      ch.updateMatrixWorld(true);
+      const c = new THREE.Box3().setFromObject(it).getCenter(new THREE.Vector3());
+      const M = new THREE.Matrix4().makeTranslation(c.x, c.y, c.z).multiply(new THREE.Matrix4().makeRotationY((deg * Math.PI) / 180)).multiply(new THREE.Matrix4().makeTranslation(-c.x, -c.y, -c.z)).multiply(it.matrixWorld);
+      it.parent.updateMatrixWorld(true);
+      new THREE.Matrix4().copy(it.parent.matrixWorld).invert().multiply(M).decompose(it.position, it.quaternion, it.scale);
+      it.updateMatrixWorld(true);
+    } }
   const root = new THREE.Group();
   const sc = new THREE.Group();
   const k = 1 / standH; // the standing body is 1 tall inside `sc` (Oct 31: was the whole box, so a raised weapon shrank the unit)
@@ -568,9 +579,7 @@ export function makeCreature3d(id: string, a: Assets, k0 = 1): C3D {
   let heightSpaces = TABLE_H[id] ?? studioH; const kk = k0;
   const st = look ? look.stretch : [1, 1, 1];
   sc.scale.set(k * st[0], k * st[1], k * st[2]);
-  // Ken, Nov 7: a model built facing backwards is turned to face forward. The turn sits OUTSIDE `sc`, so the centring below (done in sc's own space) stays right
-  const turnDeg = Number((modelTurnJson as any)[id]) || 0;
-  if (turnDeg) { const turn = new THREE.Group(); turn.rotation.y = (turnDeg * Math.PI) / 180; turn.add(sc); root.add(turn); sc.add(ch); } else { sc.add(ch); root.add(sc); }
+  sc.add(ch); root.add(sc);
   for (const pc of PARTS[id]) {
     const src = a.parts[pc.name]; if (!pc.crew || !src) continue;
     const body = skeletonClone(src) as THREE.Object3D; prep(body);

@@ -4332,8 +4332,9 @@ export class App {
     const ic = (src: string) => h('img', { src, alt: '', draggable: 'false' });
     const av = (id: string | null | undefined) => (id ? `/art/avatars/${id}.webp` : '/art/owner/goblin/grubnak-on-throne-art.png');
     const myCmd = st.players?.player?.commanderId, theirCmd = st.players?.opponent?.commanderId;
-    const side = (name: string, avatar: string | null, cmd: string, winner: boolean, tier: number) => h('div', { class: 'side' + (winner ? ' won' : ' lost') },
-      h('div', { class: 'med' + (winner ? '' : ' lost'), style: `background-image:url(${av(avatar)})` }), h('b', {}, name), h('small', {}, tier > 1 ? `${TIER_NAMES[tier]} ` : '', cmdName(cmd)), h('span', { class: 'flag ' + (winner ? 'w' : 'r') }, winner ? 'Winner' : 'Retreated'));
+    const frameImg = (f: string | null | undefined) => (f && /^[a-z0-9-]{2,40}$/.test(f) ? h('img', { class: 'av-frame', src: `/art/avatar-frames/${f}.webp`, alt: '', draggable: 'false', 'aria-hidden': 'true', 'data-frame': f }) : ''); // Nov 7: frames on the Match End too
+    const side = (name: string, avatar: string | null, cmd: string, winner: boolean, tier: number, frame?: string | null, extra?: El | '') => h('div', { class: 'side' + (winner ? ' won' : ' lost') },
+      h('div', { class: 'med' + (winner ? '' : ' lost') + (frame ? ' has-frame' : ''), style: `background-image:url(${av(avatar)})` }, frameImg(frame)), h('b', {}, name), h('small', {}, tier > 1 ? `${TIER_NAMES[tier]} ` : '', cmdName(cmd)), h('span', { class: 'flag ' + (winner ? 'w' : 'r') }, winner ? 'Winner' : 'Retreated'), extra || '');
     // rating: before -> after, and the bar inside the division (the 10-step ladder)
     let ratingPanel: El | '' = '';
     if (res && res.rating) {
@@ -4360,12 +4361,12 @@ export class App {
     const home = h('button', { type: 'button', class: 'btn panel', 'data-testid': 'end-home', onclick: () => this.showMenu() }, ic('/art/ui/silver/icon-quit.webp'), 'Dashboard');
     this.root.append(h('main', { class: 'screen end dash matchend' + (win ? ' won' : ' lost'), 'data-screen': 'end', 'data-result': win ? 'won' : 'lost', 'aria-label': win ? 'Victory' : 'Defeat' },
       h('div', { class: 'ban' },
-        side(me, ng.avatars?.me, myCmd, win, this.commanderTier('player')),
+        side(me, ng.avatars?.me, myCmd, win, this.commanderTier('player'), ng.frames?.me),
         h('div', { class: 'word' }, h('h1', { class: 'end-title' }, win ? 'VICTORY' : 'DEFEAT'), h('div', { class: 'rule' }), h('p', { class: 'pvp-end-vs' }, win ? `${cmdName(theirCmd) || them} retreats! ` : `${cmdName(myCmd) || 'Your Commander'} retreats. `, h('b', {}, `${mode} match vs ${them}`), ` · turn ${st.turn}`), why ? h('p', { class: 'pvp-end-why' }, why) : null),
-        side(them, ng.avatars?.them, theirCmd, !win, this.commanderTier('opponent'))),
-      ng.names?.them ? h('div', { class: 'end-friend', 'data-testid': 'end-friend' }, (() => { const slot = h('span', {}); void import('../net/friends').then((m) => { slot.replaceWith(m.addFriendButton(String(ng.names.them))); }); return slot; })()) : '', // Nov 7 (Ken): save the player you just played
+        side(them, ng.avatars?.them, theirCmd, !win, this.commanderTier('opponent'), ng.frames?.them)),
       h('div', { class: 'row4' }, ratingPanel || h('section', { class: 'panel', 'data-testid': 'end-rating', 'aria-label': 'Rating' }, h('div', { class: 'ptitle h' }, ic(ladderCharm('diamond')), 'Rating'), h('p', { class: 'dash-note' }, mode === 'Ranked' ? 'No rating change was reported.' : `${mode} matches do not move your rating.`)), coinsPanel, questsPanel, statsPanel),
-      h('div', { class: 'acts' }, home, again)));
+      h('div', { class: 'acts' }, home, again,
+        ng.names?.them ? h('div', { class: 'end-friend', 'data-testid': 'end-friend' }, (() => { const slot = h('span', {}); void import('../net/friends').then((m) => { slot.replaceWith(m.addFriendButton(String(ng.names.them))); }); return slot; })()) : ''))); // Nov 7 (Ken): save the player you just played; in the button row (up top it covered VICTORY)
   }
 
   // ------------------------------------------------------------ board geometry / hit testing

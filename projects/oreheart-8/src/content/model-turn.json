@@ -1,4 +1,4 @@
 {
- "_note": "Degrees each unit model is turned about its vertical axis so it faces forward (Ken, Nov 7: the Junk Catapult Crew faced backwards). Editors should read this file too.",
- "junk-catapult-crew": 180
+ "_note": "Ken, Nov 7: the Junk Catapult Crew catapult faced backwards. A held item turned about the vertical through its own centre, in degrees; the unit and its crew keep their facing. Editors should read this file too.",
+ "junk-catapult-crew": { "item": "catapult", "deg": 180 }
 }

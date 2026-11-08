@@ -7,11 +7,11 @@ const LS = (k: string, d: number) => { const v = parseInt((typeof localStorage !
 /** One sound event: its files in /audio/sfx/ (random pick when several), base volume, random pitch range (+/- semitones). */
 type SfxDef = { files: string[]; vol: number; st: number };
 const D = (files: string | string[], vol: number, st: number): SfxDef => ({ files: Array.isArray(files) ? files : [files], vol, st });
-export const sfxUrl = (file: string) => `/audio/sfx/${file}.ogg`;
+export const sfxUrl = (file: string) => (/\.(wav|ogg|mp3)$/.test(file) ? `/audio/sfx/${file}` : `/audio/sfx/${file}.ogg`); // Nov 7: a file may name its own type (Ken's card-place sound is a WAV)
 /** Event -> files, from studio/sound-spec.json (Brush, Oct 31). Keys are the audio.play() names; footsteps are step:<faction>, spells spell:<id>. */
 export const SFX: Record<string, SfxDef> = {
   click: D('ui-click', 0.45, 0.5), tick: D('ui-tick', 0.35, 0.3), chime: D('ui-chime', 0.5, 0), draw: D('card-draw', 0.6, 1), cardPlay: D('card-play', 0.7, 0.7),
-  summon: D(['summon-1', 'summon-2', 'summon-3'], 0.6, 0.8), 'step:goblins': D('step-goblin', 0.4, 1.5), 'step:gnomes': D('step-gnome', 0.4, 1.5), 'step:dwarves': D('step-dwarf', 0.4, 1.2),
+  summon: D('card-place-a.wav', 0.8, 0.8), // Ken, Nov 7: a real card set down on the table (sample A, soft place) when a unit appears 'step:goblins': D('step-goblin', 0.4, 1.5), 'step:gnomes': D('step-gnome', 0.4, 1.5), 'step:dwarves': D('step-dwarf', 0.4, 1.2),
   melee: D('melee', 0.9, 1), ranged: D('ranged', 0.85, 1), bonk: D(['bonk-1', 'bonk-2', 'bonk-3'], 0.9, 1), clink: D(['clink-1', 'clink-2', 'clink-3'], 0.85, 0.8),
   thud: D('thud', 0.85, 1), pick: D('mine-pick', 0.5, 1), shatter: D('shatter', 0.85, 0.5), 'defeat-poof': D('defeat-poof', 0.85, 0.8),
   stronghold: D('commander-hit', 1, 0.5), kaboom: D('kaboom', 1, 0.5), 'turn-start': D('turn-start', 0.85 * 0.6, 0), win: D('win', 1, 0), lose: D('lose', 1, 0),
