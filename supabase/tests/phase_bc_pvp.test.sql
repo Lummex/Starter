@@ -389,13 +389,13 @@ select pg_temp.ok('leaderboard: Side A on top with its name and label, the calle
    from pg_temp.json_as(:PA, 'aal1', 'select public.leaderboard(10)') j),
   (select j::text from pg_temp.json_as(:PA, 'aal1', 'select public.leaderboard(10)') j));
 select pg_temp.refused('leaderboard needs a login', null, null, 'select public.leaderboard(10)');
-select pg_temp.ok('news_feed: the seeded patch notes, two placeholder events and one news line',
-  (select jsonb_array_length(j -> 'patch') >= 2 and j -> 'patch' -> 0 ->> 'title' like 'Patch 0.9.5%' and jsonb_array_length(j -> 'events') = 2 and j -> 'events' -> 0 ->> 'action' in ('join', 'remind') and jsonb_array_length(j -> 'news') >= 1
+select pg_temp.ok('news_feed (launch, Nov 8): Patch 1.0 leads the patch notes, the made-up events are gone, Welcome Founders leads the news, no test-server post shows',
+  (select jsonb_array_length(j -> 'patch') = 1 and j -> 'patch' -> 0 ->> 'title' = 'Patch 1.0: Open Beta' and jsonb_array_length(j -> 'events') = 0 and j -> 'news' -> 0 ->> 'title' = 'Welcome, Founders!' and j::text not ilike '%test server%'
    from pg_temp.json_as(:PA, 'aal1', 'select public.news_feed()') j),
   (select j::text from pg_temp.json_as(:PA, 'aal1', 'select public.news_feed()') j));
 select pg_temp.refused('news_feed needs a login', null, null, 'select public.news_feed()');
 select pg_temp.refused('news: a player cannot write posts', :PA, 'aal1', $q$ select public.admin_news_set(null, 'news', 'Hacked', null, '[]', null, null, true, 0, 'because') $q$);
-select pg_temp.works('news: an admin adds a post', :PC, 'aal2', $q$ select public.admin_news_set(null, 'news', 'Server note', 'today', '["Line one"]', null, null, true, 9, 'test post') $q$);
+select pg_temp.works('news: an admin adds a post', :PC, 'aal2', $q$ select public.admin_news_set(null, 'news', 'Server note', 'today', '["Line one"]', null, null, true, 999, 'test post') $q$);
 select pg_temp.ok('news: the new post leads the news list and the audit row is there',
   (select j -> 'news' -> 0 ->> 'title' = 'Server note' from pg_temp.json_as(:PA, 'aal1', 'select public.news_feed()') j)
   and (select count(*) from public.admin_audit where action = 'news_set' and reason = 'test post') = 1);
