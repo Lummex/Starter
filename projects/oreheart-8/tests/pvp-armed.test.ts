@@ -50,8 +50,8 @@ describe('armed counters (PvP attack mode "armed")', () => {
     expect(r.state.players.player.hand.length).toBe(2);
     expect(r.state.players.player.discard.some((c: any) => c.cardId === 'shield-bubble')).toBe(true);
     expect(r.state.armed.player).toEqual([]);
-    const rat = r.state.board.creatures.find((c: any) => c.owner === 'player');
-    expect(rat && rat.health, 'the bubble took the hit').toBe(rat.maxHealth);
+    // the bubble took the first hit that landed (the Shiv Rat swings twice, so whether the rat lives depends on the dice: Nov 7, combat v4)
+    expect(r.events.some((e: any) => e.type === 'shieldBlock'), 'the bubble took a hit').toBe(true);
   });
 
   it('does not fire for an attack elsewhere, and the set counters expire at the end of the enemy turn', () => {

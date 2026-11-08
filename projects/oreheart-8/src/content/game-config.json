@@ -91,23 +91,25 @@
  "rangedRange": 7,
  "plunderFlow": 3,
  "combat": {
-  "_note": "Combat v3 (Ken, Nov 1): Attack = swings, each a d6 that hits on hitFrom or more (2-6 hits, only a 1 misses). Each landed hit is blocked when any of the defender's block dice shows a blockFaces number (a 6): dice = current Health, at most blockCap (2); a unit of cost bigUnitCost (7) or more always rolls bigUnitDice (1); Armored and Riot Shield roll armoredExtraDie (1) more, at most armoredCap (3). A Large unit's attack takes bigAttackerTakesDie (1) away from the defender's block dice, never below 1 (Ken, Nov 1). Commanders roll commanderBlockDice (1). Ranged attacks and abilities use the shown Attack, no halving (Ken, Nov 1). dice 'sure' = tests: every swing hits, nothing blocks.",
+  "_note": "Combat v4 (Ken, Nov 7: 'only miss every once in a while ... block every once in a while ... like one out of every 5 ... if they block once, they should only block 1 per little skirmish'). Attack = swings. Each swing: a d100, missPct or less misses; a landed swing is blocked on a d100 of the defender's block chance or less: blockPct, + blockHealthStepPct per Health above 2 (at most blockHealthMaxPct), + armoredPct for Armored / Riot Shield, - largeBlockMinusPct for a Large unit (cost bigUnitCost or more), - bigAttackerMinusPct against a Large attacker, kept within blockMinPct..blockMaxPct. Commanders block on commanderBlockPct. blockOncePerSkirmish: each unit blocks at most once per fight (the attack, its strike back and any Assist). missStreakGuard: a unit never misses twice in a row in one fight. Ranged attacks and abilities use the shown Attack. dice 'sure' = tests: every swing hits, nothing blocks.",
   "dice": "roll",
-  "hitFrom": 2,
-  "blockFaces": [
-   6
-  ],
-  "blockCap": 2,
+  "missPct": 10,
+  "blockPct": 11,
+  "blockHealthStepPct": 1,
+  "blockHealthMaxPct": 2,
+  "armoredPct": 6,
+  "bigUnitCost": 7,
+  "largeBlockMinusPct": 4,
+  "bigAttackerMinusPct": 3,
+  "blockMinPct": 3,
+  "blockMaxPct": 25,
+  "commanderBlockPct": 8,
+  "blockOncePerSkirmish": true,
+  "missStreakGuard": true,
   "strikeBackRolls": true,
   "afterAttack": "end",
   "swingPauseMs": 500,
-  "_pauseNote": "Ken, Nov 1: milliseconds of pause before every swing (attacks, strike-backs, ranged shots, the computer's too); the hit / miss / block sound and sticker come only when the swing lands.",
-  "armoredExtraDie": 1,
-  "armoredCap": 3,
-  "bigUnitCost": 7,
-  "bigUnitDice": 1,
-  "bigAttackerTakesDie": 1,
-  "commanderBlockDice": 1
+  "_pauseNote": "Ken, Nov 1: milliseconds of pause before every swing (attacks, strike-backs, ranged shots, the computer's too); the hit / miss / block sound and sticker come only when the swing lands."
  },
  "costFormula": {
   "_note": "Ken, Nov 1: cost = Attack + Health + ability bonus, halved and rounded up; above halfUpTo it climbs overPer per point from overBase; cap, min. Bonus: bigBonus for a big ability, smallBonus for any other, 0 for Miner abilities; only the biggest counts. A card's costOverride (in cards.json) wins over the formula. See src/engine/cost.ts and tools/gen-costs.py.",

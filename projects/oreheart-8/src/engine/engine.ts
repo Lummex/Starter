@@ -515,7 +515,7 @@ function hurt(s: any, c: any, amount: number, ev: any[], raw = false, swing = fa
   let d = amount;
   if (s.turn < (c.wardUntil || 0)) d = 0;
   if (!raw) {
-    // v2 (Ken, Nov 1): Armored / Riot Shield no longer take 1 less: they block on a 2 as well (blockFacesOf)
+    // v2 (Ken, Nov 1): Armored / Riot Shield no longer take 1 less: they block more often instead (blockPctFor)
     if (has(c, 'unbreakable')) d = Math.min(d, 3);
     if (standFastOn(s, c)) d = Math.min(d, 1); // Nov 5: Stand Fast, Lads!
     if ((c.bubbles > 0 || c.bubble) && d > 0) { c.bubbles = Math.max(0, (c.bubbles || 1) - 1); c.bubble = c.bubbles > 0; d = 0; ev.push({ type: 'shieldBlock', uid: c.uid, row: c.row, col: c.col, left: c.bubbles }); } // stacking: one bubble per blocked hit
@@ -558,73 +558,109 @@ function defeat(s: any, c: any, ev: any[]) {
   if (minerDraw) drawCard(s, c.owner, ev);
 }
 
-// ---------------------------------------------------------------- combat v2 (Ken, Nov 1: swings, block dice and move points)
+// ---------------------------------------------------------------- combat (Ken, Nov 1: swings and move points; Nov 7: v4 dice, below)
 // A unit's foot number is its move points: each step costs 1 and the one attack costs 1 and ends its turn (Miners keep 1 foot, so they play as before).
-// Attack N = N swings; each swing rolls a d6 and hits on 3-6. For each hit the defender rolls block dice equal to its CURRENT Health (at most 3);
-// any 1 or 6 blocks the hit (Armored and Riot Shield also block on a 2). A hit that gets through does 1 damage. Commanders never block, but swings at
-// them still roll. Spells and other non-swing damage stay flat. All the numbers live in game-config.json "combat"; dice: 'sure' (test pages) makes every swing land.
+// Attack N = N swings. Spells and other non-swing damage stay flat. All the numbers live in game-config.json "combat"; dice: 'sure' (test pages) makes every swing land.
 export const COMBAT = (): any => CONFIG.combat || {};
-const d6 = (s: any) => rollDie(s, 6);
-export const hitChance = (): number => (COMBAT().dice === 'sure' ? 1 : (7 - (COMBAT().hitFrom ?? 3)) / 6);
-const blockFacesOf = (_c: any): number[] => (COMBAT().dice === 'sure' ? [] : COMBAT().blockFaces || [6]);
-/** Block dice one landed hit faces (Combat v3, Ken, Nov 1): the defender's current Health, at most blockCap; a unit of cost bigUnitCost or more rolls bigUnitDice whatever its Health; Armored and Riot Shield roll one extra die, at most armoredCap. */
-/** A Large unit: cost bigUnitCost (7) or more. It rolls bigUnitDice to block, and its attacks take bigAttackerTakesDie away from the defender's block dice (never below 1). Ken, Nov 1: "bad at blocking, so they're not overpowered, and their attack's kind of harder to block". */
+// Combat v4 (Ken, Nov 7: "they miss too much ... I only want them to miss every once in a while. And block every once in a while ... like one
+// out of every 5 will be a miss. Or block ... if they block once, they should only block 1 per ... little skirmish"). Each swing is two fresh
+// d100 rolls: a miss on missPct or less, then (if it landed) a block on the defender's block chance or less. Together about 1 in 5 swings.
+//  - Block chance (blockPctFor): blockPct, a small Health bonus (blockHealthStepPct per Health above 2, at most blockHealthMaxPct), +armoredPct
+//    for Armored / Riot Shield, -largeBlockMinusPct for a Large defender, -bigAttackerMinusPct against a Large attacker; kept in blockMinPct..blockMaxPct.
+//  - Block cap: in one skirmish (an attack with its strike back and any Assist) each unit blocks at most once; after that its hits all land.
+//  - Miss streak guard: a unit that just missed can't miss its next swing in the same skirmish (two misses in a row never happen).
+//  - Card rules (Unbreakable, Stand Fast, Shield X, Bulwark bubbles) are not dice and ignore both. dice 'sure' (test pages): every swing lands.
+const d100 = (s: any) => rollDie(s, 100);
+const SURE = () => COMBAT().dice === 'sure';
+export const missChance = (): number => (SURE() ? 0 : (COMBAT().missPct ?? 10) / 100);
+export const hitChance = (): number => 1 - missChance();
+/** A Large unit: cost bigUnitCost (7) or more. It blocks less, and its attacks are harder to block (Ken, Nov 1: "bad at blocking, so they're not overpowered, and their attack's kind of harder to block"). */
 export const isLarge = (c: any): boolean => { const K = COMBAT(); return K.bigUnitCost != null && ((CARDS[c.cardId] || {}).cost ?? 0) >= K.bigUnitCost; };
-export const blockDiceFor = (c: any, health: number, attacker?: any): number => {
+const armoredUnit = (c: any): boolean => has(c, 'armored') || has(c, 'riotShield') || !!c.forgeArmored; // Nov 5: Hildegrim's Smith-upgraded Dwarves are Armored
+/** Chance in percent (0-100) that one landed hit on `c` at this Health is blocked (against `attacker`, if given). 0 at 0 Health. */
+export const blockPctFor = (c: any, health: number, attacker?: any): number => {
   const K = COMBAT();
-  let n = Math.max(0, Math.min(K.blockCap ?? 2, health));
-  if (isLarge(c)) n = Math.min(n, K.bigUnitDice ?? 1);
-  if (n > 0 && (has(c, 'armored') || has(c, 'riotShield') || c.forgeArmored)) n = Math.min(K.armoredCap ?? 3, n + (K.armoredExtraDie ?? 1)); // Nov 5: Hildegrim's Smith-upgraded Dwarves are Armored
-  if (n > 0 && attacker && isLarge(attacker)) n = Math.max(1, n - (K.bigAttackerTakesDie ?? 1));
-  return n;
+  if (SURE() || health <= 0) return 0;
+  let p = (K.blockPct ?? 11) + Math.min(K.blockHealthMaxPct ?? 2, Math.max(0, health - 2) * (K.blockHealthStepPct ?? 1));
+  if (armoredUnit(c)) p += K.armoredPct ?? 6;
+  if (isLarge(c)) p -= K.largeBlockMinusPct ?? 4;
+  if (attacker && isLarge(attacker)) p -= K.bigAttackerMinusPct ?? 3;
+  return Math.max(K.blockMinPct ?? 3, Math.min(K.blockMaxPct ?? 25, p));
 };
-export const blockDiceOf = (c: any, attacker?: any): number => blockDiceFor(c, c.health, attacker);
-/** Chance one landed hit is blocked by a defender at this Health (against `attacker`, if given: a Large attacker takes a die away). */
-export function blockChance(c: any, health = c.health, attacker?: any): number {
-  const n = blockDiceFor(c, health, attacker), p = blockFacesOf(c).length / 6;
-  return 1 - Math.pow(1 - p, n);
-}
-/** Chance a Commander blocks one landed hit (Ken, Nov 1: one die, a 6 blocks). */
-export const commanderBlockChance = (): number => { const K = COMBAT(); if (K.dice === 'sure') return 0; const n = K.commanderBlockDice ?? 0, p = (K.blockFaces || [6]).length / 6; return n ? 1 - Math.pow(1 - p, n) : 0; };
-/** Exact odds of `n` swings at `def` (null = a Commander): expected damage and the chance the target drops to 0, with the dice shrinking as Health drops. */
+/** Chance (0-1) one landed hit is blocked by a defender at this Health (against `attacker`, if given). */
+export function blockChance(c: any, health = c.health, attacker?: any): number { return blockPctFor(c, health, attacker) / 100; }
+/** Chance a Commander blocks one landed hit. */
+export const commanderBlockChance = (): number => (SURE() ? 0 : (COMBAT().commanderBlockPct ?? 8) / 100);
+const ONCE = () => COMBAT().blockOncePerSkirmish !== false;
+const GUARD = () => COMBAT().missStreakGuard !== false;
+/** One skirmish: who already blocked, and who missed their last swing. */
+export interface Skirmish { blocked: Set<string>; missed: Set<string> }
+export const newSkirmish = (): Skirmish => ({ blocked: new Set(), missed: new Set() });
+/** Exact odds of `n` swings at `def` (null = a Commander) as the first swings of a skirmish: expected damage and the chance the target drops to 0,
+ *  with the block chance following its Health, the once-per-skirmish block cap and the miss streak guard. */
 export function swingOdds(n: number, def: any | null, attacker?: any): { deal: number; kill: number } {
-  const ph = hitChance();
-  if (!def) return { deal: n * ph * (1 - commanderBlockChance()), kill: 0 };
-  // state: (Health left, hits still soaked by Shield X and Bulwark bubbles); a soaked hit costs no Health, the dice stay at the Health
+  const pm = missChance(), once = ONCE(), guard = GUARD();
+  if (!def) { // a Commander: Health high enough that it never drops; the same cap and guard
+    const pb = commanderBlockChance();
+    let dist = new Map<number, number>([[0, 1]]), deal = 0; // key: blocked*2 + missedLast
+    for (let i = 0; i < n; i++) {
+      const nx = new Map<number, number>();
+      for (const [k, p] of dist) {
+        const bl = k >> 1, ml = k & 1, miss = guard && ml ? 0 : pm, blk = once && bl ? 0 : pb;
+        const land = (1 - miss) * (1 - blk); deal += p * land;
+        const put = (key: number, q: number) => { if (q > 0) nx.set(key, (nx.get(key) || 0) + q); };
+        put((bl << 1) | 1, p * miss); put((once ? 1 : bl) << 1, p * (1 - miss) * blk); put(bl << 1, p * land);
+      }
+      dist = nx;
+    }
+    return { deal, kill: 0 };
+  }
+  // state: Health left, hits still soaked by Shield X and Bulwark bubbles, has it blocked, did the last swing miss
   const ab0 = Math.max(0, def.shield || 0) + Math.max(0, def.bubbles || (def.bubble ? 1 : 0));
-  const K = (hp: number, ab: number) => hp * 64 + ab;
-  let dist = new Map<number, number>([[K(Math.max(0, def.health), ab0), 1]]);
+  const K = (hp: number, ab: number, bl: number, ml: number) => ((hp * 64 + ab) * 2 + bl) * 2 + ml;
+  let dist = new Map<number, number>([[K(Math.max(0, def.health), ab0, 0, 0), 1]]);
+  const put = (m: Map<number, number>, key: number, q: number) => { if (q > 0) m.set(key, (m.get(key) || 0) + q); };
   for (let i = 0; i < n; i++) {
     const nx = new Map<number, number>();
     for (const [k, p] of dist) {
-      const hp = Math.floor(k / 64), ab = k % 64;
-      if (hp <= 0) { nx.set(k, (nx.get(k) || 0) + p); continue; }
-      const land = ph * (1 - blockChance(def, hp, attacker));
-      const hitK = ab > 0 ? K(hp, ab - 1) : K(hp - 1, 0);
-      nx.set(hitK, (nx.get(hitK) || 0) + p * land); nx.set(k, (nx.get(k) || 0) + p * (1 - land));
+      const ml = k & 1, bl = (k >> 1) & 1, ab = (k >> 2) % 64, hp = Math.floor((k >> 2) / 64);
+      if (hp <= 0) { put(nx, k, p); continue; }
+      const miss = guard && ml ? 0 : pm, blk = once && bl ? 0 : blockChance(def, hp, attacker);
+      put(nx, K(hp, ab, bl, 1), p * miss);
+      put(nx, K(hp, ab, once ? 1 : bl, 0), p * (1 - miss) * blk);
+      const land = p * (1 - miss) * (1 - blk);
+      put(nx, ab > 0 ? K(hp, ab - 1, bl, 0) : K(hp - 1, 0, bl, 0), land);
     }
     dist = nx;
   }
   let deal = 0, kill = 0;
-  for (const [k, p] of dist) { const hp = Math.floor(k / 64); deal += p * (def.health - hp); if (hp <= 0) kill += p; }
+  for (const [k, p] of dist) { const hp = Math.floor((k >> 2) / 64); deal += p * (def.health - hp); if (hp <= 0) kill += p; }
   return { deal, kill };
 }
 /** Expected damage of `n` swings (the computer's guess and the attack preview). */
 export const expectedSwings = (n: number, def: any | null, attacker?: any): number => swingOdds(n, def, attacker).deal;
-/** Resolve `n` swings of `att` at `def`: hit roll, block roll, then 1 damage through hurt(). Events: swing {result: miss | block | hit}. */
-function swingsAt(s: any, att: any, def: any, n: number, ev: any[], tag: string) {
+/** One swing's dice for attacker uid `au` at a defender `du` with block chance `pct` (percent). */
+function rollSwing(s: any, sk: Skirmish, au: string, du: string, pct: number): 'miss' | 'block' | 'hit' {
+  if (SURE()) return 'hit';
+  const canMiss = !(GUARD() && sk.missed.has(au));
+  if (canMiss && d100(s) <= (COMBAT().missPct ?? 10)) { sk.missed.add(au); return 'miss'; }
+  sk.missed.delete(au);
+  if (pct > 0 && !(ONCE() && sk.blocked.has(du)) && d100(s) <= pct) { sk.blocked.add(du); return 'block'; }
+  return 'hit';
+}
+/** Resolve `n` swings of `att` at `def` within skirmish `sk`: miss roll, block roll, then 1 damage through hurt(). Events: swing {result: miss | block | hit}. */
+function swingsAt(s: any, att: any, def: any, n: number, ev: any[], tag: string, sk: Skirmish = newSkirmish()) {
   let landed = 0;
   const shooter = rangedOf(s, att) > 0 || has(att, 'overwatch'); // the further points of damage of a shooter are Bleeds: they only roll when the shot itself hit
   for (let i = 0; i < n && def.health > 0; i++) {
     const base = { type: 'swing', uid: att.uid, targetUid: def.uid, row: def.row, col: def.col, tag, n: i + 1, of: n };
-    if (COMBAT().dice !== 'sure' && d6(s) < (COMBAT().hitFrom ?? 3)) { ev.push({ ...base, result: 'miss' }); if (i === 0 && shooter) break; continue; } // Ken, Nov 1: a ranged unit's first shot is the shot; if it misses (or is blocked) there are no Bleed chances
-    const dice = COMBAT().dice === 'sure' ? 0 : blockDiceOf(def, att), faces = blockFacesOf(def);
-    let blocked = false;
-    for (let k = 0; k < dice && !blocked; k++) if (faces.includes(d6(s))) blocked = true;
-    if (!blocked && has(def, 'unbreakable') && landed >= 3) blocked = true; // Unbreakable: never more than 3 from one attack
-    if (!blocked && landed >= 1 && standFastOn(s, def)) blocked = true; // Nov 5: Stand Fast, Lads!: at most 1 from any attack
-    if (blocked) { ev.push({ ...base, result: 'block', dice, armored: has(def, 'armored') || has(def, 'riotShield') }); if (i === 0 && shooter) break; continue; }
-    ev.push({ ...base, result: 'hit', dice });
+    const pct = blockPctFor(def, def.health, att);
+    let result = rollSwing(s, sk, att.uid, def.uid, pct);
+    if (result === 'miss') { ev.push({ ...base, result: 'miss' }); if (i === 0 && shooter) break; continue; } // Ken, Nov 1: a ranged unit's first shot is the shot; if it misses (or is blocked) there are no Bleed chances
+    if (result === 'hit' && has(def, 'unbreakable') && landed >= 3) result = 'block'; // Unbreakable: never more than 3 from one attack
+    if (result === 'hit' && landed >= 1 && standFastOn(s, def)) result = 'block'; // Nov 5: Stand Fast, Lads!: at most 1 from any attack
+    if (result === 'block') { ev.push({ ...base, result: 'block', chance: pct, armored: has(def, 'armored') || has(def, 'riotShield') }); if (i === 0 && shooter) break; continue; }
+    ev.push({ ...base, result: 'hit', chance: pct });
     const saved = def.brewSave;
     if (hurt(s, def, 1, ev, false, true) > 0) landed++;
     if (saved && !def.brewSave) break; // the Brewlord's save ends the attack: a unit it saves takes no more swings from it
@@ -710,9 +746,9 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   if (target.commander) {
     const n = atkValue(s, attacker), sq = stronghold(target.commander);
     ev.push({ type: 'attack', uid: attacker.uid, from: { row: attacker.row, col: attacker.col }, target: { commander: target.commander } });
-    let d = 0; // v3 (Ken, Nov 1): swings at a Commander roll to hit, and the Commander rolls commanderBlockDice: a 6 blocks
-    const cmdDice = COMBAT().dice === 'sure' ? 0 : (COMBAT().commanderBlockDice ?? 0), cmdFaces = blockFacesOf(null);
-    for (let i = 0; i < n; i++) { const hit = COMBAT().dice === 'sure' || d6(s) >= (COMBAT().hitFrom ?? 3); let result: string = hit ? 'hit' : 'miss'; if (hit && cmdDice) { let blocked = false; for (let k = 0; k < cmdDice && !blocked; k++) if (cmdFaces.includes(d6(s))) blocked = true; if (blocked) result = 'block'; } ev.push({ type: 'swing', uid: attacker.uid, commander: target.commander, row: sq.row, col: sq.col, result, dice: cmdDice, n: i + 1, of: n, tag: 'attack' }); if (result === 'hit') d++; }
+    let d = 0; // v4 (Ken, Nov 7): swings at a Commander: the same miss roll, and the Commander blocks on commanderBlockPct (once per attack)
+    const sk = newSkirmish(), cpct = Math.round(commanderBlockChance() * 100), cu = 'cmd:' + target.commander;
+    for (let i = 0; i < n; i++) { const result = rollSwing(s, sk, attacker.uid, cu, cpct); ev.push({ type: 'swing', uid: attacker.uid, commander: target.commander, row: sq.row, col: sq.col, result, chance: cpct, n: i + 1, of: n, tag: 'attack' }); if (result === 'hit') d++; }
     if (d > 0) damageCommander(s, target.commander, d, ev);
     return;
   }
@@ -722,14 +758,15 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
   const pos = { row: def.row, col: def.col };
   const strikes = melee && !sneakyOf(s, attacker) && !has(attacker, 'overwatch');
   const back = strikes ? atkValue(s, def, attacker) + (standFastOn(s, def) ? 1 : 0) : 0; // Nov 5: Stand Fast, Lads!: +1 on the strike back
-  const landed = swingsAt(s, attacker, def, atkValue(s, attacker, def), ev, 'attack');
+  const sk = newSkirmish(); // Ken, Nov 7: each unit blocks at most once in this fight
+  const landed = swingsAt(s, attacker, def, atkValue(s, attacker, def), ev, 'attack', sk);
   if (landed > 0 && def.health > 0) { // Nov 5: hits that leave Poison (Pox Doctor, Sludge Lobber, Bog Brew) or a Jinx (Hexbolt Tinker)
     const px = poisonHitOf(s, attacker); if (px > 0) applyPoison(s, def, px, ev);
     if (has(attacker, 'jinxHit')) jinx(s, def, ev);
   }
   // Smack knocks the target 2 away before it can strike back
   if (melee && def.health > 0 && has(attacker, 'smack') && attacker.health > 0) knockAway(s, attacker, def, 2, ev);
-  if (strikes && cheb(attacker, def) === 1 && def.health > 0) { ev.push({ type: 'counter', uid: def.uid }); if (COMBAT().strikeBackRolls === false) hurt(s, attacker, back, ev); else swingsAt(s, def, attacker, back, ev, 'strikeBack'); } // v2: a strike-back rolls the same way, and only from a defender still standing
+  if (strikes && cheb(attacker, def) === 1 && def.health > 0) { ev.push({ type: 'counter', uid: def.uid }); if (COMBAT().strikeBackRolls === false) hurt(s, attacker, back, ev); else swingsAt(s, def, attacker, back, ev, 'strikeBack', sk); } // v2: a strike-back rolls the same way, and only from a defender still standing
   if (has(attacker, 'overload'))
     for (const o of [...s.board.creatures]) if (o.owner === def.owner && o !== def && cheb(o, pos) === 1) hurt(s, o, CONFIG.overloadDamage, ev);
   const sdef = def.health > 0;
@@ -754,7 +791,7 @@ function resolveAttack(s: any, attacker: any, target: any, ev: any[]) {
       if (!spot) continue;
       ev.push({ type: 'move', uid: g.uid, from: { row: g.row, col: g.col }, to: spot, teleport: true });
       g.row = spot.row; g.col = spot.col;
-      swingsAt(s, g, attacker, atkValue(s, g, attacker), ev, 'assist');
+      swingsAt(s, g, attacker, atkValue(s, g, attacker), ev, 'assist', sk);
       break;
     }
   if (def.health <= 0 && has(attacker, 'siphon')) s.players[attacker.owner].bank += 1;

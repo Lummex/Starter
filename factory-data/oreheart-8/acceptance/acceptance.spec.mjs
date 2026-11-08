@@ -15328,39 +15328,40 @@ for (const vp of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'phone
 }
 
 // ---------- Combat v2 (Ken, Nov 1): swings, block dice, move points. Test pages land every swing ('sure') so the older checks keep their numbers; these turn the dice on.
-const v2MatchV2 = (page, board, extra = {}) => page.evaluate(([board, extra]) => { window.oreheart.setCombatRules({ dice: 'roll', blockFaces: [1, 6], hitFrom: 3, blockCap: 3, armoredExtraFace: 2 }); return window.oreheart.newMatch({ ai: false, skipMulligan: true, factionLock: false, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [], ...extra } }); }, [board, extra]);
+const v2MatchV2 = (page, board, extra = {}) => page.evaluate(([board, extra]) => { window.oreheart.setCombatRules({ dice: 'roll' }); return window.oreheart.newMatch({ ai: false, skipMulligan: true, factionLock: false, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [], ...extra } }); }, [board, extra]);
 const toActionV2 = (page) => page.evaluate(() => { const o = window.oreheart; const d = o.legalActions().find((x) => x.type === 'done'); if (d) o.act(d); return o.getState(); });
 const unitOfV2 = (s, id, owner = 'player') => s.board.creatures.find((c) => c.cardId === id && c.owner === owner);
-test('AC559: Attack N = N swings; each swing rolls to hit (2-6, about 5 in 6); every hit faces block dice = current Health, at most 2 (walls +1), blocked by a 6; a Commander rolls one block die; the block faces are one config value', async ({ page }) => {
+test('AC559: Combat v4 (Ken, Nov 7): Attack N = N swings; about 1 swing in 10 misses and about 1 landed hit in 10 is blocked (about 4 in 5 land); in one fight a unit blocks at most once and never misses twice in a row; a Commander blocks now and then; the block chance is one config value the preview follows', async ({ page }) => {
   test.setTimeout(120000);
   await page.goto('/?test=1&seed=3');
   await page.waitForFunction(() => !!window.oreheart);
-  expect((await page.evaluate(() => window.oreheart.getCombatRules())).blockFaces, 'the knob').toEqual([6]); // Combat v3 (Nov 1)
-  let swings = 0, hits = 0, blocks = 0, dice = [], cmdBlocks = 0, cmdSwings = 0;
+  const rules = await page.evaluate(() => window.oreheart.getCombatRules());
+  expect([rules.missPct, rules.blockPct, rules.blockOncePerSkirmish, rules.missStreakGuard], 'the knobs').toEqual([10, 11, true, true]);
+  let swings = 0, hits = 0, misses = 0, blocks = 0, cmdBlocks = 0, cmdSwings = 0, twice = 0, missRuns = 0;
   for (let seed = 1; seed <= 36; seed++) {
-    await page.evaluate((seed) => window.oreheart.setSeed && window.oreheart.setSeed(seed), seed);
     const board = [{ cardId: 'goblin-grunt', owner: 'player', row: 4, col: 6 }, { cardId: 'dwarf-pickman', owner: 'opponent', row: 4, col: 7 }, { cardId: 'wolf-rider', owner: 'player', row: 2, col: 11 }]; // beside the enemy Stronghold (1,12)
-    await page.evaluate(([board, seed]) => { window.oreheart.setCombatRules({ dice: 'roll', blockFaces: [6] }); return window.oreheart.newMatch({ ai: false, skipMulligan: true, seed, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [] } }); }, [board, seed]);
+    await page.evaluate(([board, seed]) => { window.oreheart.setCombatRules({ dice: 'roll' }); return window.oreheart.newMatch({ ai: false, skipMulligan: true, seed, setup: { firstPlayer: 'player', board, playerHand: [], opponentHand: [] } }); }, [board, seed]);
     await toActionV2(page);
     const r = await page.evaluate(() => { const o = window.oreheart; const s = o.getState(); const g = s.board.creatures.find((c) => c.cardId === 'goblin-grunt'); const a = o.legalActions().find((x) => x.type === 'attack' && x.creatureUid === g.uid && !x.target.commander); const r1 = o.act(a);
-      const w = s.board.creatures.find((c) => c.cardId === 'wolf-rider'); const b = o.legalActions().find((x) => x.type === 'attack' && x.creatureUid === w.uid && x.target.commander); const r2 = b ? o.act(b) : { events: [] }; return { e1: r1.events.filter((e) => e.type === 'swing' && e.tag === 'attack'), e2: r2.events.filter((e) => e.type === 'swing') }; });
-    expect(r.e1.length, 'Attack 2 = 2 swings').toBe(2);
-    for (const e of r.e1) { swings++; if (e.result !== 'miss') hits++; if (e.result === 'block') { blocks++; dice.push(e.dice); } }
+      const w = s.board.creatures.find((c) => c.cardId === 'wolf-rider'); const b = o.legalActions().find((x) => x.type === 'attack' && x.creatureUid === w.uid && x.target.commander); const r2 = b ? o.act(b) : { events: [] }; return { e1: r1.events.filter((e) => e.type === 'swing'), e2: r2.events.filter((e) => e.type === 'swing') }; });
+    expect(r.e1.filter((e) => e.tag === 'attack').length, 'Attack 2 = 2 swings').toBe(2);
+    const by = {}, last = {};
+    for (const e of r.e1) { swings++; if (e.result === 'hit') hits++; if (e.result === 'miss') { misses++; if (last[e.uid] === 'miss') missRuns++; } if (e.result === 'block') { blocks++; by[e.targetUid] = (by[e.targetUid] || 0) + 1; } last[e.uid] = e.result; }
+    if (Object.values(by).some((n) => n > 1)) twice++;
     expect(r.e2.length, 'the wolf (Attack 3) swings 3 times at the Commander').toBe(3);
     for (const e of r.e2) { cmdSwings++; if (e.result === 'block') cmdBlocks++; }
+    expect(r.e2.filter((e) => e.result === 'block').length, 'a Commander blocks at most once per attack').toBeLessThanOrEqual(1);
   }
-  expect(hits / swings, `hit about 5 in 6 (${hits}/${swings})`).toBeGreaterThan(0.68);
-  expect(hits / swings).toBeLessThan(0.97);
-  expect(blocks, 'some hits are blocked').toBeGreaterThan(3);
-  expect(blocks / hits, `about 31 % of hits blocked at 2 dice (${blocks}/${hits})`).toBeLessThan(0.6);
-  expect(Math.max(...dice), 'never more than 3 block dice').toBeLessThanOrEqual(3);
-  expect(cmdBlocks, 'a Commander blocks on a 6 now and then (Nov 1)').toBeGreaterThan(0);
-  expect(cmdBlocks / Math.max(1, cmdSwings)).toBeLessThan(0.4);
+  expect(hits / swings, `about 4 in 5 land (${hits}/${swings})`).toBeGreaterThan(0.65);
+  expect(hits / swings).toBeLessThan(0.95);
+  expect(misses / swings, `about 1 in 10 misses (${misses}/${swings})`).toBeLessThan(0.2);
+  expect(twice, 'a unit blocked twice in one fight').toBe(0);
+  expect(missRuns, 'two misses in a row').toBe(0);
+  expect(cmdBlocks / Math.max(1, cmdSwings)).toBeLessThan(0.25);
   expect(cmdSwings).toBe(108);
-  // the one knob: blocks only on a 6
-  await page.evaluate(() => window.oreheart.setCombatRules({ blockFaces: [6] }));
-  const pv = await page.evaluate(() => { const o = window.oreheart; const s = o.getState(); const g = s.board.creatures.find((c) => c.cardId === 'goblin-grunt'); const d = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman'); return g && d ? [o.previewAttack(g.uid, { row: d.row, col: d.col }), (o.setCombatRules({ blockFaces: [1, 6] }), o.previewAttack(g.uid, { row: d.row, col: d.col }))] : null; });
-  if (pv) expect(pv[0].youDeal, '6-only blocks: more lands').toBeGreaterThan(pv[1].youDeal);
+  // the one knob: a higher block chance lowers what the preview expects to land
+  const pv = await page.evaluate(() => { const o = window.oreheart; const s = o.getState(); const g = s.board.creatures.find((c) => c.cardId === 'goblin-grunt'); const d = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman'); if (!g || !d) return null; o.setCombatRules({ blockPct: 5 }); const lo = o.previewAttack(g.uid, { row: d.row, col: d.col }); o.setCombatRules({ blockPct: 40 }); const hi = o.previewAttack(g.uid, { row: d.row, col: d.col }); o.setCombatRules({ blockPct: 11 }); return [lo, hi]; });
+  if (pv) expect(pv[0].youDeal, 'fewer blocks: more lands').toBeGreaterThan(pv[1].youDeal);
 });
 test('AC560: move points: a 3-foot unit walks 2 and attacks (never attacks then moves); a 1-foot Miner moves OR attacks OR mines; Charge attacks at 0 points; the badge shows the points left', async ({ page }) => {
   await page.goto('/?test=1&seed=3');
@@ -15426,7 +15427,7 @@ test('AC562: the attack preview shows the odds in plain words; the Done confirma
   const s0 = await v2MatchV2(page, board);
   await toActionV2(page);
   const pv = await page.evaluate(() => { const o = window.oreheart; const s = o.getState(); const g = s.board.creatures.find((c) => c.cardId === 'goblin-grunt'), d = s.board.creatures.find((c) => c.cardId === 'dwarf-pickman'); return o.previewAttack(g.uid, { row: d.row, col: d.col }); });
-  expect(pv.swings).toBe(2); expect(pv.melee).toBe(true); expect(pv.youDeal).toBeGreaterThan(0.2); expect(pv.youDeal).toBeLessThan(1.2); expect(pv.kill).toBe(0);
+  expect(pv.swings).toBe(2); expect(pv.melee).toBe(true); expect(pv.youDeal).toBeGreaterThan(0.2); expect(pv.youDeal, "Combat v4 (Nov 7): about 4 swings in 5 land").toBeLessThan(2); expect(pv.kill).toBe(0);
   expect(pv.youTake, 'the strike back, only from a standing defender').toBeGreaterThan(0.2);
   // drag the grunt over the pickman: the box
   const g = unitOfV2(s0, 'goblin-grunt'), d = unitOfV2(s0, 'dwarf-pickman', 'opponent');

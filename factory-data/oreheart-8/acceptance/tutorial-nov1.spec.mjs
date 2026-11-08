@@ -203,18 +203,18 @@ test('TUT8: lesson 6: the archer\'s 8 straight lines are drawn; shooting the dwa
   await waitStep(page, 'fight');
 });
 
-test('TUT9: lesson 7 (fight): HIT 2-6, MISS 1, BLOCK 6 (Combat v3) with dice; one real attack with the real dice ends it', async ({ page }) => {
+test('TUT9: lesson 7 (fight): HIT 8 in 10, MISS 1 in 10, BLOCK 1 in 10 (Combat v4, Ken Nov 7); one real attack with the real dice ends it', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await openTest(page);
-  await page.evaluate(() => window.oreheart.setCombatRules({ dice: 'roll', blockFaces: [6], hitFrom: 3, blockCap: 3, armoredExtraFace: 2 }));
+  await page.evaluate(() => window.oreheart.setCombatRules({ dice: 'roll' }));
   await page.evaluate(() => window.__app.beginTutorial('fight'));
   const card = page.locator('.tut-intro .tut-card');
   await expect(card.locator('img.tut-pic')).toHaveCount(3);
-  const pips = async (cls) => card.locator(`.tut-swing.${cls} .tut-die`).evaluateAll((d) => d.map((x) => +x.dataset.n));
-  expect(await pips('hit')).toEqual([2, 3, 4, 5, 6]);
-  expect(await pips('miss')).toEqual([1]);
-  expect(await pips('block')).toEqual([6]);
-  await expect(card).toContainText(/takes 1 die away [(]never below 1[)]/);
+  const odds = async (cls) => card.locator(`.tut-swing.${cls} .tut-odds`).textContent();
+  expect(await odds('hit')).toBe('8 in 10');
+  expect(await odds('miss')).toBe('1 in 10');
+  expect(await odds('block')).toBe('1 in 10');
+  await expect(card).toContainText(/Only once per fight/);
   await expect(card).toContainText(/2 can't always kill a 2/);
   for (const w of await card.locator('img.tut-pic').all()) expect((await w.boundingBox()).width).toBeGreaterThanOrEqual(240);
   await card.getByRole('button', { name: 'Try it!' }).click();

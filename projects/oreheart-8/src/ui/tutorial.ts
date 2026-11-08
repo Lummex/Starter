@@ -147,20 +147,18 @@ const button = (label: string, cls: string, on: (e: Event) => void, attrs: Recor
   b.addEventListener('pointerdown', (e) => e.stopPropagation());
   return b;
 };
-const PIPS: Record<number, number[]> = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-const die = (n: number) => { const d = h('span', { class: 'tut-die', 'data-n': n, 'aria-label': String(n) }); for (let i = 0; i < 9; i++) d.append(h('i', PIPS[n].includes(i) ? { class: 'on' } : {})); return d; };
-const dice = (ns: number[]) => h('span', { class: 'tut-dice' }, ...ns.map(die));
 const FOOT = '<svg viewBox="0 0 24 32" aria-hidden="true"><ellipse cx="12" cy="20" rx="7" ry="10"/><circle cx="5" cy="6" r="2.4"/><circle cx="10" cy="3.6" r="2.6"/><circle cx="15.5" cy="4" r="2.3"/><circle cx="19.5" cy="7.5" r="2"/></svg>';
 
-/** The three swing results with their dice (picture card) or as a small key (under the spoken line). */
+/** The three swing results with how often they happen (picture card) or as a small key (under the spoken line). Ken, Nov 7 (combat v4):
+ *  about 8 in 10 swings hit, 1 in 10 misses, 1 in 10 is blocked; each unit blocks only once per fight. */
 function swingKey(big: boolean) {
-  const item = (pic: string, word: string, cls: string, ns: number[], note?: string) => h('figure', { class: 'tut-swing ' + cls },
+  const item = (pic: string, word: string, cls: string, odds: string, note?: string) => h('figure', { class: 'tut-swing ' + cls },
     big ? h('img', { class: 'tut-pic', src: PIC(pic), alt: word, draggable: 'false' }) : null,
-    h('figcaption', {}, h('b', {}, word), dice(ns), note ? h('small', {}, note) : null));
+    h('figcaption', {}, h('b', {}, word), h('span', { class: 'tut-odds', 'data-odds': odds }, odds), note ? h('small', {}, note) : null));
   return h('div', { class: 'tut-swings' + (big ? ' big' : '') },
-    item('swing-hit', 'HIT', 'hit', [2, 3, 4, 5, 6]),
-    item('swing-miss', 'MISS', 'miss', [1]),
-    item('block', 'BLOCK', 'block', [6], big ? '1 die per heart (max 2). Big units: 1, and a big attacker takes 1 die away (never below 1). Shields: +1. Commanders: 1.' : undefined));
+    item('swing-hit', 'HIT', 'hit', '8 in 10'),
+    item('swing-miss', 'MISS', 'miss', '1 in 10', big ? 'Never twice in a row.' : undefined),
+    item('block', 'BLOCK', 'block', '1 in 10', big ? 'Only once per fight. Shields block a bit more, big units a bit less.' : undefined));
 }
 
 /** The marker signs (drawn with the same pen as the real orders, order-draw.ts). */

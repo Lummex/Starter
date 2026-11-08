@@ -331,8 +331,42 @@ const _embV = new THREE.Vector3();
   const flowDest: Record<string, THREE.Vector3 | null> = { player: null, opponent: null };
   const flowM = new THREE.Matrix4();
   let flowDestAt = -1e9, flowDestDirty = true;
+  // Nov 7 (Ken: "there's a piece down at the bottom of the screen that's covering them up ... I would like them to go over the cutout pieces. So they
+  // need to be smaller and maybe flowing a little slower too"): the streaming shards are drawn on a thin 2D layer above the HUD frame pieces
+  // (owner-hud z 1-7) and below the HUD text and buttons (z 10+), at 60 % of their old size and about 1.8x slower. The mine's idle orbit stays 3D.
+  const FLOW_SPEED = 0.18, FLOW_SIZE = 0.19; // were 0.32 and 0.32
+  let flowCv: HTMLCanvasElement | null = null, flowCx: CanvasRenderingContext2D | null = null, flowBox = { l: 0, t: 0, w: 0, h: 0, dpr: 1 };
+  const _fp = new THREE.Vector3(), _fq = new THREE.Vector3();
+  function placeFlowLayer(rc: DOMRect) {
+    const host = canvas.closest('main.match') as HTMLElement | null;
+    if (!host) { if (flowCv) flowCv.style.display = 'none'; return; }
+    if (!flowCv || flowCv.parentElement !== host) {
+      flowCv?.remove();
+      flowCv = document.createElement('canvas'); flowCv.className = 'flow-layer'; flowCv.setAttribute('aria-hidden', 'true'); flowCv.dataset.role = 'flow-layer';
+      flowCv.style.cssText = 'position:absolute;pointer-events:none;z-index:9';
+      host.append(flowCv); flowCx = flowCv.getContext('2d');
+    }
+    const hr = host.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    flowBox = { l: rc.left - hr.left, t: rc.top - hr.top, w: rc.width, h: rc.height, dpr };
+    Object.assign(flowCv.style, { display: '', left: flowBox.l + 'px', top: flowBox.t + 'px', width: rc.width + 'px', height: rc.height + 'px' });
+    const bw = Math.round(rc.width * dpr), bh = Math.round(rc.height * dpr);
+    if (flowCv.width !== bw || flowCv.height !== bh) { flowCv.width = bw; flowCv.height = bh; }
+  }
+  /** one faceted shard on the layer: a diamond in the stream colour with a lighter facet, faded like the 3D ones were */
+  function drawShard(x: number, y: number, r: number, rot: number, col: THREE.Color, fade: number) {
+    const g = flowCx!; if (r < 0.6 || fade <= 0.02) return;
+    const c = (k: number, a: number) => `rgba(${Math.min(255, Math.round((col.r * 1.5 + 0.1) * 255 * k))},${Math.min(255, Math.round((col.g * 1.5 + 0.1) * 255 * k))},${Math.min(255, Math.round((col.b * 1.5 + 0.1) * 255 * k))},${a})`;
+    g.save(); g.translate(x, y); g.rotate(rot);
+    g.globalAlpha = Math.min(1, fade);
+    g.fillStyle = c(1, 0.28); g.beginPath(); g.arc(0, 0, r * 1.7, 0, Math.PI * 2); g.fill(); // soft glow
+    g.globalAlpha = Math.min(1, fade * 1.1);
+    g.fillStyle = c(1, 1); g.beginPath(); g.moveTo(0, -r * 1.25); g.lineTo(r * 0.72, 0); g.lineTo(0, r * 1.25); g.lineTo(-r * 0.72, 0); g.closePath(); g.fill();
+    g.fillStyle = c(1.6, 0.9); g.beginPath(); g.moveTo(0, -r * 1.25); g.lineTo(r * 0.72, 0); g.lineTo(0, 0); g.closePath(); g.fill(); // the lit facet
+    g.restore();
+  }
   function updateFlowDest() {
     const rc = canvas.getBoundingClientRect();
+    placeFlowLayer(rc);
     for (const sd of ['player', 'opponent']) {
       const el = flowTargetEl[sd];
       if (!el || !rc.width) { flowDest[sd] = null; continue; }
@@ -406,11 +440,13 @@ const _embV = new THREE.Vector3();
   function updateFlow(now: number) {
     const n = flowMode === 'off' ? 0 : flowMode === 'reduced' ? 12 : FN;
     flowPts.visible = n > 0;
-    if (!n) { flowShown = 0; return; }
+    if (!n) { flowShown = 0; if (flowCx && flowCv) flowCx.clearRect(0, 0, flowCv.width, flowCv.height); return; }
     const t = now / 1000;
     let pulse = 0;
     for (const sd of ['player', 'opponent']) pulse = Math.max(pulse, 1 - Math.min(1, (now - pulseAt[sd]) / 1000));
     let shown = 0;
+    const lay = flowCx && flowCv && flowCv.style.display !== 'none' ? flowCx : null;
+    if (lay) { lay.setTransform(1, 0, 0, 1, 0, 0); lay.clearRect(0, 0, flowCv!.width, flowCv!.height); lay.setTransform(flowBox.dpr, 0, 0, flowBox.dpr, 0, 0); }
     if (now - flowDestAt > 400 || flowDestDirty) { flowDestAt = now; flowDestDirty = false; updateFlowDest(); } // Nov 1: reading the layout every frame cost 1.6 ms; the target only moves with the view
     mines.forEach((m, mi) => {
       const owner = flowOwner[mi] || 'neutral';
@@ -424,7 +460,7 @@ const _embV = new THREE.Vector3();
         if (i >= nm) { flowDum.position.set(0, -50, 0); flowDum.scale.setScalar(0.001); flowDum.updateMatrix(); flowPts.setMatrixAt(k, flowDum.matrix); continue; }
         let fade = 1;
         if (dest) {
-          const u = (t * 0.32 + i / nm) % 1;
+          const u = (t * FLOW_SPEED + i / nm) % 1;
           const sx = a.x, sy = 1.5, sz = a.z, ex = dest.x, ey = flowDest[owner] ? dest.y : CMD_H * 0.55, ez = dest.z;
           const cx = (sx + ex) / 2, cy = 3.4, cz = (sz + ez) / 2;
           const w = 1 - u;
@@ -436,7 +472,13 @@ const _embV = new THREE.Vector3();
           flowDum.position.copy(bez);
           fade = Math.min(1, u * 6, (1 - u) * 4) * (0.8 + pulse * 0.6);
           flowDum.rotation.set(t * 3 + i, t * 2 + i * 2, t * 4 + mi);
-          flowDum.scale.setScalar(0.32 * (0.55 + 0.45 * env) * (1 + pulse * 0.5) * (0.8 + (i % 3) * 0.2)); // Ken, Nov 1: bigger, so the stream reads
+          const shardR = FLOW_SIZE * (0.55 + 0.45 * env) * (1 + pulse * 0.5) * (0.8 + (i % 3) * 0.2); // Ken, Nov 1: bigger, so the stream reads; Nov 7: 60 % of that
+          if (lay) { // Nov 7: drawn on the layer above the HUD pieces; the 3D one hides
+            _fp.copy(bez).project(camera); _fq.copy(bez); _fq.y += shardR; _fq.project(camera);
+            const x = (_fp.x + 1) / 2 * flowBox.w, y = (1 - _fp.y) / 2 * flowBox.h, r = Math.hypot((_fq.x - _fp.x) / 2 * flowBox.w, (_fq.y - _fp.y) / 2 * flowBox.h);
+            if (_fp.z < 1) drawShard(x, y, r, t * 2.5 + i * 1.3, c, fade);
+            flowDum.position.set(0, -50, 0); flowDum.scale.setScalar(0.001);
+          } else flowDum.scale.setScalar(shardR);
         } else {
           const ang = t * 1.1 + (i / nm) * Math.PI * 2, r = 0.38 + 0.12 * Math.sin(t * 1.7 + i);
           flowDum.position.set(a.x + Math.cos(ang) * r, 1.45 + 0.25 * Math.sin(t * 1.3 + i * 2) + (i % 3) * 0.12, a.z + Math.sin(ang) * r);

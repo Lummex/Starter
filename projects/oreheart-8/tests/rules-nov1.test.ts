@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createMatch, applyAction, legalActions, CONFIG, CARDS, blockDiceFor, blockChance, commanderBlockChance } from '../src/engine';
+import { createMatch, applyAction, legalActions, CONFIG, CARDS, blockPctFor, blockChance, commanderBlockChance, hitChance, swingOdds } from '../src/engine';
 
 const MINES = [{ row: 3, col: 6 }, { row: 4, col: 10 }, { row: 5, col: 6 }];
 const P = (cardId: string, row: number, col: number, x: any = {}) => ({ cardId, owner: 'player', row, col, ...x });
@@ -8,31 +8,66 @@ const at = (s: any, r: number, c: number) => s.board.creatures.find((x: any) => 
 const mk = (setup: any, extra: any = {}) => createMatch({ playerCommander: 'grubnak', opponentCommander: 'borgo', factionLock: false, mines: MINES, setup: { firstPlayer: 'player', playerHand: [], opponentHand: [], ...setup }, ...extra });
 const unit = (cardId: string, health: number, extra: any = {}) => ({ cardId, health, abilities: CARDS[cardId].abilities, ...extra });
 
-describe('Combat v3 dice (Forge/Ken, Nov 1)', () => {
-  it('settings: 2-6 hits, only a 6 blocks, at most 2 dice', () => {
+describe('Combat v4 dice (Ken, Nov 7: about 1 in 5 swings misses or is blocked; one block per fight)', () => {
+  it('settings: 10 % miss, 11 % block before small modifiers, once per skirmish, no two misses in a row', () => {
     (CONFIG as any).combat.dice = 'roll';
-    expect(CONFIG.combat.hitFrom).toBe(2); expect(CONFIG.combat.blockFaces).toEqual([6]); expect(CONFIG.combat.blockCap).toBe(2);
+    expect(CONFIG.combat.missPct).toBe(10); expect(CONFIG.combat.blockPct).toBe(11);
+    expect(CONFIG.combat.blockOncePerSkirmish).toBe(true); expect(CONFIG.combat.missStreakGuard).toBe(true);
+    expect(hitChance()).toBeCloseTo(0.9, 5);
   });
-  it('block dice: Health up to 2; a cost-7+ unit rolls 1; Armored / Riot Shield roll one more, 3 at most; Commanders roll 1', () => {
+  it('block chance: a small Health bonus (+1 per Health above 2, +2 at most); Armored / Riot Shield +6; Large -4; a Large attacker -3; Commanders 8 %', () => {
     (CONFIG as any).combat.dice = 'roll';
-    expect(blockDiceFor(unit('goblin-grunt', 3), 3)).toBe(2);
-    expect(blockDiceFor(unit('goblin-grunt', 1), 1)).toBe(1);
-    expect(blockDiceFor(unit('queen-brunhilda-stonebeard', 6), 6)).toBe(1); // cost 11
-    expect(blockDiceFor(unit('ram-rider', 5), 5)).toBe(1); // cost 7
-    expect(blockDiceFor(unit('dwarf-miner', 6), 6)).toBe(3); // Riot Shield Bearer: 2 + 1
-    expect(blockDiceFor(unit('clockwork-beetle', 5), 5)).toBe(3); // Armored
-    expect(blockDiceFor(unit('dwarf-pickman', 6), 6)).toBe(2); // a plain wall: 31 %
-    expect(blockChance(unit('dwarf-pickman', 6))).toBeCloseTo(1 - Math.pow(5 / 6, 2), 5);
-    expect(blockChance(unit('dwarf-miner', 6))).toBeCloseTo(1 - Math.pow(5 / 6, 3), 5);
-    expect(commanderBlockChance()).toBeCloseTo(1 / 6, 5);
-    // Ken, Nov 1: a Large attacker (cost 7+) takes one block die away, never below 1
+    expect(blockPctFor(unit('goblin-grunt', 1), 1)).toBe(11);
+    expect(blockPctFor(unit('goblin-grunt', 3), 3)).toBe(12);
+    expect(blockPctFor(unit('dwarf-pickman', 6), 6)).toBe(13); // a plain wall: high Health barely matters
+    expect(blockPctFor(unit('queen-brunhilda-stonebeard', 6), 6)).toBe(9); // cost 11: Large
+    expect(blockPctFor(unit('ram-rider', 5), 5)).toBe(9); // cost 7: Large
+    expect(blockPctFor(unit('dwarf-miner', 6), 6)).toBe(19); // Riot Shield Bearer
+    expect(blockPctFor(unit('clockwork-beetle', 5), 5)).toBe(19); // Armored
+    expect(blockPctFor(unit('goblin-grunt', 0), 0)).toBe(0);
     const big = unit('ram-rider', 5);
-    expect(blockDiceFor(unit('goblin-grunt', 3), 3, big)).toBe(1);
-    expect(blockDiceFor(unit('goblin-grunt', 1), 1, big)).toBe(1);
-    expect(blockDiceFor(unit('dwarf-miner', 6), 6, big)).toBe(2);
-    expect(blockDiceFor(unit('goblin-grunt', 3), 3, unit('goblin-grunt', 3))).toBe(2);
+    expect(blockPctFor(unit('goblin-grunt', 3), 3, big)).toBe(9);
+    expect(blockPctFor(unit('goblin-grunt', 1), 1, big)).toBe(8);
+    expect(blockPctFor(unit('dwarf-miner', 6), 6, big)).toBe(16);
+    expect(blockChance(unit('dwarf-pickman', 6))).toBeCloseTo(0.13, 5);
+    expect(commanderBlockChance()).toBeCloseTo(0.08, 5);
     (CONFIG as any).combat.dice = 'sure';
-    expect(commanderBlockChance()).toBe(0);
+    expect(commanderBlockChance()).toBe(0); expect(blockPctFor(unit('dwarf-miner', 6), 6)).toBe(0);
+  });
+  it('in one fight each unit blocks at most once, and never misses twice in a row (real dice, many seeds)', () => {
+    (CONFIG as any).combat.dice = 'roll';
+    let swings = 0, misses = 0, blocks = 0, twice = 0, missRuns = 0;
+    for (let seed = 1; seed <= 400; seed++) {
+      let s: any = mk({ board: [P('grubnaks-big-boss-troll', 4, 6), O('dwarf-miner', 4, 7)] }, { seed });
+      s = applyAction(s, { type: 'done' }).state;
+      const a = at(s, 4, 6);
+      const r = applyAction(s, { type: 'attack', creatureUid: a.uid, target: { row: 4, col: 7 } });
+      const by: Record<string, number> = {}, last: Record<string, string> = {};
+      for (const e of r.events as any[]) {
+        if (e.type !== 'swing') continue;
+        swings++;
+        if (e.result === 'miss') { misses++; if (last[e.uid] === 'miss') missRuns++; }
+        if (e.result === 'block') { blocks++; by[e.targetUid] = (by[e.targetUid] || 0) + 1; }
+        last[e.uid] = e.result;
+      }
+      if (Object.values(by).some((n) => n > 1)) twice++;
+    }
+    expect(twice, 'a unit blocked twice in one fight').toBe(0);
+    expect(missRuns, 'two misses in a row').toBe(0);
+    expect(misses / swings).toBeGreaterThan(0.04); expect(misses / swings).toBeLessThan(0.16);
+    expect(blocks).toBeGreaterThan(0);
+    (CONFIG as any).combat.dice = 'sure';
+  });
+  it('the exact odds follow the cap: a 6-swing attack on a 19 % blocker never expects more than one block', () => {
+    (CONFIG as any).combat.dice = 'roll';
+    const def = { ...unit('dwarf-miner', 6), health: 6 };
+    const o = swingOdds(6, def);
+    // without a cap 6 x 0.9... the cap keeps the expected damage above 6 swings minus misses minus one block
+    expect(o.deal).toBeGreaterThan(6 - 6 * 0.1 - 1 - 1e-9);
+    expect(o.deal).toBeLessThan(6);
+    const cmd = swingOdds(3, null);
+    expect(cmd.deal).toBeGreaterThan(3 - 0.3 - 0.08 * 3);
+    (CONFIG as any).combat.dice = 'sure';
   });
   it('a Commander can block: with real dice a swing at him can come back as a block', () => {
     (CONFIG as any).combat.dice = 'roll';

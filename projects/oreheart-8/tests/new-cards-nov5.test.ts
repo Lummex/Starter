@@ -1,7 +1,7 @@
 // Nov 5 (Ken approved studio/specs/new-cards-proposal-nov5.md, with his changes: piglets, Brood costs 2, "Sooey! Hog Call"):
 // the 33 new cards, the 3 tokens and the engine features they need. Dice are 'sure' here (every swing lands, nothing blocks).
 import { describe, it, expect } from 'vitest';
-import { createMatch, applyAction, legalActions, CONFIG, CARDS, AI_DECKS, STARTER_DECKS, deckProblems, spellCost, atkValue, blockDiceFor, rangedOf, ABILITY_COST, hasTag } from '../src/engine';
+import { createMatch, applyAction, legalActions, CONFIG, CARDS, AI_DECKS, STARTER_DECKS, deckProblems, spellCost, atkValue, blockPctFor, rangedOf, ABILITY_COST, hasTag } from '../src/engine';
 
 const MINES = [{ row: 3, col: 6 }, { row: 4, col: 10 }, { row: 5, col: 6 }];
 const P = (cardId: string, row: number, col: number, x: any = {}) => ({ cardId, owner: 'player', row, col, ...x });
@@ -307,7 +307,7 @@ describe('auras, spells and upgrades', () => {
   it('Ratchet Runt: +1 Attack next to an Automaton; Hexfuse Battery Golem: +1 Attack per spell cast this turn, max +3, gone next turn', () => {
     let s: any = mk({ playerCrystals: 12, playerHand: ['venom-shiv', 'venom-shiv', 'venom-shiv', 'venom-shiv'], board: [P('ratchet-runt', 6, 4), P('hexfuse-battery-golem', 6, 5), O('dwarf-pickman', 2, 9)] });
     expect(atkValue(s, at(s, 6, 4))).toBe(2);
-    expect(blockDiceFor(at(s, 6, 5), 5), 'Armored').toBe(3);
+    (CONFIG as any).combat.dice = 'roll'; expect(blockPctFor(at(s, 6, 5), 5), 'Armored').toBe(19); (CONFIG as any).combat.dice = 'sure';
     const golem = at(s, 6, 5);
     for (let i = 0; i < 4; i++) { s = act(s, { type: 'cast', uid: handUid(s, 'player', 'venom-shiv'), target: { row: 2, col: 9 } }); }
     expect(atkValue(s, at(s, 6, 5))).toBe(CARDS['hexfuse-battery-golem'].attack + 3);
@@ -351,8 +351,8 @@ describe('auras, spells and upgrades', () => {
     expect(at(s, 5, 6).maxHealth, 'Hildegrim: the Cadet next to it gains 1 Health').toBe(CARDS['shield-cadet'].health + 1);
     expect(at(s, 5, 6).upgradeCount).toBe(1);
     expect(at(s, 5, 4).maxHealth, 'a goblin neighbour gains nothing').toBe(CARDS['goblin-grunt'].health);
-    expect(blockDiceFor(at(s, 6, 5), 3), 'Smith-upgraded + Hildegrim = Armored (2 + 1)').toBe(3);
-    expect(blockDiceFor(at(s, 5, 6), 4), 'a plain +1 Health is not a Smith upgrade: no Armored').toBe(2);
+    (CONFIG as any).combat.dice = 'roll'; expect(blockPctFor(at(s, 6, 5), 3), 'Smith-upgraded + Hildegrim = Armored (+6)').toBe(18);
+    expect(blockPctFor(at(s, 5, 6), 4), 'a plain +1 Health is not a Smith upgrade: no Armored').toBe(13); (CONFIG as any).combat.dice = 'sure';
     const ft = ability(s, at(s, 6, 4).uid, 'forgeTouch', (x) => x.target.row === 6 && x.target.col === 5);
     expect(ft).toBeTruthy();
     s = act(s, ft);
