@@ -25,7 +25,7 @@ import { ohCardEl, ohCardHTML, fitCardText, commanderCard } from './ui/cardfmt';
 import { hasCreature3dSlug } from './ui/creature3d';
 import { predictHit } from './ai/ai';
 import { setDiceMode } from './engine/dice';
-import { initOffline, offlineStatus, downloadAll as offlineDownloadAll } from './ui/offline';
+import { initOffline, offlineStatus, downloadAll as offlineDownloadAll, autoUpdate, autoUpdateDebug } from './ui/offline';
 
 const params = new URLSearchParams(location.search);
 const test = params.get('test') === '1';
@@ -77,7 +77,8 @@ if (test) {
       try { return app.game.act(action, true); } catch (e: any) { return { ok: false, error: String(e && e.message || e) }; }
     },
     newMatch: (options: any = {}) => app.beginMatch(options),
-    startTutorial: () => app.beginTutorial(),
+    startTutorial: () => app.beginLegacyTutorial(), // the lesson runner (its state is what the older checks read); Tutorial v2: startTutorialV2
+    startTutorialV2: (ch?: string) => app.beginTutorial(ch || 'ch1'),
     movesLeft: () => app.game.movesLeft(),
     setMode: (m: string) => game.setMode(m),
     getMode: () => game.mode,
@@ -86,7 +87,8 @@ if (test) {
     stanceChoice: (uid?: string) => game.stanceChoice(uid),
     getDragCard: () => app.getDragCard(),
     getGuards: () => Object.fromEntries((app as any).guardSquares || []), // Nov 1: guard arrows (for the checks)
-    offline: () => offlineStatus(), offlineDownloadAll: () => offlineDownloadAll(), // Nov 2: the offline app's status (for the checks)
+    offline: () => offlineStatus(), offlineAutoUpdate: async () => ({ before: await autoUpdateDebug(), applied: await autoUpdate() }), // Nov 8: the automatic update (checks)
+    offlineDownloadAll: () => offlineDownloadAll(), // Nov 2: the offline app's status (for the checks)
     getOrders: () => app.getOrders(),
     setOrder: (o: any) => app.setOrder(o),
     cancelOrder: (uid: string) => app.cancelOrder(uid),
@@ -100,7 +102,9 @@ if (test) {
     previewAttack: (uid: string, target: any) => (game.state ? previewAttack(game.state, uid, target) : null),
     /** Oct 31: the computer's own damage prediction for a hit by `uid` on the creature at target {row, col} (ai.ts predictHit) */
     aiHitPrediction: (uid: string, target: any) => { const s: any = game.state; const c = s?.board.creatures.find((x: any) => x.uid === uid); const t = s?.board.creatures.find((x: any) => x.row === target?.row && x.col === target?.col); return c && t ? predictHit(s, c, t) : null; },
-    tutorialAction: () => (game.state ? tutorialAction(game.state) : null),
+    tutorialAction: () => (app.tut2?.active ? app.tut2.autoAction() : game.state ? tutorialAction(game.state) : null),
+    tutorialStep: () => (app.tut2?.active ? app.tut2.info() : null), // Nov 8 (Tutorial v2): chapter, step, target rect, bubble rect, fingertip
+    tutorialIdle: (ms: number) => { app.tut2?.idle(Number(ms) || 0); return app.tut2?.info() || null; },
     hasUpgradeArt: (id: string) => hasUpgradeArt(id),
     getCard: (id: string) => {
       const c: any = CARDS[id] || commanderPackCard(id); // Nov 5: the pack Commanders too

@@ -7,6 +7,7 @@ import './pvp.css';
 import './dashboard.css';
 import { applyAction, legalActions as engineLegal, brewActions, hasMovesLeft, COMMANDERS, STARTER_DECK_LIST, warbandOf, deckProblems, CARDS, mulliganActions } from '../engine';
 import { net } from './state';
+import { avatarPicture, framed } from './avatars';
 import { deckArt, deckScroller, lastDeckFor, rememberDeck } from '../ui/deck-tiles';
 import { getPlayerName } from '../ui/players';
 import { currentRegion, edgeOf, regionPanel, regionById } from './regions';
@@ -477,8 +478,9 @@ function screen(name: string, ...kids: (El | null)[]): El {
       h('div', { class: 'frow' }, nbtn('Practice with a friend', () => showMake(true), 'sbtn panel pvp-practice', { 'data-testid': 'lobby-practice', title: 'A code like any other, but nothing is paid or counted: no coins, no quests, no rank' })),
       h('div', { class: 'frow' }, nbtn('Friends list', () => { void import('./friends').then((m) => m.showFriends()); }, 'sbtn panel pvp-friends', { 'data-testid': 'lobby-friends', title: 'Your friends: who is online, requests, challenges' })))); // Nov 7 (Ken)
   // the right column: your rank (the army panel joins it when a screen has a picker)
+  // Nov 8: your framed picture (lobby-me) beside your rank in the Lobby too
   const rankBox = h('section', { class: 'panel', 'data-testid': 'lobby-rank', 'aria-label': 'Your rank' }, h('div', { class: 'ptitle h' }, h('img', { src: '/art/ui/rank-charms/diamond.webp', alt: '' }), 'Your rank', h('button', { type: 'button', class: 'more', onclick: () => { void import('./dashboard').then((m) => m.showRankings(app!)); } }, 'Rankings ›')),
-    h('div', { class: 'mini-rk' }, h('img', { class: 'rk-charm', src: '/art/ui/rank-charms/sapphire.webp', alt: '' }), h('div', {}, h('b', { class: 'rk-label' }, lastRank ? lastRank.name : 'Unranked'), h('small', { class: 'rk-line' }, lastRank ? rankText(lastRank) : 'Play a ranked match to be placed'))));
+    h('div', { class: 'mini-rk' }, h('span', { class: 'lobby-me', 'data-testid': 'lobby-me' }, framed(h('img', { class: 'lobby-av', src: avatarPicture(net.avatar || null), alt: 'You', draggable: 'false' }), net.frame)), h('img', { class: 'rk-charm', src: '/art/ui/rank-charms/sapphire.webp', alt: '' }), h('div', {}, h('b', { class: 'rk-label' }, lastRank ? lastRank.name : 'Unranked'), h('small', { class: 'rk-line' }, lastRank ? rankText(lastRank) : 'Play a ranked match to be placed'))));
   right.append(rankBox);
   const paintRank = (r: any) => { lastRank = r; const img = rankBox.querySelector('.rk-charm') as HTMLImageElement; const nm = String(r.name || '').split(' ')[0].toLowerCase(); if (nm) img.src = `/art/ui/rank-charms/${nm}.webp`; (rankBox.querySelector('.rk-label') as El).textContent = r.name; (rankBox.querySelector('.rk-line') as El).textContent = rankText(r); };
   if (lastRank) paintRank(lastRank);

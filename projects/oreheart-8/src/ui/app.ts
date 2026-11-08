@@ -13,6 +13,7 @@ import { CARDS, COMMANDERS, FACTIONS, CONFIG, ABILITIES, creatureCost, spellCost
 import { SPELL_VISUALS } from '../content/spell-visuals';
 import { SPELL_FX_SPEC } from './spell-fx'; // Nov 6: Chain Lightning's jump timing
 import { Tutorial, tutorialGame, tutorialOrders } from './tutorial';
+import { Tutorial2 } from './tutorial2';
 import { STANCES } from '../ai/stances';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters, maxDecks } from './decks';
 import { deckArt, deckScroller, lastDeckFor, rememberDeck } from './deck-tiles';
@@ -632,6 +633,9 @@ export class App {
   }
   showMenu() {
     this.leaveNet();
+    if (this.tut2?.active) this.tut2.stop(); // Nov 8: leaving a tutorial board takes its pointer layer with it
+    document.querySelectorAll('.tut2-layer').forEach((x) => x.remove());
+    setTimeout(() => { void import('./offline').then((m) => m.autoUpdate()).catch(() => {}); }, 800); // Nov 8: a waiting update applies on the menu / Dashboard
     // Nov 6 (Ken approved design D): signed in, the main menu is the Dashboard; offline and the mock PvP pages keep the older menu
     if (net.active && !/[?&]pvp=mock/.test(location.search)) { void import('../net/dashboard').then((m) => m.showDashboard(this)); return; }
     const s = this.menuScreen('main', 'title');
@@ -640,7 +644,7 @@ export class App {
       const d: any = this.dialog('Welcome to Oreheart!', [h('h2', {}, 'Welcome to Oreheart!'),
         h('p', { style: 'text-align:center;margin:0' }, 'New here? A short guided match teaches you the basics.'),
         h('div', { class: 'row' },
-          btn('Start Tutorial', 'primary', () => { localStorage.setItem('oreheart.tutorialSeen', '1'); d.close(); this.beginTutorial(); }),
+          btn('Start Tutorial', 'primary', () => { localStorage.setItem('oreheart.tutorialSeen', '1'); d.close(); this.tutorialFrom = 'welcome'; this.beginTutorial(); }),
           btn('Skip', '', () => { localStorage.setItem('oreheart.tutorialSeen', '1'); d.close(); }))], () => s.classList.remove('welcome-on'));
       s.classList.add('welcome-on');
       d.el.dataset.sticky = '1';
@@ -1021,7 +1025,7 @@ export class App {
       sec('Combat', 'Attack is swings: a creature with Attack 2 swings twice. About 1 swing in 10 misses, and about 1 landed hit in 10 is blocked, so roughly 4 swings in 5 get through. Armored and Riot Shield units block a little more often, big units (cost 7 or more) a little less, and attacks by big units are a little harder to block. In one fight (the attack and the strike back) each unit can block only once, and a unit never misses twice in a row. Commanders can block too, rarely. A hit that gets through does 1 damage. In melee the defender then swings back the same way, if it is still standing. Ranged creatures hit the first enemy up to 7 spaces away in one of the 8 straight directions (they cannot shoot past a unit) and get no strike back. Dwarves beat Goblins, Goblins beat Gnomes and Gnomes beat Dwarves for +1 swing, except against Miners. Spells do their damage straight, with no dice. Shield 1 blocks the next hit that lands. Move points: a creature\'s foot number is how many steps it can take in a turn; the attack costs 1 point and ends its turn, so a 3-foot creature can walk 2 and then attack. Miners have 1. MISS, PARRY and BLOCK pop up over the target so you can see every swing.', combat),
       sec('Savings', 'If you end your own turn with 10 or more unspent Flow, every 10 Flow (rounded down) moves into your Bank as 1 banked crystal. Spells, Instants and Crystal cards never count as moves, so a turn with nothing else to do passes by itself.'),
       sec('Spells & Instants', 'Spells are cast by your Commander using crystals (Flow first, then Bank). Commanders never attack. Instants can answer the enemy during a "Respond?" window that lasts 12 seconds. It opens whenever you hold a matching Instant, even if you cannot pay for it yet: you can play a Crystal card on its own or together with a counterspell to pay for it. Counterspells cancel spells or summons.'),
-      h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Tutorial', 'menu-fwd', () => this.beginTutorial()), btn('Back', 'menu-back', () => this.showMenu())));
+      h('div', { class: 'stack', style: 'margin:10px 0 20px' }, btn('Tutorial', 'menu-fwd', () => this.openTutorial('menu')), btn('Back', 'menu-back', () => this.showMenu())));
     this.root.append(s);
   }
 
@@ -1347,6 +1351,7 @@ export class App {
 
   // ------------------------------------------------------------ match
   beginMatch(options: any = {}) {
+    if (this.tut2?.active) this.tut2.stop(); document.querySelectorAll('.tut2-layer').forEach((x) => x.remove()); // Nov 8: a real match ends any tutorial pointer
     this.leaveNet();
     this.enemyCrystalKey = "";
     const o = { ...options };
@@ -1469,11 +1474,27 @@ export class App {
 
   /** Ken, Nov 1: the tutorial is graphic and hands-on (src/ui/tutorial.ts): one small board per lesson. `step` starts at a lesson (checks). */
   tut: Tutorial | null = null;
+  /** Nov 8: Tutorial v2 (src/ui/tutorial2.ts): chapters 'ch1'..'ch5'; 'ch6' and the old lesson ids run the lesson runner above */
+  tut2: Tutorial2 | null = null;
+  tutorialFrom: 'dashboard' | 'menu' | 'settings' | 'welcome' | '' = '';
   beginTutorial(step?: string) {
     this.lastTutorial = true;
+    if (!step || /^ch[1-6]$/.test(step)) {
+      this.tut?.stop(); this.tut = null;
+      if (!this.tut2) this.tut2 = new Tutorial2(this);
+      return this.tut2.begin(step || 'ch1');
+    }
+    return this.beginLegacyTutorial(step);
+  }
+  /** the lesson runner (chapter 6 "clever tricks" and the old lesson ids the checks use) */
+  beginLegacyTutorial(step?: string) {
+    this.lastTutorial = true;
+    this.tut2?.stop();
     if (!this.tut) this.tut = new Tutorial(this);
     return this.tut.begin(step);
   }
+  /** the Tutorial buttons (Dashboard, Settings, How to Play): a small picker, the whole tutorial or one part */
+  openTutorial(from: 'dashboard' | 'menu' | 'settings') { this.tutorialFrom = from; Tutorial2.picker(this, from); }
   /** One tutorial lesson's board (called by tutorial.ts); the arena stays the same for the whole tutorial. */
   startTutorialLesson(opts: any) {
     this.leaveNet();
@@ -2660,6 +2681,7 @@ export class App {
     const me = st.players.player, en = st.players.opponent;
     this.view && this.view.setState(st, events);
     this.record(st, events);
+    if (this.tut2?.active) this.tut2.noteEvents(events); // Nov 8: the practice skirmish ticks its goals from the events
     this.logFx(st, events);
     this.setHeart(r.enemyHealth, en.health);
     this.placeEnemyCrystal();
@@ -4227,7 +4249,7 @@ export class App {
     }
     if (st.phase === 'over' && !this.endShown) {
       this.endShown = true;
-      this.reportMatchEnd(st); // Nov 2: every match, vs-computer and PvP
+      if (!st.tutorial) this.reportMatchEnd(st); // Nov 2: every match, vs-computer and PvP (Nov 8: never a tutorial board)
       if (this.ranked(st) && !this.rankResult && st.winner) this.rankResult = recordResult(st.winner === 'player', this.rival!.id, this.rival!.points); /* Ken, Oct 31: rank points */
       const loser = st.winner === 'player' ? 'opponent' : 'player';
       const esc = FACTIONS[st.players[loser].faction].symbol === 'skull' ? '🚀' : FACTIONS[st.players[loser].faction].symbol === 'gear' ? '💨' : '🕳️';
@@ -4238,6 +4260,7 @@ export class App {
       const ov = h('div', { class: 'retreat', 'aria-hidden': 'true' }, h('img', { class: 'retreat-result', src: `/art/ui/banner-${endBanner(st.winner === 'player', st)}.webp`, alt: '', draggable: 'false' }), h('div', { class: 'esc' }, st.players[loser].commanderId === 'grubnak' ? '' : esc));
       this.root.querySelector('.match')?.append(ov);
       const winner = st.winner;
+      if (st.tutorial && this.tut2?.active && this.tut2.onWin(st)) return; // Nov 8: a Tutorial v2 board goes on to its next part
       setTimeout(() => this.showEnd(winner), t);
     }
   }

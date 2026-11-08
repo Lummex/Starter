@@ -1157,7 +1157,7 @@ test('AC700: the Exit box (Ken, Nov 7: from the cards screen the clicks went thr
   await exitBoxWorks(page, 'Rankings');
 });
 
-test('AC701: the Dashboard has a Tutorial button (Ken, Nov 7) next to Find a match; it starts the guided match (the Nov 1 tutorial)', async ({ page }) => {
+test('AC701: the Dashboard has a Tutorial button (Ken, Nov 7) next to Find a match; it opens the tutorial picker and starts the guided match (Tutorial v2, Nov 8)', async ({ page }) => {
   await signedInDash(page);
   const tut = page.locator('[data-testid=dash-tutorial]');
   await expect(tut).toBeVisible();
@@ -1165,6 +1165,9 @@ test('AC701: the Dashboard has a Tutorial button (Ken, Nov 7) next to Find a mat
   const [a, b] = await Promise.all([tut.boundingBox(), page.locator('[data-testid=dash-find]').boundingBox()]);
   expect(Math.abs(a.y - b.y), 'same row as Find a match').toBeLessThan(4);
   await tut.click();
+  // Nov 8 (Tutorial v2): the button opens the part picker first; "Whole tutorial" starts part 1 on a tutorial board
+  await expect(page.getByTestId('tut-picker')).toBeVisible();
+  await page.getByTestId('tut-pick-all').click();
   await expect(page.locator('main.match')).toBeVisible({ timeout: 20000 });
   await expect.poll(() => page.evaluate(() => !!(window.oreheart.getState() && window.oreheart.getState().tutorial)), { timeout: 10000 }).toBe(true);
 });

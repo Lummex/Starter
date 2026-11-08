@@ -16,6 +16,38 @@ export const downloadAll = () => { st.downloading = true; ping(); send({ cmd: 'd
 /** Switch to the waiting version now: the page reloads once it takes over. */
 export const applyUpdate = () => { reg?.waiting?.postMessage({ type: 'oreheart-sw', cmd: 'skipWaiting' }); };
 
+/** Nov 8 (Forge, after launch night: returning players kept yesterday's game until they found "Restart to update" in Settings):
+ *  a waiting update is applied by itself, but only while the main menu / Dashboard is on screen with no match, dialog or form open
+ *  (nothing to lose: decks, settings and progress are already saved). A short "Updating Oreheart..." shows, then the page reloads. */
+const safeToUpdate = (): boolean => {
+  if (typeof document === 'undefined') return false;
+  if (!document.querySelector('main[data-screen="title"]')) return false;           // only on the menu or the Dashboard
+  if (document.querySelector('main.match, .overlay, dialog[open], .dialog, .cardzoom, .pko, .pkm')) return false; // no match, dialog or pack opening
+  const a = document.activeElement as HTMLElement | null;
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return false;              // never while typing
+  return true;
+};
+let updating = false;
+/** Apply a waiting update now if it is safe (call on every menu / Dashboard visit). True when the page is about to reload. */
+export async function autoUpdate(): Promise<boolean> {
+  if (updating || !navigator.serviceWorker?.controller || !safeToUpdate()) return false;
+  // ask the browser afresh: the registration object kept from start-up can miss a version that installed later
+  let r: ServiceWorkerRegistration | null | undefined = null;
+  try { r = await navigator.serviceWorker.getRegistration(); } catch { r = null; }
+  const w = r?.waiting || reg?.waiting;
+  if (!w || updating || !safeToUpdate()) return false;
+  updating = true; st.updateReady = true; // controllerchange reloads only when an update was expected
+  const note = document.createElement('div');
+  note.className = 'oh-updating'; note.setAttribute('role', 'status'); note.setAttribute('data-testid', 'auto-update');
+  note.textContent = 'Updating Oreheart…';
+  document.body.append(note);
+  w.postMessage({ type: 'oreheart-sw', cmd: 'skipWaiting' });
+  setTimeout(() => location.reload(), 4000); // the new worker normally takes over first (controllerchange reloads); never get stuck
+  return true;
+}
+/** test hook: what the automatic update sees */
+export const autoUpdateDebug = async () => { let r: any = null; try { r = await navigator.serviceWorker.getRegistration(); } catch { /* none */ } return { reg: !!reg, waiting: !!(r?.waiting || reg?.waiting), controller: !!navigator.serviceWorker?.controller, safe: safeToUpdate(), updating }; };
+
 /** Enough room to keep the whole game? Phones with little storage stay on CORE and cache models as they are used. */
 async function roomForEverything(): Promise<boolean> {
   try {
@@ -43,6 +75,7 @@ export async function initOffline(enabled: boolean): Promise<void> {
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (st.updateReady && !reloading) { reloading = true; location.reload(); } });
   const watch = (w: ServiceWorker | null) => { if (!w) return; w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) { st.updateReady = true; ping(); } if (w.state === 'activated') refresh(); }); };
   reg.addEventListener('updatefound', () => watch(reg!.installing));
+  setInterval(() => { void reg?.update().catch(() => {}); }, 20 * 60 * 1000); // long sessions look for a new version every 20 minutes
   if (reg.waiting && navigator.serviceWorker.controller) { st.updateReady = true; ping(); }
   const refresh = () => send({ cmd: 'status' });
   await navigator.serviceWorker.ready;

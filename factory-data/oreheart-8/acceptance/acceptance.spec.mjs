@@ -1333,16 +1333,19 @@ test('AC25: first visit offers the tutorial; Skip is remembered', async ({ page 
   await expect(offer).toBeHidden();
 });
 
-test('AC25: Tutorial button opens the guided lessons: picture card, Try it!, a spoken line and Skip Tutorial', async ({ page }) => {
+test('AC25: Tutorial button opens the guided lessons: a part picker, a picture card, Try it!, the word bubble by the finger and Skip (Tutorial v2, Nov 8)', async ({ page }) => {
   await openMenu(page);
   await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   await page.getByRole('button', { name: 'Tutorial', exact: true }).click();
-  await expect(page.locator('img[src*="card-drag"]').first()).toBeVisible();
+  await expect(page.getByTestId('tut-picker')).toBeVisible();
+  await page.getByTestId('tut-pick-all').click();
+  await expect(page.locator('img[src*="hand-pointing"]').first()).toBeVisible();
   await page.getByRole('button', { name: 'Try it!' }).click();
-  const tip = page.getByLabel('Tutorial tip', { exact: true });
-  await expect(tip).toBeVisible();
-  await expect(tip).toContainText(/Drag this card/i, { timeout: 10000 });
-  await page.getByRole('button', { name: 'Skip Tutorial' }).click();
+  const bub = page.getByTestId('tut-bubble');
+  await expect(bub).toBeVisible();
+  await expect(bub).toContainText(/Welcome to the Skullfang Arena/i, { timeout: 10000 });
+  await page.getByTestId('tut-skip').first().click();
+  await page.getByTestId('tut-skip-yes').click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });
 
@@ -12225,7 +12228,8 @@ test('AC483: the Done button is larger than the Menu button (Ken, Nov 7: about 2
 // studio/sound-spec.json: event -> file(s), base volume, random pitch range in semitones (+/- 1.5 dB volume on top)
 const SFX_SPEC = {
   click: [['ui-click'], 0.45, 0.5], tick: [['ui-tick'], 0.35, 0.3], chime: [['ui-chime'], 0.5, 0], draw: [['card-draw'], 0.6, 1], cardPlay: [['card-play'], 0.7, 0.7], // Oct 31 (Brush mix_rules): lowered base volumes for the small sounds
-  summon: [['summon-1', 'summon-2', 'summon-3'], 0.6, 0.8], 'step:goblins': [['step-goblin'], 0.4, 1.5], 'step:gnomes': [['step-gnome'], 0.4, 1.5], 'step:dwarves': [['step-dwarf'], 0.4, 1.2],
+  // Ken, Nov 7: summon is one real card-on-the-table sound (sample A); it replaced the 3 summon variants
+  summon: [['card-place-a.wav'], 0.8, 0.8], 'step:goblins': [['step-goblin'], 0.4, 1.5], 'step:gnomes': [['step-gnome'], 0.4, 1.5], 'step:dwarves': [['step-dwarf'], 0.4, 1.2],
   // Oct 31 (Brush): the projectile sounds
   'shot-rifle': [['shot-rifle'], 0.9, 0.8], 'shot-cannon': [['shot-cannon'], 1, 0.5], 'throw-whoosh': [['throw-whoosh'], 0.8, 1.5], 'cast-zap': [['cast-zap'], 0.85, 1],
   'cast-hex': [['cast-hex'], 0.7, 1], 'fireball-whoosh': [['fireball-whoosh'], 0.85, 1], 'bowl-roll': [['bowl-roll'], 0.6, 0], 'skull-crack': [['skull-crack'], 0.9, 1],
@@ -12236,10 +12240,12 @@ const SFX_SPEC = {
 };
 const SFX_SPELLS = ['fireball', 'meteor-strike', 'venom-shiv', 'tunnel-rush', 'battle-cry', 'healing-light', 'shield-bubble', 'second-wind', 'prospectors-prayer', 'fizzle', 'hold-it', 'spell-snap', 'mirror-hex'];
 for (const id of SFX_SPELLS) SFX_SPEC['spell:' + id] = [['spell-' + id], 1, 0];
+/** a sound file's served path: a name with its own type (Ken's card-place-a.wav) or an OGG (Nov 8) */
+const sfxPath = (f) => (/\.(wav|ogg|mp3)$/.test(f) ? `/audio/sfx/${f}` : `/audio/sfx/${f}.ogg`);
 const sfxState = async (page) => (await page.evaluate(async () => await window.oreheart.getAudioState())).sfx;
 async function sfxReady(page) {
   await page.mouse.click(5, 5); // first gesture unlocks audio; the files load after it
-  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 58 sound files decoded (Oct 31: 3 summon variants; Nov 1: rocket launch and crash)', timeout: 20000 }).toBe(58); // Nov 6: + the three new spells' sounds
+  await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 56 sound files decoded (Nov 7: the card-place sound replaced the 3 summon variants; Nov 1: rocket launch and crash)', timeout: 20000 }).toBe(56); // Nov 6: + the three new spells' sounds
 }
 const playKey = (page, key) => page.evaluate((k) => {
   if (k.startsWith('spell:')) window.oreheart.playSpellSound(k.slice(6));
@@ -12259,11 +12265,11 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
       await page.evaluate(() => window.oreheart.setMixRules({ enabled: false })); // this check plays every sound as asked; the mix rules have their own check (AC525)
       let st = await sfxState(page);
       // every spec event maps to its files under /audio/sfx/, each served (200) and decoded
-      for (const [key, [files]] of Object.entries(SFX_SPEC)) expect(st.map[key], key).toEqual(files.map((f) => `/audio/sfx/${f}.ogg`));
+      for (const [key, [files]] of Object.entries(SFX_SPEC)) expect(st.map[key], key).toEqual(files.map((f) => sfxPath(f)));
       for (const f of Object.values(SFX_SPEC).flatMap(([fs]) => fs)) {
-        const r = await request.get(`/audio/sfx/${f}.ogg`);
+        const r = await request.get(sfxPath(f));
         expect(r.status(), f).toBe(200);
-        expect((await r.body()).subarray(0, 4).toString('latin1'), `${f} is OGG`).toBe('OggS');
+        expect((await r.body()).subarray(0, 4).toString('latin1'), `${f} is ${/\.wav$/.test(f) ? 'WAV' : 'OGG'}`).toBe(/\.wav$/.test(f) ? 'RIFF' : 'OggS'); // Nov 8: Ken's card-place sound is a WAV
         expect(st.files[f], `${f} decoded`).toBe('ok');
       }
       // each event plays its file (not the synth fallback), pitch and volume inside the spec's random range
@@ -12272,7 +12278,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
         const p = await lastPlay(page);
         expect(p.key, key).toBe(key);
         expect(p.from, `${key} from the file`).toBe('file');
-        expect(files.map((f) => `/audio/sfx/${f}.ogg`)).toContain(p.file);
+        expect(files.map((f) => sfxPath(f))).toContain(p.file);
         expect(p.rate, `${key} playbackRate`).toBeGreaterThanOrEqual(Math.pow(2, -semis / 12) - 1e-6);
         expect(p.rate, `${key} playbackRate`).toBeLessThanOrEqual(Math.pow(2, semis / 12) + 1e-6);
         const base = key === 'turn-start' ? vol * 0.6 : vol; // the turn horn plays gently
@@ -12691,7 +12697,7 @@ for (const dev of [{ name: '1920x1080', use: { viewport: { width: 1920, height: 
       ] }));
       await done(page);
       const man = await voicesReady(page, request);
-      await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 58 sound files decoded (with the 12 projectile sounds, 3 summon variants, the 2 rocket sounds)', timeout: 20000 }).toBe(58); // Nov 6: + the three new spells' sounds
+      await expect.poll(async () => (await sfxState(page)).loaded, { message: 'all 56 sound files decoded (with the 12 projectile sounds, the card-place sound, the 2 rocket sounds)', timeout: 20000 }).toBe(56); // Nov 6: + the three new spells' sounds
       await expect.poll(async () => (await sfxState(page)).punchLoaded, { message: 'all 6 punch files decoded', timeout: 20000 }).toBe(6);
       await unitLoaded(page, 'goblin-sneak', man); await unitLoaded(page, 'dwarf-pickman', man);
       // --- the hurt rule, through the voice hook (owner check change, Ken Nov 1: the 1-in-20 roll replaced the 35 % rule; test pages roll every time, AC550 checks the roll)
@@ -12834,7 +12840,7 @@ test('AC513: the unit voices are on, every clip is levelled the same (no per-lin
 
 // Brush / Ken (Oct 31): summon = 3 "materialize" variants (never the same twice in a row), the mining clink at most once per 0.4 s, the chime not on every pick;
 // Ken: "the sound effects default sound is too high. They should be down a little lower." (starting volume only; a saved volume is kept)
-test('AC524: summon plays 3 variants without repeating, the mining clink is limited to one per 0.4 s, and the default Sound effects volume starts lower while a saved volume is kept', async ({ page, context }) => {
+test('AC524: summon plays the card-on-the-table sound (Ken, Nov 7), the mining clink is limited to one per 0.4 s, and the default Sound effects volume starts lower while a saved volume is kept', async ({ page, context }) => {
   test.setTimeout(90000);
   await start(page, quiet({ playerHand: [] }));
   await sfxReady(page);
@@ -12842,9 +12848,8 @@ test('AC524: summon plays 3 variants without repeating, the mining clink is limi
   for (let i = 0; i < 12; i++) { await playKey(page, 'summon'); await page.waitForTimeout(140); } // Oct 31 mix rules: the same sound at most once per 120 ms
   const s = (await sfxState(page)).plays.slice(base).filter((p) => p.key === 'summon').map((p) => p.file);
   expect(s.length).toBe(12);
-  for (let i = 1; i < s.length; i++) expect(s[i], `summon ${i} differs from summon ${i - 1}`).not.toBe(s[i - 1]);
-  expect(new Set(s).size, 'all three variants are used').toBe(3);
-  expect(s.every((f) => /\/audio\/sfx\/summon-[123]\.ogg$/.test(f))).toBe(true);
+  // Ken, Nov 7: one sound, a real card set down on the table (sample A), instead of the 3 summon variants
+  expect(s.every((f) => /\/audio\/sfx\/card-place-a\.wav$/.test(f))).toBe(true);
   await page.waitForTimeout(900); // the last summons must end first: the mix allows 3 effects at once and a pick ranks below a summon
   const n1 = (await sfxState(page)).plays.length;
   await page.evaluate(() => { for (let i = 0; i < 6; i++) window.oreheart.playSfx('pick'); });

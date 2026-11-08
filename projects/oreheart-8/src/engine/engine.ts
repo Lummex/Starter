@@ -641,6 +641,9 @@ export function swingOdds(n: number, def: any | null, attacker?: any): { deal: n
 export const expectedSwings = (n: number, def: any | null, attacker?: any): number => swingOdds(n, def, attacker).deal;
 /** One swing's dice for attacker uid `au` at a defender `du` with block chance `pct` (percent). */
 function rollSwing(s: any, sk: Skirmish, au: string, du: string, pct: number): 'miss' | 'block' | 'hit' {
+  // Tutorial v2 (Nov 8): a teaching fight never leaves the lesson to luck: the tutorial queues the exact results, used first
+  const q = s.tutorial && Array.isArray(s.tutorial.rolls) ? s.tutorial.rolls : null;
+  if (q && q.length) { const r = q.shift(); if (r === 'miss') { sk.missed.add(au); return 'miss'; } if (r === 'block') { sk.blocked.add(du); return 'block'; } return 'hit'; }
   if (SURE()) return 'hit';
   const canMiss = !(GUARD() && sk.missed.has(au));
   if (canMiss && d100(s) <= (COMBAT().missPct ?? 10)) { sk.missed.add(au); return 'miss'; }
@@ -1718,7 +1721,7 @@ function applyActionInner(state: any, action: any): { ok: boolean; state: any; e
 // starts each lesson as its own scripted match with `tutorial: '<step>'`); the engine only notices when the lesson's goal was done.
 // 'controls', 'order' and 'chain' are taught with the real controls and drawn orders (UI only): the tutorial screen marks them done
 // with markTutorialDone(). Room is kept before 'swap' for Anvil's coming lessons (a standing mining order; guard arrows).
-export const TUTORIAL_ORDER = ['card', 'controls', 'move', 'order', 'chase', 'chain', 'ranged', 'fight', 'commander', 'mineorder', 'guardarrows', 'swap', 'complete'];
+export const TUTORIAL_ORDER = ['card', 'controls', 'move', 'order', 'chase', 'chain', 'ranged', 'fight', 'commander', 'mineorder', 'guardarrows', 'swap', 'v2', 'complete']; // 'v2': a Tutorial v2 board (src/ui/tutorial2.ts runs it; the engine only keeps its rolls)
 export const TUTORIAL_UI_STEPS = ['controls', 'order', 'chain', 'mineorder', 'guardarrows'];
 export function markTutorialDone(s: any) { if (s && s.tutorial && s.tutorial.step !== 'complete') s.tutorial.done = true; }
 function advanceTutorial(s: any, act: any, actor: Side, events: any[]) {

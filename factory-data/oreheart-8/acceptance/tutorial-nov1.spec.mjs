@@ -56,11 +56,14 @@ const centre = async (loc) => { const b = await loc.boundingBox(); return { x: b
 const ringAt = (page) => page.evaluate(() => { const r = document.querySelector('.tut-layer .tut-ring'); if (!r) return null; const b = r.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; });
 const inside = (p, b, pad = 8) => p && b && p.x >= b.x - pad && p.x <= b.x + b.width + pad && p.y >= b.y - pad && p.y <= b.y + b.height + pad;
 
-test('TUT1: How to Play -> Tutorial opens lesson 1: a big picture card, one short line, Try it! (1920x1080)', async ({ page }) => {
+test('TUT1: the lesson runner lesson 1 (now inside Tutorial v2 part 6 "Clever tricks"; How to Play -> Tutorial opens the part picker since Nov 8): a big picture card, one short line, Try it! (1920x1080)', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await openMenu(page);
   await page.getByRole('button', { name: 'How to Play', exact: true }).click();
   await page.getByRole('button', { name: 'Tutorial', exact: true }).click();
+  await expect(page.getByTestId('tut-picker')).toBeVisible();
+  await openTest(page);
+  await page.evaluate(() => window.__app.beginLegacyTutorial('card'));
   const card = page.locator('.tut-intro .tut-card');
   await expect(card).toBeVisible();
   const pic = card.locator('img.tut-big-pic');

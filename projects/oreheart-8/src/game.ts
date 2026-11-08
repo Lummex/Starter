@@ -56,6 +56,8 @@ export class Game {
   ai = true;
   aiBoth = false;
   scripted = false;
+  /** Tutorial v2 (Nov 8): the scripted enemy's next action (null = pass / Done as before) */
+  scriptedEnemy: ((s: any) => any | null) | null = null;
   difficulty = 'normal';
   /** Oct 31: the computer's playstyle for this match (the rival's; styles.ts). 'balanced' = the computer exactly as before. */
   aiStyle: StyleId = 'balanced';
@@ -122,6 +124,7 @@ export class Game {
     this.ai = options.ai !== false;
     this.aiBoth = this.testMode && (options.aiBoth === true || (this.mode === 'compvscomp' && !options.paused));
     this.scripted = !!options.tutorial;
+    this.scriptedEnemy = null; // a new match: Tutorial v2 sets its own after creating the board
     this.autoSkip = !this.scripted && (this.testMode ? options.autoSkip === true : options.autoSkip !== false);
     clearTimeout(this.skipTimer);
     if (this.scripted) this.ai = true;
@@ -419,7 +422,7 @@ export class Game {
     const s = this.state;
     if (this.aiTurn !== s.turn) { this.aiTurn = s.turn; this.aiCount = 0; }
     const snap = this.testMode ? JSON.stringify(s) : null;
-    let a = this.scripted ? (s.pendingResponse ? { type: 'pass' } : { type: 'done' }) : aiChoose(s, this.difficulty, this.rand, undefined, this.aiStyle);
+    let a = this.scripted ? (s.pendingResponse ? { type: 'pass' } : ((this.scriptedEnemy && this.scriptedEnemy(s)) || { type: 'done' })) : aiChoose(s, this.difficulty, this.rand, undefined, this.aiStyle);
     if (this.testMode && (globalThis as any).__aiForceNext) { const f = (globalThis as any).__aiForceNext; delete (globalThis as any).__aiForceNext; a = f(s); } // test hook: the referee must refuse this
     a = auditPick(s, a, snap);
     if (++this.aiCount > 60 && !s.pendingResponse && s.phase !== 'mulligan') a = { type: 'done' };

@@ -1,124 +1,596 @@
 {
-  "playerCommander": "grubnak",
-  "opponentCommander": "sproingle",
-  "setup": {
-    "firstPlayer": "player",
-    "opponentHealth": 2,
-    "playerHand": [
-      "goblin-scrounger",
-      "goblin-scrounger",
-      "goblin-smith-miner",
-      "crystal-cluster",
-      "venom-shiv",
-      "goblin-grunt"
-    ],
-    "playerDeck": [
-      "goblin-smith-miner",
-      "goblin-grunt",
-      "goblin-grunt",
-      "goblin-pebbler",
-      "soul-shard",
-      "goblin-slinger",
-      "crystal-cluster",
-      "goblin-scrounger",
-      "goblin-grunt",
-      "goblin-pebbler",
-      "soul-shard",
-      "goblin-slinger",
-      "crystal-cluster",
-      "goblin-scrounger",
-      "goblin-grunt",
-      "goblin-pebbler",
-      "soul-shard",
-      "goblin-slinger",
-      "crystal-cluster",
-      "goblin-scrounger"
-    ],
-    "opponentHand": [],
-    "opponentDeck": [
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector",
-      "gnome-prospector"
-    ],
-    "board": [
-      {
-        "cardId": "gnome-prospector",
-        "owner": "opponent",
-        "row": 2,
-        "col": 8
-      },
-      {
-        "cardId": "gnome-prospector",
-        "owner": "opponent",
-        "row": 2,
-        "col": 4
-      },
-      {
-        "cardId": "goblin-pebbler",
-        "owner": "player",
-        "row": 3,
-        "col": 8
-      }
-    ]
-  },
-  "tips": {
-    "summon": "Welcome! Your Stronghold sits in the bottom-left corner. Drag a Miner (Goblin Miner) from your hand onto a free space on your back row, the bottom row next to that corner, to summon it. You have no crystals, but a basic Miner is free when you are broke.",
-    "move": "Nice! Press Done to reach the Action phase, then drag your Miner onto an empty space beside the middle mine. Miners may move the turn they appear. Each troop does one thing per turn: move OR attack OR mine. You can zoom (pinch or mouse wheel) and drag the battlefield to look around, and tap any creature to see its card.",
-    "mine": "Mining is an action! On your next Action phase, drag your Miner onto the mine beside it. A Miner mines 2 crystals, a Fighter 1. Standing nearby without mining gives nothing.",
-    "mineTap": "Now the shortcut. Next turn, in the Action phase, tap the mine: every ready Miner beside it mines at once. Tap the mine now (press and hold a mine to see its info).",
-    "spend": "What you mined becomes your Flow at the start of your next turn. Spend your Flow: summon a Miner or another troop in the Deploy phase. (The tutorial tops up your Bank so you can keep playing.)",
-    "crystal": "Crystal cards fill your Bank. Bank crystals never reset and can be spent any time, even while the enemy acts. Play a Crystal card from your hand now.",
-    "upgrade": "Upgrade time! In the Deploy phase, drag a Miner card from your hand onto one of your own troops to upgrade it. A basic Miner gives +1 Health, a Smith Miner gives +1 Attack and +1 Health, for good.",
-    "swap": "Swap places: in the Action phase drag one of your troops onto another of yours (within its move range) to trade places.",
-    "fight": "Time to fight! In the Action phase drag your Boneknocker onto the enemy troop. A preview shows You deal and You take before you let go. Melee hits are simultaneous: both strike. Damage heals at the start of your next turn.",
-    "spell": "Cast a spell! Drag Venom Shiv from your hand onto an enemy troop: it is poisoned for 3 turns. Spells cost soul crystals (Flow first, then Bank). Tap a card's text for the Full explanation.",
-    "savings": "Saving up: if you end your turn with 10 or more Flow, every 10 Flow becomes 1 banked crystal. You have plenty of Flow right now, so just press Done and watch it get banked. After the enemy moves, open the Menu on the right and press Last turn to see what it did.",
-    "commander": "Finally, march a fighter next to the enemy Stronghold and attack the Commander. Each hit removes Health equal to the attacker's Attack. Bring them to 0!",
-    "complete": "Tutorial complete!"
-  },
-  "mines": [
-    {
-      "row": 3,
-      "col": 5
-    },
-    {
-      "row": 4,
-      "col": 7
-    },
-    {
-      "row": 5,
-      "col": 9
-    }
+ "playerCommander": "grubnak",
+ "opponentCommander": "sproingle",
+ "setup": {
+  "firstPlayer": "player",
+  "opponentHealth": 2,
+  "playerHand": [
+   "goblin-scrounger",
+   "goblin-scrounger",
+   "goblin-smith-miner",
+   "crystal-cluster",
+   "venom-shiv",
+   "goblin-grunt"
   ],
-  "gifts": {
-    "spend": {
-      "bank": 2
-    },
-    "upgrade": {
-      "bank": 2
-    },
-    "spell": {
-      "bank": 3
-    },
-    "savings": {
-      "flow": 12
-    }
+  "playerDeck": [
+   "goblin-smith-miner",
+   "goblin-grunt",
+   "goblin-grunt",
+   "goblin-pebbler",
+   "soul-shard",
+   "goblin-slinger",
+   "crystal-cluster",
+   "goblin-scrounger",
+   "goblin-grunt",
+   "goblin-pebbler",
+   "soul-shard",
+   "goblin-slinger",
+   "crystal-cluster",
+   "goblin-scrounger",
+   "goblin-grunt",
+   "goblin-pebbler",
+   "soul-shard",
+   "goblin-slinger",
+   "crystal-cluster",
+   "goblin-scrounger"
+  ],
+  "opponentHand": [],
+  "opponentDeck": [
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector",
+   "gnome-prospector"
+  ],
+  "board": [
+   {
+    "cardId": "gnome-prospector",
+    "owner": "opponent",
+    "row": 2,
+    "col": 8
+   },
+   {
+    "cardId": "gnome-prospector",
+    "owner": "opponent",
+    "row": 2,
+    "col": 4
+   },
+   {
+    "cardId": "goblin-pebbler",
+    "owner": "player",
+    "row": 3,
+    "col": 8
+   }
+  ]
+ },
+ "mines": [
+  {
+   "row": 3,
+   "col": 5
+  },
+  {
+   "row": 4,
+   "col": 7
+  },
+  {
+   "row": 5,
+   "col": 9
   }
+ ],
+ "gifts": {
+  "spend": {
+   "bank": 2
+  },
+  "upgrade": {
+   "bank": 2
+  },
+  "spell": {
+   "bank": 3
+  },
+  "savings": {
+   "flow": 12
+  }
+ },
+ "_discontinued": {
+  "tipsOld": {
+   "summon": "Welcome! Your Stronghold sits in the bottom-left corner. Drag a Miner (Goblin Miner) from your hand onto a free space on your back row, the bottom row next to that corner, to summon it. You have no crystals, but a basic Miner is free when you are broke.",
+   "move": "Nice! Press Done to reach the Action phase, then drag your Miner onto an empty space beside the middle mine. Miners may move the turn they appear. Each troop does one thing per turn: move OR attack OR mine. You can zoom (pinch or mouse wheel) and drag the battlefield to look around, and tap any creature to see its card.",
+   "mine": "Mining is an action! On your next Action phase, drag your Miner onto the mine beside it. A Miner mines 2 crystals, a Fighter 1. Standing nearby without mining gives nothing.",
+   "mineTap": "Now the shortcut. Next turn, in the Action phase, tap the mine: every ready Miner beside it mines at once. Tap the mine now (press and hold a mine to see its info).",
+   "spend": "What you mined becomes your Flow at the start of your next turn. Spend your Flow: summon a Miner or another troop in the Deploy phase. (The tutorial tops up your Bank so you can keep playing.)",
+   "crystal": "Crystal cards fill your Bank. Bank crystals never reset and can be spent any time, even while the enemy acts. Play a Crystal card from your hand now.",
+   "upgrade": "Upgrade time! In the Deploy phase, drag a Miner card from your hand onto one of your own troops to upgrade it. A basic Miner gives +1 Health, a Smith Miner gives +1 Attack and +1 Health, for good.",
+   "swap": "Swap places: in the Action phase drag one of your troops onto another of yours (within its move range) to trade places.",
+   "fight": "Time to fight! In the Action phase drag your Boneknocker onto the enemy troop. A preview shows You deal and You take before you let go. Melee hits are simultaneous: both strike. Damage heals at the start of your next turn.",
+   "spell": "Cast a spell! Drag Venom Shiv from your hand onto an enemy troop: it is poisoned for 3 turns. Spells cost soul crystals (Flow first, then Bank). Tap a card's text for the Full explanation.",
+   "savings": "Saving up: if you end your turn with 10 or more Flow, every 10 Flow becomes 1 banked crystal. You have plenty of Flow right now, so just press Done and watch it get banked. After the enemy moves, open the Menu on the right and press Last turn to see what it did.",
+   "commander": "Finally, march a fighter next to the enemy Stronghold and attack the Commander. Each hit removes Health equal to the attacker's Attack. Bring them to 0!",
+   "complete": "Tutorial complete!"
+  }
+ },
+ "v2": {
+  "_note": "Tutorial v2 (Nov 8, Ledger's spec studio/specs/tutorial-v2.md). Words only: the targets, goals and boards live in src/ui/tutorial2.ts by step id. {click} / {Click} become Click or Tap; {cost} {atk} {hp} {move} {abCost} {abName} {name} come from the card being taught.",
+  "chapters": [
+   {
+    "id": "ch1",
+    "title": "Your battle screen",
+    "pic": "hand-pointing",
+    "say": "Your battle screen.",
+    "sub": "Let's look around before the fighting starts.",
+    "steps": [
+     {
+      "id": "tour-hello",
+      "title": "Welcome to the Skullfang Arena!",
+      "do": "Let's look around before the fighting starts.",
+      "ok": "Let's go!"
+     },
+     {
+      "id": "tour-menu",
+      "title": "This is the Menu button.",
+      "do": "{Click} it to open the menu.",
+      "hint": "{Click} the round Menu button the finger is pointing at."
+     },
+     {
+      "id": "tour-menu-panel",
+      "title": "The menu!",
+      "do": "Settings, sound, How to play, and the Give up button live here."
+     },
+     {
+      "id": "tour-menu-close",
+      "title": "That's the Menu button again.",
+      "do": "{Click} it to close the menu.",
+      "hint": "{Click} the Menu button again to close it."
+     },
+     {
+      "id": "tour-emote",
+      "title": "This is you!",
+      "do": "Your picture and name. {Click} your picture to send an emote.",
+      "hint": "{Click} your round picture, bottom left."
+     },
+     {
+      "id": "tour-emote-send",
+      "title": "Send one!",
+      "do": "{Click} \"Hello!\" to wave at your opponent.",
+      "hint": "{Click} the \"Hello!\" sticker."
+     },
+     {
+      "id": "tour-emote-mute",
+      "title": "They waved back!",
+      "do": "If someone's emotes ever bother you, open the dial and {click} \"Mute opponent\"."
+     },
+     {
+      "id": "tour-my-health",
+      "title": "Your Commander's Health.",
+      "do": "Grubnak starts with 20. If it reaches 0, he runs away and you lose!"
+     },
+     {
+      "id": "tour-enemy",
+      "title": "Your opponent.",
+      "do": "Their picture, name and Commander."
+     },
+     {
+      "id": "tour-enemy-health",
+      "title": "The enemy Commander's Health.",
+      "do": "Knock this from 20 down to 0 to WIN."
+     },
+     {
+      "id": "tour-flow",
+      "title": "Your crystal shards: Flow.",
+      "do": "Crystals pay for your cards. This big number is what you can spend this turn."
+     },
+     {
+      "id": "tour-bank",
+      "title": "Your Bank.",
+      "do": "Spare crystals from Crystal cards hide in here. They don't vanish at the end of a turn."
+     },
+     {
+      "id": "tour-next",
+      "title": "Next turn's Flow.",
+      "do": "\"+2\" would mean 2 more crystals arrive when your next turn starts."
+     },
+     {
+      "id": "tour-mines",
+      "title": "Crystal mines!",
+      "do": "Creatures next to a mine can dig. Miners dig 2 crystals, fighters 1. The crystals arrive next turn."
+     },
+     {
+      "id": "tour-phases",
+      "title": "Your turn has 4 phases.",
+      "do": "Draw › Deploy › Action › End. The lit one is now. Online, each phase has a timer."
+     },
+     {
+      "id": "tour-done",
+      "title": "This is the Done button.",
+      "do": "{Click} it when you're finished with a phase. Not yet! First, two more things."
+     },
+     {
+      "id": "tour-deck",
+      "title": "Your deck.",
+      "do": "You draw 1 card from here every turn. The number shows how many are left."
+     },
+     {
+      "id": "tour-enemy-deck",
+      "title": "Their deck and their hand.",
+      "do": "You can count their cards, but you can't peek!"
+     },
+     {
+      "id": "tour-hand",
+      "title": "Your hand.",
+      "do": "These are the cards you can play. Let's look at one up close!"
+     }
+    ]
+   },
+   {
+    "id": "ch2",
+    "title": "Reading a card",
+    "pic": "hand-pointing",
+    "say": "Reading a card.",
+    "sub": "Every number on a card means something.",
+    "steps": [
+     {
+      "id": "card-open",
+      "title": "{name}.",
+      "do": "{Click} the card to look at it up close.",
+      "hint": "{Click} the card in your hand, bottom middle."
+     },
+     {
+      "id": "card-cost",
+      "title": "Casting cost.",
+      "do": "The number in the top corner. He costs {cost} crystals to play."
+     },
+     {
+      "id": "card-attack",
+      "title": "Attack.",
+      "do": "The top number in the round badge: how many swings he gets. {atk} swings!"
+     },
+     {
+      "id": "card-health",
+      "title": "Health (defense).",
+      "do": "The bottom number: how many hits he can take. {hp} hits and he's out."
+     },
+     {
+      "id": "card-feet",
+      "title": "Feet.",
+      "do": "How many steps he can walk each turn. {move}!"
+     },
+     {
+      "id": "card-type",
+      "title": "Melee or ranged.",
+      "do": "A sword means he hits the space right next to him. A bow means he shoots from far away."
+     },
+     {
+      "id": "card-name",
+      "title": "His name.",
+      "do": "Every card has one. This one is very proud of his pan."
+     },
+     {
+      "id": "card-text",
+      "title": "What he does.",
+      "do": "The rules text. Special powers are written here. He has none: plain and sturdy."
+     },
+     {
+      "id": "card-rarity",
+      "title": "Rarity.",
+      "do": "Common, Uncommon, Rare, Ultra Rare, Legendary. Rarer cards are harder to find!"
+     },
+     {
+      "id": "card-faction",
+      "title": "His team colour.",
+      "do": "Green frames are Goblins, purple are Gnomes, blue are Dwarves."
+     },
+     {
+      "id": "card-play",
+      "title": "Play this card.",
+      "do": "{Click} this to put him on the battlefield. Or just drag cards from your hand!",
+      "hint": "{Click} \"Play this card\", then {click} a glowing square."
+     }
+    ]
+   },
+   {
+    "id": "ch3",
+    "title": "Units on the battlefield",
+    "pic": "walk-move-points",
+    "say": "Units on the battlefield.",
+    "sub": "Read their badges before you fight.",
+    "steps": [
+     {
+      "id": "unit-hello",
+      "title": "This is your {name} on the battlefield.",
+      "do": "Every unit wears a little badge with its numbers."
+     },
+     {
+      "id": "unit-attack",
+      "title": "Attack.",
+      "do": "{atk} = he swings {atk} times when he attacks."
+     },
+     {
+      "id": "unit-health",
+      "title": "Health.",
+      "do": "{hp} = he can take {hp} hits. It refills at the start of your turn."
+     },
+     {
+      "id": "unit-feet",
+      "title": "Feet.",
+      "do": "{move} = he can walk {move} steps this turn. Attacking uses 1 and ends his turn."
+     },
+     {
+      "id": "unit-type",
+      "title": "The sword.",
+      "do": "A sword means melee: he hits units right next to him. A bow means he shoots from far away. A pickaxe means a Miner."
+     },
+     {
+      "id": "unit-ability",
+      "title": "His special ability: {abName}!",
+      "do": "This little button rolls a bowling ball. It costs {abCost} crystals."
+     },
+     {
+      "id": "ability-off",
+      "title": "It's dark: not enough crystals.",
+      "do": "You have 0 Flow, and {abName} needs {abCost}. {Click} it and see.",
+      "hint": "{Click} the bowling-ball button."
+     },
+     {
+      "id": "enemy-stats",
+      "title": "Enemy units have badges too!",
+      "do": "Shield Cadet: Attack 1, Health 3. Always check before you attack."
+     },
+     {
+      "id": "tap-unit",
+      "title": "Tap a unit for its orders.",
+      "do": "{Click} your Brawler.",
+      "hint": "{Click} right on your Brawler."
+     },
+     {
+      "id": "stances",
+      "title": "Orders: Hold · Guard · Aggressive.",
+      "do": "Hold stays put. Guard protects nearby squares. Aggressive charges the nearest enemy. You'll try them later."
+     },
+     {
+      "id": "card-again",
+      "title": "Want the whole card?",
+      "do": "Press and hold any unit to see its card."
+     }
+    ]
+   },
+   {
+    "id": "ch4",
+    "title": "Your first battle",
+    "pic": "swing-hit",
+    "say": "Your first battle.",
+    "sub": "A few real turns. The enemy Commander is tired: 2 Health!",
+    "steps": [
+     {
+      "id": "deploy",
+      "title": "Deploy!",
+      "do": "Drag the Grunt onto the glowing square. Your back row is your summoning row.",
+      "hint": "Press on the Grunt card and drag it onto the glowing square."
+     },
+     {
+      "id": "deploy-paid",
+      "title": "You paid {cost} crystals.",
+      "do": "See? Your Flow went down."
+     },
+     {
+      "id": "done-deploy",
+      "title": "Done with Deploy.",
+      "do": "{Click} Done to go to the Action phase.",
+      "hint": "{Click} the green Done button."
+     },
+     {
+      "id": "action-phase",
+      "title": "Action phase!",
+      "do": "Now your creatures can move, attack or dig."
+     },
+     {
+      "id": "new-units-wait",
+      "title": "He just arrived.",
+      "do": "New creatures rest on their first turn. {Click} Done to end your turn.",
+      "hint": "{Click} the green Done button to end your turn."
+     },
+     {
+      "id": "enemy-turn",
+      "title": "The enemy's turn…",
+      "do": "Watch what they do. It will be your turn again soon."
+     },
+     {
+      "id": "draw",
+      "title": "You drew a card!",
+      "do": "Every turn starts with a fresh card from your deck."
+     },
+     {
+      "id": "miner",
+      "title": "A Miner!",
+      "do": "Miners dig crystals. Drag one onto your back row.",
+      "hint": "Drag the Miner card onto the glowing square."
+     },
+     {
+      "id": "done-deploy-2",
+      "title": "Deploy done.",
+      "do": "{Click} Done to start the Action phase.",
+      "hint": "{Click} the green Done button."
+     },
+     {
+      "id": "move",
+      "title": "Walk!",
+      "do": "Drag your Grunt to walk. Each foot is 1 step.",
+      "hint": "Press on your Grunt and drag him to the glowing square."
+     },
+     {
+      "id": "preview",
+      "title": "The attack preview.",
+      "do": "Drag your Grunt onto the dwarf. While you hold, a box guesses the fight. Let go on the dwarf.",
+      "hint": "Drag your Grunt onto the dwarf next to him."
+     },
+     {
+      "id": "dice",
+      "title": "How a swing works.",
+      "do": "Attack 2 = 2 swings. About 8 in 10 swings HIT (1 damage). About 1 in 10 MISS. About 1 in 10 hits get BLOCKED, and each unit blocks only once per fight. Hurt units heal at the start of their next turn."
+     },
+     {
+      "id": "strike-back",
+      "title": "He swung back!",
+      "do": "In melee, a defender that is still standing hits back. Archers and Sneaky units don't get hit back."
+     },
+     {
+      "id": "mine",
+      "title": "Dig!",
+      "do": "Whoosh! We moved your Miner next to the mine. Drag him onto the mine: 2 crystals for next turn.",
+      "hint": "Drag your Miner onto the glowing crystal mine."
+     },
+     {
+      "id": "income",
+      "title": "+2 next turn!",
+      "do": "That's your mining paying off."
+     },
+     {
+      "id": "end-turn",
+      "title": "End your turn.",
+      "do": "{Click} Done until it's your turn again.",
+      "hint": "{Click} the green Done button."
+     },
+     {
+      "id": "commander",
+      "title": "Hit the enemy Commander!",
+      "do": "Whoosh! Your Grunt is at the enemy Stronghold. Drag him onto it. Every hit takes 1 Health.",
+      "hint": "Drag your Grunt onto the enemy Stronghold."
+     },
+     {
+      "id": "win",
+      "title": "0! He runs away!",
+      "do": "That's how you win: bring the enemy Commander to 0.",
+      "ok": "Next!"
+     }
+    ]
+   },
+   {
+    "id": "ch5",
+    "title": "Practice skirmish",
+    "pic": "commander-retreat",
+    "say": "Practice skirmish.",
+    "sub": "A couple of real rounds. I'll help if you get stuck.",
+    "goals": [
+     {
+      "id": "g-miner",
+      "round": 1,
+      "line": "Deploy your Miner on your back row",
+      "hint": "Drag the Miner card onto a glowing square on your back row."
+     },
+     {
+      "id": "g-brawler",
+      "round": 1,
+      "line": "Deploy your Bowler Brawler",
+      "hint": "Drag the Brawler onto your back row. 3 crystals: you have just enough!"
+     },
+     {
+      "id": "g-walk-miner",
+      "round": 1,
+      "line": "{Click} Done, then walk your Miner next to a mine",
+      "hint": "Drag your Miner next to a crystal mine."
+     },
+     {
+      "id": "g-end-1",
+      "round": 1,
+      "line": "End your turn",
+      "hint": "{Click} Done to end your turn."
+     },
+     {
+      "id": "g-dig",
+      "round": 2,
+      "line": "Dig! Drag your Miner onto the mine",
+      "hint": "Drag your Miner onto the mine."
+     },
+     {
+      "id": "g-slinger",
+      "round": 2,
+      "line": "Deploy your Skullflinger (ranged)",
+      "hint": "Drag the Skullflinger onto your back row."
+     },
+     {
+      "id": "g-walk-brawler",
+      "round": 2,
+      "line": "Walk your Brawler toward the Shield Cadet",
+      "hint": "Drag the Brawler toward the enemy."
+     },
+     {
+      "id": "g-attack",
+      "round": 2,
+      "line": "Attack the Shield Cadet",
+      "hint": "Drag the Brawler onto the Cadet."
+     },
+     {
+      "id": "g-shoot",
+      "round": 2,
+      "line": "Shoot with your Skullflinger",
+      "hint": "Archers shoot along straight lines. Drag onto an enemy in line."
+     },
+     {
+      "id": "g-spell",
+      "round": 3,
+      "line": "Cast Venom Shiv on an enemy",
+      "hint": "Drag the Venom Shiv card onto an enemy. Spells cost crystals too: Flow first, then Bank."
+     },
+     {
+      "id": "g-strike",
+      "round": 3,
+      "line": "Use Strike! (now you have the crystals)",
+      "hint": "Your Brawler's bowling ball is shining: {click} it, then pick a glowing square."
+     },
+     {
+      "id": "g-hit-commander",
+      "round": 3,
+      "line": "March on the enemy Commander and hit him",
+      "hint": "Drag a unit next to the enemy Stronghold, then onto it."
+     },
+     {
+      "id": "g-win",
+      "round": 4,
+      "line": "Bring Borgo to 0!",
+      "hint": "Keep hitting the Stronghold. Every hit is 1 Health."
+     }
+    ],
+    "broke": "Out of crystals! Next turn you'll have more. {Click} Done.",
+    "gift": "+2 practice crystals",
+    "end": {
+     "title": "That's a real match!",
+     "do": "Ready for the real thing?",
+     "play": "Play now!",
+     "more": "Show me the clever tricks"
+    }
+   },
+   {
+    "id": "ch6",
+    "title": "Clever tricks",
+    "pic": "marker-move",
+    "say": "Clever tricks.",
+    "sub": "Orders, chases, archers and more."
+   }
+  ],
+  "picker": {
+   "title": "Tutorial",
+   "do": "Pick a part, or play the whole thing.",
+   "whole": "Whole tutorial"
+  },
+  "skip": {
+   "ask": "Skip the tutorial? You can play it again any time from the Dashboard.",
+   "yes": "Yes, skip",
+   "no": "Keep learning"
+  },
+  "bar": "Part {ch} of 6 · Step {n} of {of}",
+  "idleTitle": "Need a hand?"
+ }
 }

@@ -89,7 +89,7 @@ export function showSettingsD(app: App): void {
     row('Card pop-ups', 'The big card when you hover or tap one', tog('Card pop-ups', app.popups, (on) => set('oreheart.popups', on ? 'on' : 'off'), 'set-popups')),
     row('Square highlights and unit rings', 'Colours, glow and thickness', fxBtn),
     fx,
-    row('Tutorial', 'Learn the basics again', btn('Play the tutorial', 'sbtn panel', () => { set('oreheart.tutorialSeen', '1'); app.beginTutorial(); }, { 'data-testid': 'play-tutorial' })),
+    row('Tutorial', 'Learn the basics again', btn('Play the tutorial', 'sbtn panel', () => { set('oreheart.tutorialSeen', '1'); app.openTutorial('settings'); }, { 'data-testid': 'play-tutorial' })),
     row('Starter decks', 'Bring back any starter deck you removed', starters));
   // Account
   const emailEl = h('b', { 'data-testid': 'settings-email' }, online ? '…' : '—');
