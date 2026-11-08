@@ -2192,3 +2192,9 @@ html body .col-grid .col-badge{top:-4px!important;bottom:auto!important;right:-4
 /* Nov 7: Brush's Oreshard bill is wider than tall: its icon boxes keep the bill whole (contain) and a touch wider */
 .econ-shard-img,.cos-ico[src$="oreshard.webp"],img[src$="/icons/oreshard.webp"]{object-fit:contain}
 .dash .top .coins.shards img{width:1.9em;height:1.4em;object-fit:contain}
+/* Ken, Nov 7: the coin and the Oreshard (crystal ingot) bigger and the same size everywhere, nice and visible */
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) .dash .top .coins img{width:2.3em!important;height:2.3em!important;object-fit:contain;filter:drop-shadow(0 1px 3px #000)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) .shop-bundle .shop-price img{width:1.6em!important;height:1.6em!important;object-fit:contain}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) .shop-bundle .shop-buys img{width:1.8em!important;height:1.8em!important;object-fit:contain;margin:0}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) :is(.econ-coins,.econ-shards) > img{width:2em!important;height:2em!important;object-fit:contain}
+html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) :is(.cos-panel,.sl-panel,.overlay) .cos-price .cos-ico{width:1.6em!important;height:1.6em!important}
