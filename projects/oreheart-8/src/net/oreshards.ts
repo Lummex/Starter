@@ -3,6 +3,7 @@
 // card details never touch the game. Oreshards arrive ONLY when Stripe's webhook confirms the payment: this screen only shows
 // what the server says (my_oreshards), and after the return from Stripe it re-reads the balance for a while. One-way conversion
 // to Coins (1 for 1). Under-13 accounts without an approved parent see a message instead of the bundles. TEST + sandbox only.
+import { SHARD_ICON } from './shard-icon';
 import { h } from '../ui/app';
 import { econShow, backBtn, coinChip, isTestPage, stubMode, setCoins } from './economy';
 import { rpc, client } from './online';
@@ -65,7 +66,7 @@ export const api = {
 /** test pages: pay for packs with the stand-in Oreshards (economy.ts buyPacks with pay = 'oreshards') */
 export function stubSpendShards(n: number): number { if (n > STUB.oreshards) throw new Error(`Not enough Oreshards (this costs ${n}, you have ${STUB.oreshards}).`); STUB.oreshards -= n; STUB.history.unshift({ delta: -n, reason: 'pack', at: new Date().toISOString(), balance_after: STUB.oreshards }); return STUB.oreshards; }
 export const shardsNow = () => STUB.oreshards;
-export const shardIcon = (cls = 'econ-shard-img') => h('img', { class: cls, src: '/art/packs/chest/chest-card-back.webp', alt: '', draggable: 'false' });
+export const shardIcon = (cls = 'econ-shard-img') => h('img', { class: cls, src: SHARD_ICON, alt: '', draggable: 'false' });
 
 /** The Oreshard counter for the Shop header, with the "+" that opens this screen. */
 export function shardChip(): El {

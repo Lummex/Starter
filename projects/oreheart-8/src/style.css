@@ -2186,3 +2186,6 @@ html body .dash.skin[data-screen="econ-shop"] .skin-body .shop-stash-row .shop-s
 html body .dash.skin[data-screen="econ-shop"] .skin-body .shop-stash-row .shop-stash-actions{width:100%;margin-left:0;flex-direction:row;flex-wrap:wrap;justify-content:flex-end;align-items:center}
 /* Nov 7: the copy-count plaque covered the card's Health gem and rules text: it sits on the top-right corner (art only there) */
 html body .col-grid .col-badge{top:-4px!important;bottom:auto!important;right:-4px!important}
+/* Nov 7: with the Oreshard box beside the coins, the centred logo is a little smaller on tablets so the top bar's pills stay clear of it */
+.dash .top .coins.shards .n{font-variant-numeric:tabular-nums}
+@media (min-width:901px) and (max-width:1180px){html body .dash:not(.setup-d)>.logo{width:13.5em;height:4.5em}}

@@ -17,6 +17,7 @@ import { loadRegions, serverPillText, startHeartbeat, type RegionsInfo } from '.
 
 type El = HTMLElement;
 const ico = (src: string, cls = '') => h('img', { src, alt: '', draggable: 'false', class: cls || null });
+import { SHARD_ICON } from './shard-icon';
 const COIN = '/art/packs/icons/coin.webp', FREEPACK = '/art/packs/icons/free-pack.webp', QUEST = '/art/packs/icons/quest.webp';
 const fmt = (n: number) => Number(n || 0).toLocaleString('en-US');
 let app: App | null = null;
@@ -59,6 +60,34 @@ export async function showDashboard(a: App): Promise<void> {
   void import('./cosmetics').then((m) => m.maybeBetaWelcome(a)).catch(() => {}); // Nov 7: the beta welcome, once per account
 }
 
+/** the Oreshards you have, in its own box beside the coins; a tap opens Buy Oreshards */
+function shardsBox(): El {
+  const n = h('span', { class: 'n', 'data-testid': 'dash-shards-n' }, '…');
+  const b = h('button', { type: 'button', class: 'coins panel shards', 'data-testid': 'dash-shards', 'aria-label': 'Oreshards: buy more', title: 'Oreshards',
+    onclick: () => { void import('./oreshards').then((m) => m.showOreshards()); } }, ico(SHARD_ICON), n, h('span', { class: 'plus' }, '+'));
+  void import('./oreshards').then((m) => m.api.info()).then((i: any) => { const v = Number(i?.oreshards) || 0; n.textContent = fmt(v); b.setAttribute('aria-label', `${fmt(v)} Oreshards: buy more`); }).catch(() => { n.textContent = '0'; });
+  return b;
+}
+/** full screen on / off (hidden where the browser can't, e.g. an iPhone) */
+function fullscreenBtn(): El | null {
+  const d: any = document;
+  if (!(d.fullscreenEnabled || d.webkitFullscreenEnabled)) return null;
+  const on = () => !!(d.fullscreenElement || d.webkitFullscreenElement);
+  const ico = h('span', { class: 'fb-ico fs-ico', 'aria-hidden': 'true' });
+  const draw = () => { ico.innerHTML = on()
+    ? '<svg viewBox="0 0 24 24" width="100%" height="100%"><g fill="none" stroke="#dfe6f2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></g></svg>'
+    : '<svg viewBox="0 0 24 24" width="100%" height="100%"><g fill="none" stroke="#dfe6f2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></g></svg>'; };
+  const b = h('button', { type: 'button', class: 'icn panel fs-btn', 'data-testid': 'dash-fullscreen', 'aria-label': 'Full screen', title: 'Full screen', 'aria-pressed': String(on()),
+    onclick: () => {
+      const el: any = document.documentElement;
+      if (on()) void (d.exitFullscreen || d.webkitExitFullscreen)?.call(d)?.catch?.(() => {});
+      else void (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el)?.catch?.(() => {});
+    } }, ico);
+  const sync = () => { draw(); b.setAttribute('aria-pressed', String(on())); b.setAttribute('aria-label', on() ? 'Leave full screen' : 'Full screen'); b.title = on() ? 'Leave full screen' : 'Full screen'; };
+  draw();
+  document.addEventListener('fullscreenchange', sync); document.addEventListener('webkitfullscreenchange', sync);
+  return b;
+}
 export function topBar(data: Data, extra: El[] = []): El {
   const name = getPlayerName();
   const avatarId = (data.rank && (data.rank as any).avatar) || net.avatar || null;
@@ -71,12 +100,14 @@ export function topBar(data: Data, extra: El[] = []): El {
       framed(h('img', { class: 'av', src: avatarPicture(avatarId), alt: avatarName(avatarId) }), net.frame),
       h('div', {}, h('b', {}, name), h('small', {}, rk ? ico(ladderCharm(rk.name)) : null, rk ? rk.label : 'Unranked'))),
     h('button', { type: 'button', class: 'coins panel', 'aria-label': `${coins == null ? '' : fmt(coins) + ' '}coins: open the shop`, 'data-testid': 'dash-coins', onclick: () => { void openScreen('shop'); } }, ico(COIN), coins == null ? '…' : fmt(coins), h('span', { class: 'plus' }, '+')),
+    shardsBox(), // Nov 7 (Ken): "a spot next to the coins ... in its own little box, how many ore shards you have"
     free > 0 || stashN > 0 ? h('button', { type: 'button', class: 'free panel', 'data-testid': 'dash-free', onclick: () => { void openScreen('shop'); } }, ico(FREEPACK), free > 0 ? `${free} free pack${free === 1 ? '' : 's'}` : `${stashN} sealed pack${stashN === 1 ? '' : 's'}`) : null,
     h('div', { class: 'grow' }),
     // Nov 6 (regions): the player's server and how many are on it; a tap opens the lobby where the server can be changed
     h('button', { type: 'button', class: 'server panel', 'data-testid': 'dash-server', title: 'Your server: change it in the PvP Lobby', onclick: () => net.openPvp?.('ranked') }, h('span', { class: 'dot' + (data.online ? '' : ' off') }), serverPillText(data.online)),
     ...extra,
     // Nov 7 (Ken): the friends list, and an Exit button near the gear
+    fullscreenBtn(), // Nov 7 (Ken): "give me a full screen ... icon" in the top-right buttons
     (() => { // Nov 7 (Ken): report a bug or send an idea, always in reach (the box's code loads on the first tap)
       const ico = h('span', { class: 'fb-ico', 'aria-hidden': 'true' });
       ico.innerHTML = '<svg viewBox="0 0 24 24" width="100%" height="100%"><g fill="none" stroke="#dfe6f2" stroke-width="1.8" stroke-linecap="round"><ellipse cx="12" cy="14" rx="5.2" ry="6.2" fill="#2b3446"/><path d="M12 8v12M8.6 6.6 7 4.5M15.4 6.6 17 4.5M6.8 12H3.5M17.2 12h3.3M6.9 16.5l-3 1.8M17.1 16.5l3 1.8"/><circle cx="12" cy="7.2" r="2.4" fill="#2b3446"/></g></svg>';
