@@ -1040,6 +1040,7 @@ const _embV = new THREE.Vector3();
     const t = st.turn, out: [string, number, number?][] = [];
     // Ken (Oct 30, stacking): [icon, number, x2 / x3 chip]
     if (c.poison > 0) out.push(['poison', c.poison, Math.max(1, c.poisonStacks || 1)]);
+    if (c.brewPoisonTurn === t && !(CARDS[c.cardId]?.abilities || []).includes('brewPoison')) out.push(['poisonblade', 0]); // Ken, Nov 7: poison-tipped by the Bogwater Brewer this turn
     if (c.drunk > 0) out.push(['drunk', c.drunk]);
     if ((c.rootUntil || 0) > t) out.push(['rooted', c.rootUntil - t]);
     if ((c.wardUntil || 0) > t) out.push(['ward', 0]);

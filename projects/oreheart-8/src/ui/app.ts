@@ -3465,6 +3465,8 @@ export class App {
     // Ken (Oct 30, stacking): a stacked effect shows a gold x2 / x3 chip on its icon
     const ps = c.poison > 0 ? Math.max(1, c.poisonStacks || 1) : 0, bs = c.bubbles > 1 ? c.bubbles : 0, bc = st.flags?.battleCryN?.[c.owner] || 0;
     if (c.poison > 0) list.push({ k: 'poison', n: c.poison, x: ps, label: ps > 1 ? `Poisoned x${ps}: ${ps} damage a turn, ${c.poison} turn${c.poison > 1 ? 's' : ''} left` : `Poisoned, ${c.poison} turn${c.poison > 1 ? 's' : ''} left` });
+    // Ken, Nov 7: the Goblin the Bogwater Brewer poison-tipped this turn shows a poisoned dagger, so you know which one to attack with
+    if (c.brewPoisonTurn === t && !(CARDS[c.cardId]?.abilities || []).includes('brewPoison')) list.push({ k: 'poisonblade', n: 0, label: 'Poison-tipped: its hits poison the target for 2 turns (this turn)' });
     if (c.drunk > 0) list.push({ k: 'drunk', n: c.drunk, label: `Drunk, ${c.drunk} turn${c.drunk > 1 ? 's' : ''} left` });
     if ((c.rootUntil || 0) > t) list.push({ k: 'rooted', n: c.rootUntil - t, label: "Rooted: can't move" });
     if ((c.wardUntil || 0) > t) list.push({ k: 'ward', n: 0, label: 'Warded: takes no damage' });
