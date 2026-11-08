@@ -5,6 +5,8 @@
 -- Own ids (f000…) and names: seed.sql holds the d000… users, and names with a reserved part (admin…) are refused at sign-up.
 
 \ir _helpers.sql
+-- Nov 7 (migration 12): new players start with 2800 coins (7 packs); this file's arithmetic was written for 500, so it pins 500 here (rolled back)
+update public.settings set value = '500'::jsonb where key = 'signup_bonus_coins';
 
 -- Nov 7 (Ken): the live economy, before this file pins the older numbers for its arithmetic
 select pg_temp.ok('Nov 7: packs cost 400 coins, 1 Oreshard = 4 coins (pack rate 0.25), daily quests 75 / 125 / 200',

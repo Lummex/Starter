@@ -3,6 +3,8 @@
 -- Own ids (fb00…) and names with no reserved part. Every door is called in its own statement, then checked (with the values seen).
 
 \ir _helpers.sql
+-- Nov 7 (migration 12): new players start with 2800 coins (7 packs); this file's arithmetic was written for 500, so it pins 500 here (rolled back)
+update public.settings set value = '500'::jsonb where key = 'signup_bonus_coins';
 
 insert into auth.users (id, aud, role, email, raw_user_meta_data, email_confirmed_at) values
   ('fb000000-0000-4000-8000-000000000009', 'authenticated', 'authenticated', 'fbk@test.local', '{"username":"Fb_Keeper"}', now()),

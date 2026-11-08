@@ -4,6 +4,8 @@
 -- One transaction, rolled back at the end. Exits non-zero if any check fails.
 
 \ir _helpers.sql
+-- Nov 7 (migration 12): new players start with 2800 coins (7 packs); this file's arithmetic was written for 500, so it pins 500 here (rolled back)
+update public.settings set value = '500'::jsonb where key = 'signup_bonus_coins';
 
 -- Nov 7 (migration 11): live prices are 400 coins a pack, 1 Oreshard = 4 coins, quests 75/125/200. The arithmetic in this file was
 -- written for 100 / 1 / 25-50-75, so it pins those here (inside this file's rolled-back transaction); phase_d checks the live values.

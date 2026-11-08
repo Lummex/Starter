@@ -33,8 +33,8 @@ select pg_temp.ok('signup: wallet holds the signup coins (setting signup_bonus_c
 select pg_temp.ok('signup: one signup_bonus ledger row',
   (select count(*) from public.transactions where user_id = :P1 and reason = 'signup_bonus' and balance_after = delta) = 1);
 -- Zero start (Ken, Nov 4): no cards at sign-up; the setting is empty and the trigger grants nothing
-select pg_temp.ok('signup: the starter collection is the three Commanders (Ken, Nov 5: "you will start out with the commanders") and the bonus is 500',
-  (select value from public.settings where key = 'starter_collection') = '{"commander-grubnak": 1, "commander-sproingle": 1, "commander-borgo": 1}'::jsonb and :BONUS = 500);
+select pg_temp.ok('signup: the starter collection is the three Commanders (Ken, Nov 5: "you will start out with the commanders") and the bonus is 2800 (Ken, Nov 7: 7 packs of 400)',
+  (select value from public.settings where key = 'starter_collection') = '{"commander-grubnak": 1, "commander-sproingle": 1, "commander-borgo": 1}'::jsonb and :BONUS = 2800);
 select pg_temp.ok('signup: a new player owns the three Commanders and nothing else (zero start otherwise)',
   (select count(*) from public.card_instances where owner_id = :P1 or original_owner_id = :P1) = 3
   and (select count(*) from pg_temp.collection_of(:P1)) = 3 and (select bool_and(card_id like 'commander-%') from pg_temp.collection_of(:P1)));
