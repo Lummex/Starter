@@ -2189,3 +2189,6 @@ html body .col-grid .col-badge{top:-4px!important;bottom:auto!important;right:-4
 /* Nov 7: with the Oreshard box beside the coins, the centred logo is a little smaller on tablets so the top bar's pills stay clear of it */
 .dash .top .coins.shards .n{font-variant-numeric:tabular-nums}
 @media (min-width:901px) and (max-width:1180px){html body .dash:not(.setup-d)>.logo{width:13.5em;height:4.5em}}
+/* Nov 7: Brush's Oreshard bill is wider than tall: its icon boxes keep the bill whole (contain) and a touch wider */
+.econ-shard-img,.cos-ico[src$="oreshard.webp"],img[src$="/icons/oreshard.webp"]{object-fit:contain}
+.dash .top .coins.shards img{width:1.9em;height:1.4em;object-fit:contain}
