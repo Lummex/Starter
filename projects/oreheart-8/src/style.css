@@ -2198,3 +2198,6 @@ html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) .shop-bundle .shop-price 
 html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) .shop-bundle .shop-buys img{width:1.8em!important;height:1.8em!important;object-fit:contain;margin:0}
 html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) :is(.econ-coins,.econ-shards) > img{width:2em!important;height:2em!important;object-fit:contain}
 html body:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) :is(.cos-panel,.sl-panel,.overlay) .cos-price .cos-ico{width:1.6em!important;height:1.6em!important}
+/* Ken, Nov 7: "Strike: not available ..." was hidden behind the timer bar at the top. The board's short messages sit lower, in front of the HUD, and easy to read */
+html body:not(#_a):not(#_b):not(#_c):not(#_d) .match .hint:not(.hint-pic){top:clamp(40px,16vh,190px)!important;z-index:250!important;font-size:clamp(14px,1.6vw,22px);padding:.4em 1em;max-width:min(80vw,760px);text-align:center;box-shadow:0 4px 18px #000c}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) .match .hint.hint-pic{top:clamp(40px,16vh,190px)!important;z-index:250!important}

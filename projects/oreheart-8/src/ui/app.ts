@@ -4258,7 +4258,7 @@ export class App {
     const pic = MSG_PIC[text];
     const hint = pic ? h('div', { class: 'hint hint-pic', role: 'status' }, h('img', { src: `/art/speech/${pic}.webp`, alt: '', draggable: 'false' }), h('span', { class: 'sr-only' }, text)) : h('div', { class: 'hint', role: 'status' }, text);
     r.board.append(hint);
-    setTimeout(() => hint.remove(), 1600);
+    setTimeout(() => hint.remove(), 2600); // Nov 7 (Ken): long enough to read
   }
 
   /** End screen: your rank charm, the points won or lost, and a short "Rank up!" moment when you climb a division. */
