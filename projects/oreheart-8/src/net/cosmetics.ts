@@ -43,12 +43,13 @@ export const api = {
     }
     return await rpc('buy_sleeve', { p_id: id, p_idem_key: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10) });
   },
-  async welcome(): Promise<{ show: boolean; beta: boolean; reward?: string; equipped?: string }> {
+  async welcome(): Promise<{ show: boolean; beta: boolean; reward?: string; equipped?: string; avatars?: string[] }> {
     if (stubMode()) {
       if (params().get('beta') !== '1') return { show: false, beta: false }; // test pages: only when a check asks for it (&beta=1), so the box never blocks other checks
       if (!STUB.owned.includes('founder')) STUB.owned.push('founder');
       const show = !STUB.welcomed; STUB.welcomed = true;
-      return { show, beta: true, reward: 'founder', equipped: STUB.equipped };
+      const fr = await import('./frames'); fr.stubGrantFounder();
+      return { show, beta: true, reward: 'founder', equipped: STUB.equipped, avatars: fr.FOUNDER_AVATARS.map((a) => a.id) };
     }
     return await rpc('beta_welcome');
   },
@@ -87,6 +88,9 @@ export async function maybeBetaWelcome(app: App): Promise<void> {
   try { w = await api.welcome(); } catch { return; }
   if (w && w.equipped) equipped = w.equipped;
   if (!w || !w.show) return;
+  const fr = await import('./frames');
+  let pick: string | null = null;
+  const choice = fr.founderChoice((id) => { pick = id; });
   const wear = h('button', { type: 'button', class: 'btn panel play', 'data-testid': 'beta-wear' }, 'Wear it now');
   const later = h('button', { type: 'button', class: 'btn panel', 'data-testid': 'beta-later' }, 'Maybe later');
   const d: any = app.dialog('Welcome to the Oreheart beta', [
@@ -97,11 +101,18 @@ export async function maybeBetaWelcome(app: App): Promise<void> {
         h('p', {}, 'You found Oreheart before almost anyone. The goblins are impressed. The gnomes took notes. The dwarves pretended not to care.'),
         h('p', {}, 'Things may wobble, squeak or catch fire (only a little). If you spot something odd, or dream up something great, press the ',
           h('b', {}, 'bug button'), ' at the top of the Dashboard and tell us.'),
-        h('p', { class: 'beta-gift' }, 'For helping, the ', h('b', {}, 'Founder card back'), ' is yours forever. Only beta testers will ever have it.'))),
+        h('p', { class: 'beta-gift' }, 'For helping, the ', h('b', {}, 'Founder card back'), ', the ', h('b', {}, 'Founder frame'), ' and 32 ', h('b', {}, 'Founder avatars'), ' are yours forever. Only beta testers will ever have them.'))),
+    h('div', { class: 'beta-founder' }, h('img', { class: 'beta-frame', src: fr.frameUrl('founder'), alt: 'The Founder frame', draggable: 'false' }), h('div', {}, h('b', {}, 'Pick a Founder avatar, or keep your own'), choice)),
     h('div', { class: 'row' }, wear, later)]);
   d.el.setAttribute('data-testid', 'beta-welcome');
   d.el.dataset.sticky = '1'; // a choice, not a stray click outside
-  wear.addEventListener('click', async () => { try { const r = await api.equip('founder'); equipped = r.equipped || 'founder'; toast('Founder card back on!', backArt('founder')); } catch { /* keeps the default */ } d.close(); });
+  wear.addEventListener('click', async () => {
+    try { const r = await api.equip('founder'); equipped = r.equipped || 'founder'; } catch { /* keeps the default */ }
+    try { const r = await fr.api.setFrame('founder'); net.frame = r.equipped; } catch { /* no frame */ }
+    if (pick) { try { await fr.api.setAvatar(pick); } catch { /* keeps their avatar */ } }
+    toast('Founder back and frame on!', backArt('founder')); d.close();
+    if (document.querySelector('[data-dash]')) void import('./dashboard').then((m) => m.showDashboard(app));
+  });
   later.addEventListener('click', () => { d.close(); toast('It waits for you in Collection → Card backs.', backArt('founder')); });
 }
 

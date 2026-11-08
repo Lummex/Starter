@@ -1,8 +1,9 @@
+import EMOTES from '../content/emotes.json';
 // The PvP service (Anvil, Nov 2): the operations behind the `match` server function, written once over a small `Store`
 // interface so the same code runs in the Supabase Edge Function (Deno + Postgres) and in the local mock server
 // (Node + memory) that the hidden checks use. See factory-design/design/oreheart-pvp-nov2-contract.md part 2.5.
 import { validateDeck, STARTER_DECKS, COMMANDERS } from '../engine';
-import { startMatch, playerAction, applyTimeouts, forfeit, viewsFor, viewFor, seatOf, deckProblem, DEFAULT_RULES, type MatchRecord, type MatchMode, type PlayerInfo, type DeckChoice, type Rules, type Seat, type View } from './referee';
+import { startMatch, playerAction, applyTimeouts, forfeit, viewsFor, viewFor, seatOf, deckProblem, DEFAULT_RULES, type MatchRecord, type MatchMode, type PlayerInfo, type DeckChoice, type Rules, type Seat, type View, addEmote } from './referee';
 
 export interface Room {
   code: string;
@@ -52,6 +53,8 @@ export interface Store {
   rankOf(userId: string): Promise<RankInfo>;
   /** Nov 5 (upgraded cards): the best tier this player owns of each of these cards (card id -> 2..5); {} when none */
   tiersOf(userId: string, cards: string[] | null): Promise<Record<string, number>>;
+  /** Nov 7: may this player use this emote (free, or bought)? */
+  emoteOk(userId: string, emote: string): Promise<boolean>;
   /** Nov 6: does the player own a copy of this card at this tier (1 = Original)? */
   hasCopy(userId: string, cardId: string, tier: number): Promise<boolean>;
 }
@@ -68,6 +71,9 @@ export const ROOM_MINUTES = 30;
 export const isCode = (c: unknown): c is string => typeof c === 'string' && /^[A-HJ-NP-Z]{6}$/.test(c);
 
 export class ServiceError extends Error {}
+// Nov 7: the emote catalog (the same list the game shows); the free starter ones need no check
+const EMOTE_IDS = new Set<string>((EMOTES as any).packs.flatMap((p: any) => p.emotes.map((e: any) => e.id)));
+const FREE_EMOTES = new Set<string>((EMOTES as any).packs.filter((p: any) => p.free).flatMap((p: any) => p.emotes.map((e: any) => e.id)));
 const fail = (msg: string): never => { throw new ServiceError(msg); };
 
 function basicSummary(events: any[], finalState: any, side: 'player' | 'opponent') {
@@ -97,6 +103,7 @@ export class PvpService {
         case 'act': return await this.act(body, user, now);
         case 'tick': return await this.withMatch(body, user, now, async (m) => ({ view: viewFor(m, seatOf(m, user.userId)!, []) }));
         case 'forfeit': return await this.forfeit(body, user, now);
+        case 'emote': return await this.emote(body, user, now); // Nov 7 (Ken): emotes from the avatar
         case 'queue': return await this.queue(body, user, now);
         case 'leave': await this.store.queueLeave(user.userId); return { ok: true };
         case 'rank': return { ok: true, rank: await this.store.rankOf(user.userId) };
@@ -307,6 +314,23 @@ export class PvpService {
       const views = viewsFor(m, r.events);
       await this.store.putViews(m, views);
       await this.afterEnd(m);
+      return { view: views[seat] };
+    });
+  }
+
+  /** Nov 7 (Ken): an emote. Known ids only, owned (free or bought), one every 2 s; the views go out with the same seq, so no move is disturbed. */
+  async emote(body: any, user: PlayerInfo, now: number) {
+    const id = String(body?.emote || '');
+    if (!EMOTE_IDS.has(id)) fail('No such emote.');
+    if (!FREE_EMOTES.has(id) && !(await this.store.emoteOk(user.userId, id))) fail("You don't have that emote yet.");
+    return this.withMatch(body, user, now, async (m) => {
+      const seat = seatOf(m, user.userId)!;
+      const r = addEmote(m, user.userId, id, now, body?.code ?? null);
+      if (!r.ok) return { ok: false, error: r.error };
+      const saved = await this.store.updateMatch(m, m.seq);
+      if (!saved) return { ok: false, error: 'The match moved on; try again.' };
+      const views = viewsFor(m, []);
+      await this.store.putViews(m, views);
       return { view: views[seat] };
     });
   }

@@ -8,13 +8,13 @@ import { h } from '../ui/app';
 import { econShow, backBtn } from './economy';
 import { rpc, client } from './online';
 import { net } from './state';
-import { avatarPicture, avatarName } from './avatars';
+import { avatarPicture, avatarName, framed } from './avatars';
 import { ladderCharm } from '../content/ladder';
 import { isMockPvp, mockUser, makeCode, joinCode, quickPick } from './pvp';
 import { currentRegion } from './regions';
 
 type El = HTMLElement;
-export interface FriendCard { id: string; username: string; avatar: string | null; rating: number; rank: string; status: 'online' | 'in_match' | 'offline'; since?: string }
+export interface FriendCard { id: string; username: string; avatar: string | null; frame?: string | null; title?: string | null; rating: number; rank: string; status: 'online' | 'in_match' | 'offline'; since?: string }
 export interface Person { id: string; username: string; avatar?: string | null; at?: string }
 export interface Invite { id: string; from_id: string; from_name: string; from_avatar: string | null; mode: 'friend' | 'practice'; region: string | null; expires_at: string }
 export interface Overview {
@@ -129,7 +129,7 @@ function friendRow(f: FriendCard, o: Overview, p: Parts): El {
   const challenge = btn('Challenge', () => void challengeFriend(f, p.alert), 'primary', { 'data-testid': 'friends-challenge', title: canChallenge ? `Challenge ${f.username} to a ${challengeMode === 'practice' ? 'practice' : 'friend'} match` : f.status === 'in_match' ? `${f.username} is in a match` : `${f.username} is offline` });
   if (!canChallenge) challenge.setAttribute('disabled', '');
   return h('div', { class: 'fr-row ' + f.status, role: 'listitem', 'data-player': f.username, 'data-status': f.status, 'data-testid': 'friends-row' },
-    h('span', { class: 'fr-avwrap' }, av(f.avatar, f.username), h('i', { class: 'fr-dot ' + f.status, 'aria-hidden': 'true' })),
+    h('span', { class: 'fr-avwrap' }, framed(av(f.avatar, f.username), f.frame), h('i', { class: 'fr-dot ' + f.status, 'aria-hidden': 'true' })),
     h('div', { class: 'fr-who' }, h('b', {}, f.username), h('small', {}, charm(f.rank), f.rank || 'Unranked', ' · ', h('span', { class: 'fr-status', 'data-testid': 'friends-status' }, STATUS_WORD[f.status] || f.status))),
     h('span', { class: 'fr-acts' }, challenge, btn('⋯', () => { more.hidden = !more.hidden; }, 'fr-dots', { 'aria-label': `More for ${f.username}`, 'data-testid': 'friends-more' })), more);
 }

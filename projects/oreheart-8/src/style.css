@@ -2082,3 +2082,54 @@ html body .overlay.e-discard-view>.dialog:not(.viewer3d):not([aria-label=Mulliga
 .overlay .dialog .beta-back{width:8em;height:12em;object-fit:cover;border-radius:8px;box-shadow:0 0 0 2px #c9d0da,0 0 24px rgba(124,200,255,.45);flex:0 0 auto}
 .overlay .dialog .beta-txt h2{margin:0 0 .4em}.overlay .dialog .beta-txt p{margin:.35em 0}.overlay .dialog .beta-gift{color:#9fd8ff}
 @media (max-width:700px){.overlay .dialog .beta-box{flex-direction:column}.overlay .dialog .beta-back{width:6em;height:9em}}
+
+/* ---- Nov 7 (Ken): avatar frames (Sketch: the hole is the avatar circle; the frame is 1.88x it, centred over it) ---- */
+.o-av.has-frame,.cos-av{position:relative}
+.o-av .av-frame,.av-fw .av-frame,.cos-av .av-frame{position:absolute;left:50%;top:50%;width:188%;height:188%;transform:translate(-50%,-50%);pointer-events:none;z-index:2;max-width:none}
+.av-fw{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center;line-height:0}
+.o-title{display:inline-block;font:700 .62em/1.2 inherit;letter-spacing:.08em;text-transform:uppercase;color:#ffd76a;text-shadow:0 1px 2px #000;margin-left:.4em;font-style:normal}
+.o-pl .o-title{display:block;margin:0}
+/* ---- emotes: the avatar opens the dial; stickers pop out of the avatar ---- */
+.emote-av,.o-plate .o-av.emote-av{cursor:pointer;outline-offset:3px;pointer-events:auto}
+.emote-av:hover{filter:brightness(1.12)}
+.emote-dial{position:fixed;inset:0;z-index:60;pointer-events:none}
+.emote-pick{position:fixed;width:var(--es,64px);height:var(--es,64px);margin:calc(var(--es,64px) / -2) 0 0 calc(var(--es,64px) / -2);border-radius:50%;border:2px solid #c9a24e;background:radial-gradient(#2c2418,#120e09);box-shadow:0 4px 12px #000a;padding:4px;cursor:pointer;pointer-events:auto;animation:emoteIn .18s ease-out both}
+.emote-pick img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.emote-pick:hover,.emote-pick:focus-visible{transform:scale(1.14);border-color:#ffd76a}
+.emote-pick[disabled]{opacity:.35;cursor:not-allowed;transform:none}
+.emote-mute{position:fixed;transform:translate(-50%,-50%);pointer-events:auto;font:600 13px/1 inherit;padding:6px 12px;border-radius:14px;border:1px solid #c9a24e;background:#1a140dee;color:#f3e3bf;cursor:pointer}
+@keyframes emoteIn{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.emote-pop{position:fixed;z-index:58;pointer-events:none;transform:translate(-50%,var(--dy));display:flex;flex-direction:column;align-items:center}
+.emote-pop img{width:clamp(84px,11vh,132px);height:auto;animation:emotePop .5s cubic-bezier(.3,1.6,.5,1) both;transform-origin:50% 100%;filter:drop-shadow(0 4px 8px #000b)}
+.emote-pop.out{opacity:0;transition:opacity .45s}
+@keyframes emotePop{0%{transform:scale(.2,.2)}45%{transform:scale(1.18,.86)}70%{transform:scale(.92,1.1)}100%{transform:scale(1,1)}}
+.emote-code{margin-top:4px;padding:4px 10px;border-radius:8px;background:#f7ecd0;color:#2a1d0c;font:600 13px/1.2 inherit;border:2px solid #8a6427;box-shadow:0 3px 8px #0008;white-space:nowrap}
+.emote-code b{letter-spacing:.12em}
+.emote-answer{position:fixed;z-index:59;transform:translateX(-50%);display:flex;gap:6px;padding:6px;border-radius:10px;background:#1a140df0;border:1px solid #c9a24e;box-shadow:0 4px 12px #000a}
+/* ---- the cosmetics panels (Shop, Collection, beta welcome) ---- */
+.cos-panel{margin-top:.8em}
+.cos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(7.4em,1fr));gap:.7em;margin:.5em 0}
+.cos-grid.small{grid-template-columns:repeat(auto-fill,minmax(5.2em,1fr))}
+.cos-grid.founder{grid-template-columns:repeat(auto-fill,minmax(3.6em,1fr));max-height:13em;overflow:auto;padding:.9em .5em}
+.cos-item{display:flex;flex-direction:column;align-items:center;gap:.45em;padding:.9em .3em .5em;border-radius:10px;border:1px solid #6b5228;background:#17120cbb;color:#f3e3bf;font:inherit;cursor:default}
+button.cos-item{cursor:pointer}
+.cos-item.on{border-color:#ffd76a;box-shadow:0 0 0 2px #ffd76a66 inset}
+.cos-item b{font-size:.8em;text-align:center}
+.cos-item small{font-size:.72em}
+.cos-av{display:block;width:3.4em;height:3.4em;border-radius:50%;background:#2a2116 center/cover no-repeat;margin:.45em}
+.cos-grid.founder .cos-av{width:2.8em;height:2.8em;margin:0}
+.cos-pay{display:flex;flex-wrap:wrap;gap:.3em;justify-content:center}
+.cos-pay .net-btn{font-size:.72em;padding:.35em .6em}
+.cos-owned{font-size:.74em;color:#9fdc8c}
+.cos-note{min-height:1.2em;font-size:.82em;color:#f3d48a}
+.cos-pack{border-top:1px solid #6b522866;padding:.5em 0}
+.cos-pack-head{display:flex;justify-content:space-between;align-items:center;gap:.6em;flex-wrap:wrap}
+.cos-emotes,.cos-wheel{display:flex;flex-wrap:wrap;gap:.5em;margin-top:.4em}
+.cos-emote{display:flex;flex-direction:column;align-items:center;gap:.2em;width:5.6em;padding:.3em;border-radius:8px;border:1px solid #6b522866;background:#120e09aa;color:#f3e3bf;font:inherit}
+.cos-emote img{width:3.6em;height:3.6em;object-fit:contain}
+.cos-emote small{font-size:.68em;text-align:center}
+.cos-wheel .cos-emote{width:auto;cursor:pointer;opacity:.55}
+.cos-wheel .cos-emote.on{opacity:1;border-color:#ffd76a}
+.overlay .dialog .beta-founder{display:flex;gap:1em;align-items:flex-start;margin:.8em 0;max-width:42em}
+.overlay .dialog .beta-frame{width:5.5em;height:5.5em;flex:none}
+@media (max-width:700px){.overlay .dialog .beta-founder{flex-direction:column;align-items:center}}

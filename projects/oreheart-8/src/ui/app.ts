@@ -1359,10 +1359,23 @@ export class App {
     this.showMatch();
     this.update(this.game.state, []);
     this.syncCommanderTiers();
+    this.startEmotes();
     { const f = this.game.state.players.player.faction; const st = STARTER_DECK_LIST.find((d) => d.id === (o.playerDeckId || (o.playerDeck ? '' : warbandOf(f)))); this.showDeckName(o.deckName || (st ? st.name : o.playerDeck ? 'My deck' : '')); }
     return state;
   }
   /** Nov 7 (Ken: "in the bottom left-hand corner, show the name of the deck you're playing"): small silver words under the Flow crystal */
+  /** Nov 7 (Ken): emotes from the avatar; the module loads with the first match */
+  emoteMod: any = null;
+  startEmotes() {
+    const ng: any = this.netGame;
+    void import('../net/emotes').then((m) => {
+      this.emoteMod = m;
+      m.startMatchEmotes({ pvp: ng ? { sendEmote: (id: string, code?: string | null) => ng.sendEmote(id, code), names: ng.names } : null,
+        myAv: () => (this.r.myName?.querySelector('.o-av') as El | null) || null, theirAv: () => (this.r.eName?.querySelector('.o-av') as El | null) || null });
+      if (ng) { m.markSeen(ng.emotesNow); ng.onEmotes = (list: any[]) => m.takeEmotes(list); }
+      if (this.test) (window as any).oreheart && ((window as any).oreheart.emotes = m.emoteHooks());
+    }).catch(() => {});
+  }
   showDeckName(name: string) {
     const m = this.root.querySelector('.match') as El | null;
     if (!m) return;
@@ -1392,6 +1405,7 @@ export class App {
     this.showMatch();
     this.update(ng.state, [{ type: 'newMatch' }]);
     this.showDeckName(net.matchDeckName || '');
+    this.startEmotes();
     this.syncCommanderTiers();
   }
   /** Back to the computer-match Game (the friend match keeps running on the server; "Back to your match" re-opens it). */
@@ -1717,8 +1731,8 @@ export class App {
   /** Short title shown; the rest of the full display name stays in the text for screen readers. */
   /** Ken, Oct 31: the name plate shows the PLAYER's name big and the Commander's name small underneath, with a round avatar spot beside it
    *  (a placeholder with the first letter until Brush's avatars plug in: data-avatar on .o-av). */
-  setPlate(el: El, player: string, commander: string, faction: string, side: 'player' | 'enemy', rank: RankInfo | null = null, tip = '', avatar = '') {
-    const key = player + '|' + commander + '|' + faction + '|' + (rank ? rank.label : '') + '|' + tip + '|' + avatar;
+  setPlate(el: El, player: string, commander: string, faction: string, side: 'player' | 'enemy', rank: RankInfo | null = null, tip = '', avatar = '', frame: string | null = null, title: string | null = null) {
+    const key = player + '|' + commander + '|' + faction + '|' + (rank ? rank.label : '') + '|' + tip + '|' + avatar + '|' + (frame || '') + '|' + (title || '');
     if (el.dataset.plate === key) return;
     el.dataset.plate = key; el.dataset.full = commander; el.dataset.player = player;
     el.classList.add('o-plate', side === 'enemy' ? 'o-enemy' : 'o-you');
@@ -1730,7 +1744,10 @@ export class App {
     const src = avatarUrl(avatar); /* Brush's avatar (a painted stand-in of the same race until its own picture exists) */
     if (src) { av.classList.add('has-img'); av.style.backgroundImage = `url(${src})`; av.dataset.avatar = avatar; av.dataset.shown = shownAvatar(avatar); }
     if (rank) av.append(this.charmEl(rank));
+    if (frame) { const fi = h('img', { class: 'av-frame', src: `/art/avatar-frames/${frame}.webp`, alt: '', draggable: 'false', 'aria-hidden': 'true', 'data-frame': frame }); av.append(fi); av.classList.add('has-frame'); } // Nov 7 (Ken): the avatar frame
+    if (title) { words.append(h('span', { class: 'o-title', 'data-testid': side === 'enemy' ? 'title-them' : 'title-me' }, title)); }
     if (side === 'enemy') el.replaceChildren(words, av); else el.replaceChildren(av, words);
+    this.emoteMod?.bindAvatar();
     el.setAttribute('aria-label', `${side === 'enemy' ? 'Opponent' : 'You'}: ${player}, Commander ${commander}${rank ? `, rank ${rank.label}` : ''}`);
     if (tip) el.setAttribute('title', tip); else el.removeAttribute('title');
     el.dataset.tip = tip; el.dataset.rank = rank ? rank.label : '';
@@ -2656,10 +2673,10 @@ export class App {
     r.eBank.textContent = String(en.bank);
     if (this.netGame) { // Nov 2 (PvP): your name, and your friend's name and avatar from the server's view (no rank charms in friend matches)
       const ng = this.netGame;
-      this.setPlate(r.myName, ng.names.me || getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player', null, '', ng.avatars.me || getPlayerAvatar());
-      this.setPlate(r.eName, ng.names.them || 'Your friend', COMMANDERS[en.commanderId]?.name || '', en.faction, 'enemy', null, '', ng.avatars.them || '');
+      this.setPlate(r.myName, ng.names.me || getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player', null, '', ng.avatars.me || getPlayerAvatar(), ng.frames?.me ?? null, ng.titles?.me ?? null);
+      this.setPlate(r.eName, ng.names.them || 'Your friend', COMMANDERS[en.commanderId]?.name || '', en.faction, 'enemy', null, '', ng.avatars.them || '', ng.frames?.them ?? null, ng.titles?.them ?? null);
     } else { const my = rankOf(loadRank().points);
-      this.setPlate(r.myName, getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player', my, `${getPlayerName()}: ${my.label}, ${my.inDivision} rank points`, getPlayerAvatar());
+      this.setPlate(r.myName, getPlayerName(), COMMANDERS[me.commanderId]?.name || '', me.faction, 'player', my, `${getPlayerName()}: ${my.label}, ${my.inDivision} rank points`, getPlayerAvatar(), net.active ? net.frame : null, net.active ? net.title : null);
       const rv = this.rival, rec = rv ? recordVs(rv.id) : null;
       this.setPlate(r.eName, this.aiName || 'Opponent', COMMANDERS[en.commanderId]?.name || '', en.faction, 'enemy', rv ? rankOf(rv.points) : null,
         rv ? `${rv.name}: ${rankOf(rv.points).label} · ${rv.skill === 'easy' ? 'Easy' : rv.skill === 'hard' ? 'Hard' : 'Medium'} · ${rv.styleLabel} · You ${rec!.w}-${rec!.l}` : '', rv ? rv.avatar : ''); }

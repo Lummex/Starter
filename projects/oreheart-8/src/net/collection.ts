@@ -34,6 +34,7 @@ export async function showCollection(): Promise<void> {
     h('div', { class: 'econ-head' }, backBtn(),
       h('div', { class: 'econ-titles' }, h('h1', {}, 'Your Collection'), h('p', { class: 'econ-sub' }, 'Every card you own. The grey ones are still out there, hiding in packs.')),
       net.openCardBacks ? h('button', { type: 'button', class: 'net-btn sbtn panel cb-open', 'data-testid': 'col-card-backs', onclick: () => net.openCardBacks?.() }, 'Card backs') : null, // Nov 7: wear the Founder back
+      net.openLooks ? h('button', { type: 'button', class: 'net-btn sbtn panel cb-open', 'data-testid': 'col-looks', onclick: () => net.openLooks?.() }, 'Frames & emotes') : null,
       coinChip()),
     alert,
     h('div', { class: 'col-main' },

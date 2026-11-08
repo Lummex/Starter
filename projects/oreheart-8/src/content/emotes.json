@@ -1,0 +1,155 @@
+{
+ "note": "Emotes (Sketch, Nov 7; art/emotes/manifest.json). Art: public/art/emotes/<pack>/<name>.webp. The server holds prices and ownership.",
+ "wheel_default": [
+  "free-starter/friends",
+  "free-starter/good-game",
+  "free-starter/nice",
+  "free-starter/thinking",
+  "free-starter/your-turn",
+  "free-starter/yes",
+  "free-starter/no-thanks",
+  "free-starter/hello"
+ ],
+ "packs": [
+  {
+   "id": "free-starter",
+   "name": "Free Starter",
+   "free": true,
+   "emotes": [
+    {
+     "id": "free-starter/hello",
+     "label": "Hello!"
+    },
+    {
+     "id": "free-starter/good-game",
+     "label": "Good game! (GG)"
+    },
+    {
+     "id": "free-starter/oops",
+     "label": "Oops!"
+    },
+    {
+     "id": "free-starter/wow",
+     "label": "Wow!"
+    },
+    {
+     "id": "free-starter/friends",
+     "label": "Friends?"
+    },
+    {
+     "id": "free-starter/thinking",
+     "label": "Thinking..."
+    },
+    {
+     "id": "free-starter/your-turn",
+     "label": "Your turn!"
+    },
+    {
+     "id": "free-starter/nice",
+     "label": "Nice!"
+    },
+    {
+     "id": "free-starter/yes",
+     "label": "Yes!"
+    },
+    {
+     "id": "free-starter/no-thanks",
+     "label": "No thanks"
+    }
+   ]
+  },
+  {
+   "id": "goblin-grumbles",
+   "name": "Goblin Grumbles",
+   "free": false,
+   "emotes": [
+    {
+     "id": "goblin-grumbles/grubnak-laugh",
+     "label": "Grubnak laughs"
+    },
+    {
+     "id": "goblin-grumbles/grubnak-rage",
+     "label": "Grubnak rages"
+    },
+    {
+     "id": "goblin-grumbles/belch",
+     "label": "BURP!"
+    },
+    {
+     "id": "goblin-grumbles/oink",
+     "label": "Oink!"
+    },
+    {
+     "id": "goblin-grumbles/kaboom",
+     "label": "KA-BOOM!"
+    },
+    {
+     "id": "goblin-grumbles/mine",
+     "label": "Mine!"
+    }
+   ]
+  },
+  {
+   "id": "gnome-gizmos",
+   "name": "Gnome Gizmos",
+   "free": false,
+   "emotes": [
+    {
+     "id": "gnome-gizmos/knobbin-smug",
+     "label": "Knobbin smirks"
+    },
+    {
+     "id": "gnome-gizmos/thinking",
+     "label": "Thinking..."
+    },
+    {
+     "id": "gnome-gizmos/ta-da",
+     "label": "Ta-da!"
+    },
+    {
+     "id": "gnome-gizmos/confused",
+     "label": "Confused"
+    },
+    {
+     "id": "gnome-gizmos/eureka",
+     "label": "Eureka!"
+    },
+    {
+     "id": "gnome-gizmos/robot-salute",
+     "label": "Robot salute"
+    }
+   ]
+  },
+  {
+   "id": "dwarf-grudges",
+   "name": "Dwarf Grudges",
+   "free": false,
+   "emotes": [
+    {
+     "id": "dwarf-grudges/borgo-proud",
+     "label": "Borgo stands proud"
+    },
+    {
+     "id": "dwarf-grudges/borgo-facepalm",
+     "label": "Borgo facepalm"
+    },
+    {
+     "id": "dwarf-grudges/wham",
+     "label": "WHAM!"
+    },
+    {
+     "id": "dwarf-grudges/cheers",
+     "label": "Cheers!"
+    },
+    {
+     "id": "dwarf-grudges/hmph",
+     "label": "Hmph!"
+    },
+    {
+     "id": "dwarf-grudges/shield-up",
+     "label": "Shield up!"
+    }
+   ]
+  }
+ ]
+}

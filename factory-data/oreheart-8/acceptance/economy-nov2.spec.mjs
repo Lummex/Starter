@@ -1384,3 +1384,81 @@ test('AC709: every bundle shows coins OR Oreshards; short of Oreshards the butto
   expect(await page.evaluate(() => window.oreheart.oreshards.state().oreshards)).toBe(400);
   expect(await page.evaluate(() => window.oreheart.oreshards.state().coins)).toBe(coins0);
 });
+
+test('AC711: the emote dial against the computer (Ken, Nov 7): a click on your avatar opens up to 8 emotes, on screen and apart (PC and phone); a pick pops from your avatar; Friends? is off against the computer', async ({ page }) => {
+  test.setTimeout(90000);
+  for (const size of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(size);
+    await page.goto('/?test=1');
+    await page.waitForFunction(() => !!window.oreheart && !!window.oreheart.newMatch);
+    await page.evaluate(() => window.oreheart.newMatch({ ai: false, skipMulligan: true, setup: { firstPlayer: 'player' } }));
+    const av = page.locator('[data-testid=emote-avatar]');
+    await expect(av).toBeVisible({ timeout: 15000 });
+    await av.click();
+    const picks = page.locator('[data-testid=emote-dial] .emote-pick');
+    await expect(picks).toHaveCount(8);
+    const boxes = await picks.evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }));
+    for (const [l, t, r, b] of boxes) expect(l >= 0 && t >= 0 && r <= size.width && b <= size.height, `${size.width}: on screen ${l},${t},${r},${b}`).toBe(true);
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) { const [p, q] = [boxes[i], boxes[j]]; expect(Math.hypot((p[0] + p[2]) / 2 - (q[0] + q[2]) / 2, (p[1] + p[3]) / 2 - (q[1] + q[3]) / 2) >= p[2] - p[0] - 0.5, `${size.width}: picks ${i} and ${j} overlap`).toBe(true); } // round buttons: centres a width apart
+    await expect(page.locator('[data-testid=emote-dial] [data-emote="free-starter/friends"]')).toBeDisabled();
+    await expect(page.locator('[data-testid=emote-mute]')).toHaveCount(0);
+    await page.locator('[data-testid=emote-dial] [data-emote="free-starter/good-game"]').click();
+    await expect(page.locator('[data-testid=emote-pop][data-from=me][data-emote="free-starter/good-game"]')).toBeVisible();
+    const pop = await page.locator('[data-testid=emote-pop] img').first().getAttribute('src');
+    expect(pop).toBe('/art/emotes/free-starter/good-game.webp');
+  }
+});
+
+test('AC713: Frames and Emotes in the Shop (Ken, Nov 7): six frames for coins or Oreshards, never Founder or Producer; the free set plus three packs with singles; buying a frame and a pack works; Collection "Frames & emotes" wears the frame and sets the wheel', async ({ page }) => {
+  test.setTimeout(90000);
+  await signedInDashWith(page, '');
+  await page.locator('[data-testid=dash-coins]').click();
+  await expect(page.locator('[data-screen="econ-shop"]')).toBeVisible({ timeout: 10000 });
+  const fr = page.locator('[data-testid=shop-frames]');
+  await expect(fr.locator('.cos-item')).toHaveCount(6, { timeout: 10000 });
+  expect(await fr.locator('.cos-item').evaluateAll((els) => els.map((e) => e.dataset.frame))).not.toContain('producer');
+  expect(await fr.locator('.cos-item').evaluateAll((els) => els.map((e) => e.dataset.frame))).not.toContain('founder');
+  await expect(fr.locator('.av-frame').first()).toHaveAttribute('src', /\/art\/avatar-frames\/[a-z-]+\.webp$/);
+  await fr.locator('[data-testid="frame-buy-skullfang-coins"]').click();
+  await expect(fr.locator('[data-testid="frame-wear-skullfang"]')).toBeVisible({ timeout: 10000 });
+  await fr.locator('[data-testid="frame-wear-skullfang"]').click();
+  await expect(fr.locator('.cos-item[data-frame=skullfang] .cos-owned')).toHaveText('Wearing');
+  const em = page.locator('[data-testid=shop-emotes]');
+  await expect(em.locator('.cos-pack')).toHaveCount(4, { timeout: 10000 });
+  await expect(em.locator('.cos-pack[data-pack=free-starter] .cos-owned')).toHaveText('Free for everyone');
+  await expect(em.locator('.cos-emote')).toHaveCount(28);
+  await em.locator('[data-testid="emote-pack-goblin-grumbles-shards"]').click();
+  await expect(em.locator('.cos-pack[data-pack=goblin-grumbles] .cos-owned')).toHaveText('All yours', { timeout: 10000 });
+  // Collection -> Frames & emotes
+  await page.evaluate(() => window.__app.showMenu());
+  await expect(page.locator('main.dash[data-dash="1"]')).toBeVisible({ timeout: 10000 });
+  await page.locator('[data-testid=dash-collection]').click();
+  await expect(page.locator('[data-screen="econ-collection"]')).toBeVisible({ timeout: 10000 });
+  await page.locator('[data-testid=col-looks]').click();
+  const d = page.locator('[data-testid=looks-dialog]');
+  await expect(d).toBeVisible();
+  await expect(d.locator('[data-testid=looks-frame-skullfang]')).toHaveAttribute('aria-checked', 'true');
+  await d.locator('[data-testid=looks-frame-none]').click();
+  await expect(d.locator('[data-testid=looks-frame-none]')).toHaveAttribute('aria-checked', 'true');
+  const wheel = d.locator('[data-testid=looks-wheel] .cos-emote');
+  expect(await wheel.count()).toBeGreaterThanOrEqual(16); // 10 free + 6 bought
+  await d.locator('[data-testid=looks-close]').click();
+});
+
+test('AC714: the beta welcome also gives the Founder frame and 32 Founder avatars (Ken, Nov 7): pick one or keep your own; Wear puts on the Founder back and frame, and the picked avatar', async ({ page }) => {
+  test.setTimeout(90000);
+  await signedInDashWith(page, '&beta=1');
+  const w = page.locator('[data-testid=beta-welcome]');
+  await expect(w).toBeVisible({ timeout: 10000 });
+  await expect(w.locator('img.beta-frame')).toHaveAttribute('src', /frames\/founder\.webp$/);
+  const grid = w.locator('[data-testid=beta-avatars]');
+  await expect(grid.locator('.cos-item')).toHaveCount(33); // keep mine + 32
+  await expect(w.locator('[data-testid=beta-keep-avatar]')).toHaveAttribute('aria-checked', 'true');
+  await w.locator('[data-testid=beta-avatar-founder-latino-girl]').click();
+  await expect(w.locator('[data-testid=beta-avatar-founder-latino-girl]')).toHaveAttribute('aria-checked', 'true');
+  await w.locator('[data-testid=beta-wear]').click();
+  await expect(w).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => window.oreheart.cosmetics.equipped())).toBe('founder');
+  await expect(page.locator('[data-testid=dash-who] .av-fw[data-frame=founder]')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('[data-testid=dash-who] img.av')).toHaveAttribute('src', /avatars\/founder-latino-girl\.webp$/);
+});

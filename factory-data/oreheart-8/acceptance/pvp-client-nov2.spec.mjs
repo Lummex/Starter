@@ -1012,3 +1012,59 @@ test('AC704: card backs in PvP (Ken, Nov 7): Bob wears the Founder back, so Alic
   await expect.poll(() => b.evaluate(() => [...document.querySelectorAll('.enemy-hand .back')].map((e) => e.dataset.back)), { timeout: 15000 }).toContain('default');
   await closeAll(a, b);
 });
+
+test('AC712: emotes in PvP (Ken, Nov 7): a click on your avatar opens the dial; the pick pops from your avatar and from the opponent\'s avatar on the other screen; Friends? gives Yes!/No thanks, Yes! shows the friend code and makes them friends; Bob\'s Producer frame and title show on Alice\'s screen; mute hides the opponent\'s', async ({ browser }) => {
+  test.setTimeout(150000);
+  const id = uniq();
+  const a = await openAs(browser, 'alice' + id), b = await openAs(browser, 'bob' + id);
+  await atMenu(a); await atMenu(b);
+  expect((await (await fetch(`http://127.0.0.1:${MOCK_PORT}/debug/frame?user=${encodeURIComponent('bob' + id)}&item=producer&title=Producer`)).json()).ok).toBe(true);
+  const made = await hook(a, 'create', 'grubnak', 'goblin-warband');
+  expect(made && made.ok, 'create: ' + JSON.stringify(made)).toBe(true);
+  const joined = await hook(b, 'join', made.code, 'borgo', 'dwarf-warband');
+  expect(joined && joined.ok, 'join: ' + JSON.stringify(joined)).toBe(true);
+  await inMatch(b); await inMatch(a);
+  await keepHands(a, b);
+  // the frame and title Bob wears, on Alice's screen
+  await expect(a.locator('.o-plate.o-enemy .o-av img.av-frame')).toHaveAttribute('src', /frames\/producer\.webp$/, { timeout: 15000 });
+  await expect(a.locator('[data-testid=title-them]')).toHaveText('Producer');
+  // the dial: up to 8, on screen, no overlaps
+  await a.locator('[data-testid=emote-avatar]').click();
+  const dial = a.locator('[data-testid=emote-dial]');
+  await expect(dial.locator('.emote-pick')).toHaveCount(8);
+  const boxes = await dial.locator('.emote-pick').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }));
+  for (const [l, t, r, bt] of boxes) expect(l >= 0 && t >= 0 && r <= 1600 && bt <= 900, `on screen ${l},${t},${r},${bt}`).toBe(true);
+  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) { // round buttons: centres at least one width apart
+    const [p, q] = [boxes[i], boxes[j]];
+    expect(Math.hypot((p[0] + p[2]) / 2 - (q[0] + q[2]) / 2, (p[1] + p[3]) / 2 - (q[1] + q[3]) / 2) >= p[2] - p[0] - 0.5, `picks ${i} and ${j} overlap`).toBe(true);
+  }
+  await dial.locator('[data-emote="free-starter/hello"]').click();
+  await expect(dial).toHaveCount(0);
+  await expect(a.locator('[data-testid=emote-pop][data-from=me][data-emote="free-starter/hello"]')).toBeVisible();
+  await expect(b.locator('[data-testid=emote-pop][data-from=them][data-emote="free-starter/hello"]')).toBeVisible({ timeout: 15000 });
+  // Friends? -> Yes! on Bob's screen -> the code plate on Alice's, and friends both ways
+  await a.waitForTimeout(2200);
+  await a.locator('[data-testid=emote-avatar]').click();
+  await a.locator('[data-testid=emote-dial] [data-emote="free-starter/friends"]').click();
+  const ans = b.locator('[data-testid=emote-answer]');
+  await expect(ans).toBeVisible({ timeout: 15000 });
+  await ans.locator('[data-testid=emote-yes]').click();
+  await expect(a.locator('[data-testid=emote-pop][data-from=them][data-emote="free-starter/yes"] [data-testid=emote-code]')).toBeVisible({ timeout: 15000 });
+  await expect.poll(async () => {
+    const r = await (await fetch(`http://127.0.0.1:${MOCK_PORT}/friends?user=${encodeURIComponent('alice' + id)}`, { method: 'POST', body: JSON.stringify({ op: 'overview' }) })).json();
+    return (r.friends || []).map((f) => f.username);
+  }, { timeout: 15000 }).toContain('bob' + id);
+  // asked once: Friends? is off for the rest of the match
+  await a.waitForTimeout(2200);
+  await a.locator('[data-testid=emote-avatar]').click();
+  await expect(a.locator('[data-testid=emote-dial] [data-emote="free-starter/friends"]')).toBeDisabled();
+  // mute: Alice mutes Bob, Bob's next emote does not pop on her screen
+  await a.locator('[data-testid=emote-mute]').click();
+  await b.waitForTimeout(2200);
+  await b.locator('[data-testid=emote-avatar]').click();
+  await b.locator('[data-testid=emote-dial] [data-emote="free-starter/nice"]').click();
+  await expect(b.locator('[data-testid=emote-pop][data-from=me][data-emote="free-starter/nice"]')).toBeVisible();
+  await a.waitForTimeout(3000);
+  await expect(a.locator('[data-testid=emote-pop][data-from=them][data-emote="free-starter/nice"]')).toHaveCount(0);
+  await closeAll(a, b);
+});

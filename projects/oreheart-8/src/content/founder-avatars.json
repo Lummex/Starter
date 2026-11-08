@@ -1,0 +1,197 @@
+{
+ "note": "Founder avatars (Sketch, Nov 7): beta reward only, never sold. public/art/avatars/<id>.webp.",
+ "avatars": [
+  {
+   "id": "founder-boy-black",
+   "label": "Founder (boy)",
+   "group": "black",
+   "gender": "m"
+  },
+  {
+   "id": "founder-boy-white",
+   "label": "Founder (boy)",
+   "group": "white",
+   "gender": "m"
+  },
+  {
+   "id": "founder-girl-black",
+   "label": "Founder (girl)",
+   "group": "black",
+   "gender": "f"
+  },
+  {
+   "id": "founder-girl-white",
+   "label": "Founder (girl)",
+   "group": "white",
+   "gender": "f"
+  },
+  {
+   "id": "founder-man-black",
+   "label": "Founder (man)",
+   "group": "black",
+   "gender": "m"
+  },
+  {
+   "id": "founder-man-white",
+   "label": "Founder (man)",
+   "group": "white",
+   "gender": "m"
+  },
+  {
+   "id": "founder-woman-black",
+   "label": "Founder (woman)",
+   "group": "black",
+   "gender": "f"
+  },
+  {
+   "id": "founder-woman-white",
+   "label": "Founder (woman)",
+   "group": "white",
+   "gender": "f"
+  },
+  {
+   "id": "founder-east-asian-boy",
+   "label": "Founder (boy)",
+   "group": "east-asian",
+   "gender": "m"
+  },
+  {
+   "id": "founder-east-asian-girl",
+   "label": "Founder (girl)",
+   "group": "east-asian",
+   "gender": "f"
+  },
+  {
+   "id": "founder-east-asian-man",
+   "label": "Founder (man)",
+   "group": "east-asian",
+   "gender": "m"
+  },
+  {
+   "id": "founder-east-asian-woman",
+   "label": "Founder (woman)",
+   "group": "east-asian",
+   "gender": "f"
+  },
+  {
+   "id": "founder-south-asian-boy",
+   "label": "Founder (boy)",
+   "group": "south-asian",
+   "gender": "m"
+  },
+  {
+   "id": "founder-south-asian-girl",
+   "label": "Founder (girl)",
+   "group": "south-asian",
+   "gender": "f"
+  },
+  {
+   "id": "founder-south-asian-man",
+   "label": "Founder (man)",
+   "group": "south-asian",
+   "gender": "m"
+  },
+  {
+   "id": "founder-south-asian-woman",
+   "label": "Founder (woman)",
+   "group": "south-asian",
+   "gender": "f"
+  },
+  {
+   "id": "founder-latino-boy",
+   "label": "Founder (boy)",
+   "group": "latino",
+   "gender": "m"
+  },
+  {
+   "id": "founder-latino-girl",
+   "label": "Founder (girl)",
+   "group": "latino",
+   "gender": "f"
+  },
+  {
+   "id": "founder-latino-man",
+   "label": "Founder (man)",
+   "group": "latino",
+   "gender": "m"
+  },
+  {
+   "id": "founder-latino-woman",
+   "label": "Founder (woman)",
+   "group": "latino",
+   "gender": "f"
+  },
+  {
+   "id": "founder-mena-boy",
+   "label": "Founder (boy)",
+   "group": "mena",
+   "gender": "m"
+  },
+  {
+   "id": "founder-mena-girl",
+   "label": "Founder (girl)",
+   "group": "mena",
+   "gender": "f"
+  },
+  {
+   "id": "founder-mena-man",
+   "label": "Founder (man)",
+   "group": "mena",
+   "gender": "m"
+  },
+  {
+   "id": "founder-mena-woman",
+   "label": "Founder (woman)",
+   "group": "mena",
+   "gender": "f"
+  },
+  {
+   "id": "founder-sea-pacific-boy",
+   "label": "Founder (boy)",
+   "group": "sea-pacific",
+   "gender": "m"
+  },
+  {
+   "id": "founder-sea-pacific-girl",
+   "label": "Founder (girl)",
+   "group": "sea-pacific",
+   "gender": "f"
+  },
+  {
+   "id": "founder-sea-pacific-man",
+   "label": "Founder (man)",
+   "group": "sea-pacific",
+   "gender": "m"
+  },
+  {
+   "id": "founder-sea-pacific-woman",
+   "label": "Founder (woman)",
+   "group": "sea-pacific",
+   "gender": "f"
+  },
+  {
+   "id": "founder-indigenous-boy",
+   "label": "Founder (boy)",
+   "group": "indigenous",
+   "gender": "m"
+  },
+  {
+   "id": "founder-indigenous-girl",
+   "label": "Founder (girl)",
+   "group": "indigenous",
+   "gender": "f"
+  },
+  {
+   "id": "founder-indigenous-man",
+   "label": "Founder (man)",
+   "group": "indigenous",
+   "gender": "m"
+  },
+  {
+   "id": "founder-indigenous-woman",
+   "label": "Founder (woman)",
+   "group": "indigenous",
+   "gender": "f"
+  }
+ ]
+}

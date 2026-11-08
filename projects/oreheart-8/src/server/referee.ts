@@ -7,7 +7,11 @@ import { createMatch, applyAction, STARTER_DECKS, COMMANDERS, type Side } from '
 import { presentFor, realAction } from '../engine/view';
 
 export type Seat = 'a' | 'b';
-export interface PlayerInfo { userId: string; username: string; avatar: string | null; cardBack?: string | null /* Nov 7: the equipped card back (null = the Oreheart default) */ }
+export interface PlayerInfo { userId: string; username: string; avatar: string | null; cardBack?: string | null /* Nov 7: the equipped card back (null = the Oreheart default) */; frame?: string | null; title?: string | null /* Nov 7: the avatar frame and a title (Producer) the other player sees */ }
+/** Nov 7 (Ken): an emote one player sent; n counts up so each browser shows each emote once. `code` rides on a Yes to a Friends? ask. */
+export interface EmoteNote { seat: Seat; id: string; n: number; at: number; code?: string | null }
+export const EMOTE_COOLDOWN_MS = 2000;
+export const EMOTE_KEEP = 6;
 export interface DeckChoice { commander: string; cards: string[] | null; deckId: string | null; tiers?: number[] | null /* Nov 5: each slot's copy tier, parallel to cards */; commanderTier?: number | null /* Nov 6: the Commander copy (tier) the player asked to fight as; the store checks he owns one */ }
 export interface Rules { phaseSeconds: number; bankSeconds: number; respondSeconds: number; timeoutsToForfeit: number; mulliganSeconds?: number; respondMinSeconds?: number; attackMode?: 'armed' | 'window' }
 export const DEFAULT_RULES: Rules = { phaseSeconds: 120, bankSeconds: 60, respondSeconds: 12, timeoutsToForfeit: 3, respondMinSeconds: 2 };
@@ -36,6 +40,8 @@ export interface MatchRecord {
   clock: Clock;
   result: MatchResult | null;
   log: any[];            // every event so far (for the quest summary at the end)
+  emotes?: EmoteNote[];   // Nov 7: the last few emotes (never part of the engine state; no seq bump)
+  emoteN?: number;
   engineVersion: string;
   createdAt: number;
   endedAt: number | null;
@@ -49,6 +55,8 @@ export interface View {
   names: { me: string; them: string }; avatars: { me: string | null; them: string | null }; backs?: { me: string | null; them: string | null };
   result: null | { won: boolean; reason: string; mode?: string; rating?: { before: number; after: number } };
   tiers?: { me: Record<string, number>; them: Record<string, number> };
+  frames?: { me: string | null; them: string | null }; titles?: { me: string | null; them: string | null };
+  emotes?: { from: 'me' | 'them'; id: string; n: number; code?: string | null }[];
 }
 
 export const seatSide = (seat: Seat): Side => (seat === 'a' ? 'player' : 'opponent');
@@ -253,7 +261,22 @@ export function viewFor(m: MatchRecord, seat: Seat, events: any[]): View {
     backs: { me: m.players[seat].cardBack ?? null, them: m.players[them].cardBack ?? null }, // Nov 7: each player's card back; the other one sees it on the enemy hand
     result: m.result ? { won: m.result.winner === seat, reason: m.result.reason, mode: m.mode || 'friend', ...(m.rating && m.rating[seat] ? { rating: m.rating[seat] } : {}) } : null,
     tiers: { me: (m.tiers && m.tiers[seat]) || {}, them: (m.tiers && m.tiers[them]) || {} },
+    frames: { me: m.players[seat].frame ?? null, them: m.players[them].frame ?? null }, titles: { me: m.players[seat].title ?? null, them: m.players[them].title ?? null },
+    emotes: (m.emotes || []).map((e) => ({ from: e.seat === seat ? 'me' as const : 'them' as const, id: e.id, n: e.n, ...(e.code ? { code: e.code } : {}) })),
   };
+}
+
+/** Nov 7 (Ken): a player sends an emote. Not a move: the engine state and seq stay; one every EMOTE_COOLDOWN_MS per player. */
+export function addEmote(m: MatchRecord, userId: string, id: string, now: number, code?: string | null): { ok: boolean; error?: string } {
+  const seat = seatOf(m, userId);
+  if (!seat) return { ok: false, error: 'You are not in this match.' };
+  if (m.status !== 'active') return { ok: false, error: 'The match is over.' };
+  const last = (m.emotes || []).filter((e) => e.seat === seat).pop();
+  if (last && now - last.at < EMOTE_COOLDOWN_MS) return { ok: false, error: 'One emote at a time.' };
+  m.emoteN = (m.emoteN || 0) + 1;
+  const c = typeof code === 'string' && /^[A-Z0-9]{4,12}$/.test(code) ? code : null;
+  m.emotes = [...(m.emotes || []), { seat, id, n: m.emoteN, at: now, ...(c ? { code: c } : {}) }].slice(-EMOTE_KEEP);
+  return { ok: true };
 }
 
 /** Both players' views after a change. */

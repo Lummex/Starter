@@ -9,6 +9,7 @@ import { shardChip, shardIcon as shardIconEl } from './oreshards';
 // Nov 7: the Oreshard side of the prices (the server's oreshard_pack_rate and the player's balance), loaded with the shop
 let shardRate = 1, shardBal = 0;
 import { sleevesPanel } from './cosmetics';
+import { framesPanel, emotesPanel } from './frames';
 import { oddsWords } from './quest-summary';
 import { TIER_NAMES, RARITY_LABEL } from '../content/card-labels';
 export { oddsWords };
@@ -34,7 +35,7 @@ export async function showShop(): Promise<void> {
       h('div', { class: 'econ-wallet' }, shardChip(), h('button', { type: 'button', class: 'net-btn sbtn panel shop-convert', 'data-testid': 'shop-convert', title: '1 Oreshard = 1 Coin, one way', onclick: () => { void import('./oreshards').then((m) => m.showOreshards('convert')); } }, 'Oreshards → Coins'), coinChip())),
     alert,
     h('div', { class: 'shop-main' },
-      h('div', { class: 'shop-left' }, kinds, grid, strip, sleevesPanel()), // Nov 7 (Ken): card sleeves for Oreshards
+      h('div', { class: 'shop-left' }, kinds, grid, strip, sleevesPanel(), framesPanel(), emotesPanel()), // Nov 7 (Ken): frames and emote packs // Nov 7 (Ken): card sleeves for Oreshards
       h('div', { class: 'shop-side' }, stash, odds, streak, pulls, limit)));
   let info: ShopInfo;
   try { info = await api.shopInfo(); } catch (e: any) { grid.replaceChildren(); alert.textContent = 'The shop is closed right now: ' + String(e?.message || e); return; }

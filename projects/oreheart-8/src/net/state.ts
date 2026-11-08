@@ -17,6 +17,11 @@ export const net = {
   openShop: null as (() => void) | null,
   /** Nov 6 (Dashboard): the signed-in avatar id, the Profile screen and the PvP doors (set by flow.ts / pvp.ts) */
   avatar: null as string | null,
+  /** Nov 7: the signed-in player's avatar frame and title (Producer), and the Founder avatars they were given */
+  frame: null as string | null,
+  title: null as string | null,
+  founderAvatars: [] as string[],
+  openLooks: null as (() => void) | null,
   openProfile: null as (() => void) | null,
   /** Nov 7: the card-back chooser (set by the Dashboard, which has the app) */
   openCardBacks: null as (() => void) | null,

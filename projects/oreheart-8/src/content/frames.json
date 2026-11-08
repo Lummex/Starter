@@ -1,0 +1,46 @@
+{
+ "note": "Avatar frames (Sketch, Nov 7). public/art/avatar-frames/<id>.webp; draw 1.882x the avatar circle, centred.",
+ "scale": 1.882,
+ "frames": [
+  {
+   "id": "producer",
+   "name": "Producer",
+   "kind": "producer"
+  },
+  {
+   "id": "founder",
+   "name": "Founder",
+   "kind": "founder"
+  },
+  {
+   "id": "goblin-junkpile",
+   "name": "Goblin Junkpile",
+   "kind": "store"
+  },
+  {
+   "id": "gnome-arcane",
+   "name": "Gnome Arcane",
+   "kind": "store"
+  },
+  {
+   "id": "dwarf-deepforge",
+   "name": "Dwarf Deepforge",
+   "kind": "store"
+  },
+  {
+   "id": "crystal-crown",
+   "name": "Crystal Crown",
+   "kind": "store"
+  },
+  {
+   "id": "piglet-pen",
+   "name": "Piglet Pen",
+   "kind": "store"
+  },
+  {
+   "id": "skullfang",
+   "name": "Skullfang",
+   "kind": "store"
+  }
+ ]
+}

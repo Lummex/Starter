@@ -31,12 +31,19 @@ export const AI_AVATARS = aiAvatars(AVATAR_LIST);
 export const avatarForViewer = (id: string | null | undefined) => avatarAsSeenBy(AVATAR_LIST, id, net.ageGroup);
 
 /** Picture for a saved avatar: a portrait, an older card-art avatar, or the default portrait. */
+/** Nov 7 (Ken): wraps an avatar picture with its frame (Sketch's ring, 1.88x the circle, over it). No frame: the picture as it was. */
+export function framed(img: HTMLElement, frame: string | null | undefined): HTMLElement {
+  if (!frame || !/^[a-z0-9-]{2,40}$/.test(frame)) return img;
+  const w = document.createElement('span'); w.className = 'av-fw'; w.dataset.frame = frame;
+  const f = document.createElement('img'); f.className = 'av-frame'; f.src = `/art/avatar-frames/${frame}.webp`; f.alt = ''; f.draggable = false; f.setAttribute('aria-hidden', 'true');
+  w.append(img, f); return w;
+}
 export function avatarPicture(id: string | null | undefined): string {
-  if (id && byId.has(id)) return `/art/avatars/${id}.webp`;
+  if (id && (byId.has(id) || /^founder-[a-z-]{3,40}$/.test(id))) return `/art/avatars/${id}.webp`; // Nov 7: Founder avatars too
   const card = id ? CARDS[id] : null;
   return (card && pictureOf(card)) || `/art/avatars/${DEFAULT_AVATAR}.webp`;
 }
 
 export function avatarName(id: string | null | undefined): string {
-  return avatarById(id)?.label || (id && CARDS[id]?.name) || avatarById(DEFAULT_AVATAR)!.label;
+  return avatarById(id)?.label || (id && id.startsWith('founder-') ? 'Founder avatar' : '') || (id && CARDS[id]?.name) || avatarById(DEFAULT_AVATAR)!.label;
 }

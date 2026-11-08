@@ -70,7 +70,7 @@ describe('regions: the queue is per server', () => {
     const { store, svc } = rig();
     store.fallbackSeconds = 4;
     await svc.handle('rank', {}, alice, T0); // makes her rating row
-    store.ratings.get('u-alice')!.rating = 1400;
+    store.ratings.get('u-alice')!.rating = 1400; store.elo.set('u-alice', 1400); // Nov 7: matchmaking uses the hidden Elo
     await svc.handle('queue', { mode: 'ranked', region: 'us-west', anyRegion: true, ...pick }, alice, T0);
     const r = await svc.handle('queue', { mode: 'ranked', region: 'us-east', anyRegion: true, ...pickB }, bob, T0 + 1000);
     expect(r).toMatchObject({ waiting: true, fallback: 4 }); // 1400 vs 1000 is outside the window, in any region

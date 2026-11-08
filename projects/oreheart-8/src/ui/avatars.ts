@@ -16,6 +16,7 @@ export const isMatureAllowed = () => matureAllowed;
 const byId = new Map(AVATARS.map((a) => [a.id, a]));
 /** The avatar to show for a planned id: its own picture once Brush has painted it (a mature one only when allowed, else its safe stand-in), until then a painted one of the same race. */
 export function shownAvatar(id: string): string {
+  if (/^founder-[a-z-]{3,40}$/.test(id)) return id; // Nov 7: the 32 Founder avatars (beta reward; the server checks who may wear one)
   const a = byId.get(id);
   if (a?.mature && !matureAllowed) { const f = a.safe_fallback || ''; if (f && shipped.has(f)) return f; }
   if (shipped.has(id)) return id;

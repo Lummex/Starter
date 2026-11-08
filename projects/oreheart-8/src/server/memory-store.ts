@@ -117,6 +117,9 @@ export class MemoryStore implements Store {
   async rankOf(userId: string) { return clone(this.rankRow(userId)); }
   async tiersOf(userId: string, cards: string[] | null) { const t = this.tiers.get(userId) || {}; const out: Record<string, number> = {}; for (const [k, v] of Object.entries(t)) if (v > 1 && (!cards || cards.includes(k))) out[k] = v; return out; }
   /** the mock's collection: one tier per card per user (the /debug/tier route sets it); an Original is always owned */
+  /** Nov 7: the mock lets every emote through unless a test says otherwise (lockedEmotes) */
+  lockedEmotes = new Set<string>();
+  async emoteOk(_userId: string, emote: string) { return !this.lockedEmotes.has(emote); }
   async hasCopy(userId: string, cardId: string, tier: number) { const t = this.tiers.get(userId) || {}; return tier <= 1 ? true : t[cardId] === tier; }
   newId() { return 'm' + String(++this.ids).padStart(4, '0'); }
   random() { return this.rng(); }

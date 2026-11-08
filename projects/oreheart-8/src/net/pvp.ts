@@ -165,6 +165,11 @@ export class NetGame {
   names = { me: '', them: '' };
   avatars: { me: string | null; them: string | null } = { me: null, them: null };
   backs: { me: string | null; them: string | null } = { me: null, them: null }; // Nov 7: each player's card back
+  frames: { me: string | null; them: string | null } = { me: null, them: null }; // Nov 7: avatar frames and titles
+  titles: { me: string | null; them: string | null } = { me: null, them: null };
+  /** Nov 7: the emotes in the views (the match screen pops the new ones) */
+  onEmotes: ((list: any[]) => void) | null = null;
+  emotesNow: any[] = [];
   result: null | { won: boolean; reason: string; coins?: number; mode?: string; rating?: { before: number; after: number } } = null;
   view: any = null;
   /** the screen shows these (a refused move, a lost connection) */
@@ -235,6 +240,9 @@ export class NetGame {
     if (v.names) this.names = { me: String(v.names.me ?? ''), them: String(v.names.them ?? '') };
     if (v.avatars) this.avatars = { me: v.avatars.me ?? null, them: v.avatars.them ?? null };
     if ((v as any).backs) this.backs = { me: (v as any).backs.me ?? null, them: (v as any).backs.them ?? null };
+    if ((v as any).frames) this.frames = { me: (v as any).frames.me ?? null, them: (v as any).frames.them ?? null };
+    if ((v as any).titles) this.titles = { me: (v as any).titles.me ?? null, them: (v as any).titles.them ?? null };
+    if (Array.isArray((v as any).emotes)) { this.emotesNow = (v as any).emotes; this.onEmotes?.(this.emotesNow); } // an emote keeps the seq: it rides on every view
     if (v.mySide === 'a' || v.mySide === 'b') this.mySide = v.mySide;
     if (v.result) this.result = v.result;
     this.status = v.status === 'over' ? 'over' : 'active';
@@ -369,6 +377,10 @@ export class NetGame {
   async actRemote(a: any): Promise<{ ok: boolean; error?: string; seq: number }> {
     const r = await this.send(a);
     return { ...r, seq: this.seq };
+  }
+  /** Nov 7 (Ken): send an emote (the server checks it is yours and paces them) */
+  async sendEmote(id: string, code?: string | null): Promise<{ ok: boolean; error?: string }> {
+    try { const r = await this.t.call('emote', { matchId: this.matchId, emote: id, ...(code ? { code } : {}) }); return r && r.ok ? { ok: true } : { ok: false, error: r?.error || 'The emote did not go.' }; } catch { return { ok: false, error: 'offline' }; }
   }
   async forfeit(): Promise<any> {
     try { const r = await this.t.call('forfeit', { matchId: this.matchId }); if (r && r.view) this.applyView(r.view, true); return r; }

@@ -8,7 +8,7 @@ import { h, type App } from '../ui/app';
 import { net } from './state';
 import { api, refreshCoins, lastShop, setShop, openScreen, isTestPage, type ShopInfo, type QuestsInfo, type RankCard, type NewsFeed, type NewsPost } from './economy';
 import { showDecks } from '../ui/decks';
-import { avatarPicture, avatarName } from './avatars';
+import { avatarPicture, avatarName, framed } from './avatars';
 import { getPlayerName } from '../ui/players';
 import { ladderCharm, rankOfRating } from '../content/ladder';
 import { collectionCards } from './quest-summary';
@@ -44,6 +44,8 @@ const dayWords = (iso: string | null | undefined) => { if (!iso) return ['', '']
 export async function showDashboard(a: App): Promise<void> {
   app = a;
   net.openCardBacks = () => { void import('./cosmetics').then((m) => m.openBackPicker(a)); };
+  net.openLooks = () => { void import('./frames').then((m) => m.openLooksPicker(a)); }; // Nov 7 (Ken): frames, Founder avatars, the emote wheel
+  if (net.active) await import('./frames').then((m) => m.loadMyFrame()).catch(() => {});
   a.clear();
   const root = h('main', { class: 'screen menu-screen dash', 'data-screen': 'title', 'data-dash': '1', 'aria-label': 'Main menu' });
   a.root.append(root);
@@ -66,7 +68,7 @@ export function topBar(data: Data, extra: El[] = []): El {
   const stashN = data.shop && data.shop.stash ? Object.values(data.shop.stash.packs || {}).reduce((s, n) => s + (Number(n) || 0), 0) : 0;
   return h('div', { class: 'top' },
     h('button', { type: 'button', class: 'who panel', 'aria-label': 'Profile', title: `${name}, ${rk ? rk.label : 'unranked'}: your profile`, 'data-testid': 'dash-who', onclick: () => net.openProfile?.() },
-      h('img', { class: 'av', src: avatarPicture(avatarId), alt: avatarName(avatarId) }),
+      framed(h('img', { class: 'av', src: avatarPicture(avatarId), alt: avatarName(avatarId) }), net.frame),
       h('div', {}, h('b', {}, name), h('small', {}, rk ? ico(ladderCharm(rk.name)) : null, rk ? rk.label : 'Unranked'))),
     h('button', { type: 'button', class: 'coins panel', 'aria-label': `${coins == null ? '' : fmt(coins) + ' '}coins: open the shop`, 'data-testid': 'dash-coins', onclick: () => { void openScreen('shop'); } }, ico(COIN), coins == null ? '…' : fmt(coins), h('span', { class: 'plus' }, '+')),
     free > 0 || stashN > 0 ? h('button', { type: 'button', class: 'free panel', 'data-testid': 'dash-free', onclick: () => { void openScreen('shop'); } }, ico(FREEPACK), free > 0 ? `${free} free pack${free === 1 ? '' : 's'}` : `${stashN} sealed pack${stashN === 1 ? '' : 's'}`) : null,
@@ -232,9 +234,9 @@ export async function showRankings(a: App): Promise<void> {
   const shares: Record<string, number> = (lb && lb.shares) || {};
   const total = (lb && Number(lb.players)) || 0;
   const rows: El[] = (lb && lb.top ? lb.top : []).map((p: any) => h('tr', { class: p.me ? 'me' : '', 'data-testid': 'rank-row' },
-    h('td', {}, String(p.place)), h('td', {}, h('div', { class: 'pl' }, h('img', { src: avatarPicture(p.avatar), alt: '' }), h('span', {}, p.username))),
+    h('td', {}, String(p.place)), h('td', {}, h('div', { class: 'pl' }, framed(h('img', { src: avatarPicture(p.avatar), alt: '' }), p.frame), h('span', {}, p.username), p.title ? h('em', { class: 'o-title' }, p.title) : null)),
     h('td', {}, h('span', { class: 'lab' }, ico(ladderCharm(rankOfRating(p.rating, steps.length ? steps : undefined).name)), p.label)), h('td', {}, fmt(p.rating)), h('td', {}, `${p.wins}-${p.losses}`), h('td', {}, p.games ? `${Math.round((p.wins / p.games) * 100)}%` : '')));
-  if (me && me.place && !(lb && lb.top && lb.top.some((p: any) => p.me))) rows.push(h('tr', { class: 'me', 'data-testid': 'rank-row' }, h('td', {}, String(me.place)), h('td', {}, h('div', { class: 'pl' }, h('img', { src: avatarPicture(net.avatar), alt: '' }), h('span', {}, getPlayerName()))), h('td', {}, h('span', { class: 'lab' }, ico(ladderCharm(rk.name)), rk.label)), h('td', {}, fmt(me.rating)), h('td', {}, `${me.wins}-${me.losses}`), h('td', {}, me.games ? `${Math.round((me.wins / me.games) * 100)}%` : '')));
+  if (me && me.place && !(lb && lb.top && lb.top.some((p: any) => p.me))) rows.push(h('tr', { class: 'me', 'data-testid': 'rank-row' }, h('td', {}, String(me.place)), h('td', {}, h('div', { class: 'pl' }, framed(h('img', { src: avatarPicture(net.avatar), alt: '' }), net.frame), h('span', {}, getPlayerName()))), h('td', {}, h('span', { class: 'lab' }, ico(ladderCharm(rk.name)), rk.label)), h('td', {}, fmt(me.rating)), h('td', {}, `${me.wins}-${me.losses}`), h('td', {}, me.games ? `${Math.round((me.wins / me.games) * 100)}%` : '')));
   root.append(topBar(data), h('div', { class: 'logo', 'aria-hidden': 'true' }),
     h('div', { class: 'back' }, h('button', { type: 'button', class: 'btn panel', onclick: () => { void showDashboard(a); } }, '‹ Dashboard')),
     h('div', { class: 'main' },
