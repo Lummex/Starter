@@ -14,6 +14,7 @@ import { SPELL_FX_SPEC } from './spell-fx'; // Nov 6: Chain Lightning's jump tim
 import { Tutorial, tutorialGame, tutorialOrders } from './tutorial';
 import { STANCES } from '../ai/stances';
 import { showDecks, loadDecks, deckLegal, storeDecks, hiddenStarters, setHiddenStarters, maxDecks } from './decks';
+import { deckArt, deckScroller, lastDeckFor, rememberDeck } from './deck-tiles';
 import { showSettingsD } from './settings-d';
 import { net } from '../net/state';
 import { rankOfRating, ladderCharm } from '../content/ladder';
@@ -757,6 +758,16 @@ export class App {
     let deckSel = 'starter:' + warband();
     if (typeof picks.deck === 'string' && picks.deck !== '') { const i = decks.findIndex((d) => d.name === picks.deck && deckLegal(d, cmd)); if (i >= 0) deckSel = 'saved:' + i; }
     else if (typeof picks.deckId === 'string' && STARTER_DECKS[picks.deckId]) deckSel = 'starter:' + picks.deckId;
+    // Nov 7 (Ken): the deck last used with this Commander (a saved deck by its name, a starter by its id)
+    const recall = () => {
+      const k = lastDeckFor(cmd);
+      if (k.startsWith('name:')) { const i = decks.findIndex((d) => d.name === k.slice(5) && (!d.commander || d.commander === cmd) && deckLegal(d, cmd)); if (i >= 0) { deckSel = 'saved:' + i; return true; } }
+      else if (k.startsWith('starter:') && STARTER_DECKS[k.slice(8)] && !hiddenStarters().includes(k.slice(8)) && (STARTER_DECK_LIST.find((x) => x.id === k.slice(8)) as any)?.faction === COMMANDERS[cmd].faction) { deckSel = k; return true; }
+      return false;
+    };
+    recall();
+    let myBack: string | null = null;
+    if (net.active) void import('../net/cosmetics').then((m) => m.api.mine()).then((c: any) => c?.equipped).then((b: any) => { if (typeof b === 'string' && b !== myBack) { myBack = b; buildRow(); sel(); } }).catch(() => {});
     const cmdBtns: El[] = [], diffBtns: El[] = [], stacks: El[] = [];
     const msg = h('p', { class: 'deck-msg', 'aria-label': 'Deck message', role: 'status' });
     // Owner (Ken, Oct 30): the background is the hall of the Commander selected, or the one under the pointer / keyboard focus
@@ -816,17 +827,37 @@ export class App {
       const d: any = this.dialog('Remove deck?', [h('h2', {}, 'Remove deck?'), h('p', { style: 'text-align:center' }, `Remove ${label} from the deck picker?`),
         h('div', { class: 'row' }, btn('Remove', 'primary', () => { doIt(); d.close(); buildRow(); sel(); }), btn('Cancel', '', () => d.close()))]);
     };
-    const stack = (label: string, n: number, ok: boolean, key: string, onpick: () => void, starterId?: string, savedIdx?: number) => {
-      const b = h('button', { type: 'button', class: `dstack${ok ? '' : ' bad'}`, 'data-key': key, 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', onclick: onpick },
-        h('img', { class: 'deck-img', src: '/art/deck/deck-menu.png', alt: '', draggable: 'false' }),
-        h('span', { class: 'ds-name', 'aria-hidden': 'true' }, label), h('span', { class: 'ds-n', 'aria-hidden': 'true' }, `${n} cards ${ok ? '✔' : '⚠'}`));
+    const stack = (label: string, n: number, ok: boolean, key: string, onpick: () => void, starterId?: string, savedIdx?: number, cards: string[] = [], why = '') => {
+      const nameEl = h('span', { class: 'ds-name', 'aria-hidden': 'true', title: savedIdx != null ? 'Double-click to rename' : '' }, label);
+      const b = h('button', { type: 'button', class: `dstack dk-tile${ok ? '' : ' bad'}`, 'data-key': key, 'aria-label': `${label}, ${n} cards, ${ok ? 'ready' : 'not ready'}`, 'aria-disabled': ok ? null : 'true', title: ok ? '' : why, onclick: onpick },
+        deckArt(cards, cmd, myBack), nameEl, h('span', { class: 'ds-n', 'aria-hidden': 'true' }, `${n} cards ${ok ? '✔' : '⚠'}`), ok ? null : h('span', { class: 'ds-why', 'aria-hidden': 'true' }, why));
       stacks.push(b);
+      // Nov 7 (Ken: "a little pencil so you can edit the decks ... Or double click the name"): your own decks only (starters can't be edited)
+      if (savedIdx != null && !(net.active && net.under13)) {
+        b.addEventListener('dblclick', (e) => { // the whole tile: its name text lets clicks through
+          e.stopPropagation();
+          const inp = h('input', { type: 'text', class: 'ds-rename', maxlength: '24', value: label, 'aria-label': `Rename ${label}` }) as HTMLInputElement;
+          const done = (save: boolean) => {
+            const v = inp.value.trim().slice(0, 24);
+            if (!save || !v || v === label) { buildRow(); sel(); return; }
+            const d = decks[savedIdx];
+            if (net.active) { void net.saveDeck(d.id, { ...d, name: v }).then(() => { d.name = v; buildRow(); sel(); }, (er: any) => { msg.textContent = er?.message || 'The server refused that name.'; buildRow(); sel(); }); return; }
+            d.name = v; storeDecks(decks); buildRow(); sel();
+          };
+          inp.addEventListener('keydown', (k: KeyboardEvent) => { k.stopPropagation(); if (k.key === 'Enter') done(true); else if (k.key === 'Escape') done(false); });
+          let armed = false; setTimeout(() => { armed = true; }, 400); // the double-click's own mouse-up must not count as leaving the box
+          inp.addEventListener('blur', () => { if (armed) done(true); else inp.focus(); });
+          inp.addEventListener('click', (k) => k.stopPropagation());
+          nameEl.hidden = true; b.after(inp); inp.focus(); inp.select(); // beside the tile (a box inside a button can't be typed in reliably)
+        });
+      }
       const rm = btn('Remove', 'small tx-act', () => confirmRemove(label, () => {
         if (starterId) setHiddenStarters([...hiddenStarters(), starterId]); else if (savedIdx != null) { const gone = decks.splice(savedIdx, 1)[0]; if (net.active) { if (gone && gone.id) void net.removeDeck(gone.id).catch((e: any) => { msg.textContent = e.message; }); } else storeDecks(decks); }
         if (deckSel === key || deckSel.startsWith('saved:')) { const first = STARTER_DECK_LIST.find((d) => !hiddenStarters().includes(d.id)); deckSel = first ? 'starter:' + first.id : decks.length ? 'saved:0' : deckSel; }
       }), { 'aria-label': `Remove ${label}` }) as HTMLButtonElement;
       if (visibleCount() <= 1) { rm.disabled = true; rm.setAttribute('aria-disabled', 'true'); }
       const acts: El[] = [rm];
+      if (savedIdx != null) acts.unshift(btn('✎', 'small tx-act ds-pencil', () => showDecks(this, { focus: savedIdx, onBack: () => this.showSetup() }), { 'aria-label': `Edit ${label}`, title: 'Edit this deck', 'data-testid': 'deck-edit' }));
       if (starterId) acts.push(btn('Copy', 'small tx-act', () => {
         const sd: any = STARTER_DECK_LIST.find((x) => x.id === starterId)!;
         if (decks.length >= maxDecks()) { msg.textContent = `You can save up to ${maxDecks()} decks.`; return; }
@@ -846,16 +877,18 @@ export class App {
       const hid = hiddenStarters();
       void order;
       const list = STARTER_DECK_LIST.filter((d) => d.faction === fac).filter((d) => !hid.includes(d.id));
-      const items: El[] = list.map((d) => stack(d.name, d.cards.length, true, 'starter:' + d.id, () => { deckSel = 'starter:' + d.id; msg.textContent = ''; sel(); }, d.id));
+      const items: El[] = list.map((d) => stack(d.name, d.cards.length, true, 'starter:' + d.id, () => { deckSel = 'starter:' + d.id; msg.textContent = ''; sel(); }, d.id, undefined, d.cards));
       decks.forEach((d, i) => {
         if (d.commander && d.commander !== cmd) return;
         const ok = deckLegal(d, cmd);
+        const why = ok ? '' : deckProblems(d.cards.filter((id) => CARDS[id]), cmd)[0] || 'This deck is not ready.';
         items.push(stack(d.name, d.cards.length, ok, 'saved:' + i, () => {
-          if (!ok) { msg.textContent = deckProblems(d.cards.filter((id) => CARDS[id]), cmd)[0] || 'This deck is not ready.'; return; }
+          if (!ok) { msg.textContent = why; return; }
           deckSel = 'saved:' + i; msg.textContent = ''; sel();
-        }, undefined, i));
+        }, undefined, i, d.cards, why));
       });
-      items.push(h('div', { class: 'dslot' }, h('button', { type: 'button', class: 'dstack newdeck', onclick: () => showDecks(this) }, '+ New Deck')));
+      items.push(h('div', { class: 'dslot' }, h('button', { type: 'button', class: 'dstack dk-tile newdeck', 'aria-label': '+ New Deck', onclick: () => showDecks(this, { onBack: () => this.showSetup() }) },
+        h('span', { class: 'dk-art dk-new', 'aria-hidden': 'true' }, '+'), h('span', { class: 'ds-name', 'aria-hidden': 'true' }, 'New Deck'), h('span', { class: 'ds-n', 'aria-hidden': 'true' }, ' '))));
       row.replaceChildren(...items);
     };
     // Owner (Ken, Oct 31): "the background box that the commander cards sit in, I don't want that" (no wall), and "when you click the goblin king,
@@ -904,7 +937,7 @@ export class App {
     };
     document.addEventListener('keydown', onEsc);
     const onCmd = () => {
-      if (deckSel.startsWith('starter:') && !hiddenStarters().includes(warband())) deckSel = 'starter:' + warband();
+      if (!recall() && (deckSel.startsWith('starter:') || deckSel.startsWith('saved:')) && !hiddenStarters().includes(warband())) deckSel = 'starter:' + warband();
       buildRow(); sel();
     };
     void FN;
@@ -917,6 +950,7 @@ export class App {
           const pick = deckSel.startsWith('saved:') ? decks[+deckSel.slice(6)] : null;
           const deckId = pick ? '' : deckSel.slice(8);
           try { localStorage.setItem('oreheart.picks', JSON.stringify({ cmd, diff, mode, deck: pick ? pick.name : '', deckId })); } catch { /* storage unavailable */ }
+          rememberDeck(cmd, pick ? 'name:' + pick.name : 'starter:' + deckId);
           this.beginMatch({ playerCommander: cmd, opponentCommander: opp, difficulty: diff, mode, rivalId: rv.id, aiStyle: rv.style, ...(pick ? { playerDeck: pick.cards.slice(), deckName: pick.name } : { playerDeckId: deckId }) });
     };
     // Nov 6 (design D, Ken approved): START is the Fight! button (its name stays Fight! for the checks and the keyboard)
@@ -939,8 +973,9 @@ export class App {
             h('span', { class: 'cs-label' }, 'Game mode'), h('div', { class: 'mode-row', role: 'group', 'aria-label': 'Game mode' }, ...modeBtns),
             h('span', { class: 'cs-label' }, 'Difficulty'), h('div', { class: 'row setup-actions', role: 'group', 'aria-label': 'Difficulty' }, ...diffBtns),
             h('div', { class: 'cs-extra' }, msg, btn('Restore starter decks', 'sbtn panel', () => { setHiddenStarters([]); buildRow(); sel(); }))),
-          h('section', { class: 'panel cs-deckbox', 'aria-label': 'Deck' }, h('div', { class: 'ptitle' }, deckTitle, h('button', { type: 'button', class: 'more', onclick: () => showDecks(this) }, 'Edit deck \u203a')),
-            h('div', { class: 'deck-wrap' }, h('span', { class: 'cs-label', 'aria-hidden': 'true' }, 'Deck'), row)),
+          h('section', { class: 'panel cs-deckbox', 'aria-label': 'Deck' }, h('div', { class: 'ptitle' }, deckTitle, h('button', { type: 'button', class: 'more', onclick: () => showDecks(this, { onBack: () => this.showSetup() }) }, 'Edit deck \u203a')),
+            h('div', { class: 'deck-wrap' }, h('span', { class: 'cs-label', 'aria-hidden': 'true' }, 'Deck'), deckScroller(row)),
+            h('button', { type: 'button', class: 'net-btn sbtn panel cs-build', 'data-testid': 'build-decks', onclick: () => showDecks(this, { onBack: () => this.showSetup() }) }, 'Build / edit decks')),
           h('section', { class: 'panel cs-locked', 'aria-label': 'Locked Commanders' }, h('div', { class: 'ptitle' }, h('h2', { class: 'h' }, 'Locked Commanders')),
             h('div', { class: 'cs-lockrow' }, ...[['Queen Skreeka', 'Goblin'], ['Old Grumblebeard', 'Dwarf']].map(([n, f]) => h('div', { class: 'cs-lock' }, h('span', { class: 'pic', 'aria-hidden': 'true' }), h('b', {}, n), h('small', {}, `${f} · coming in a later season`)))),
             h('p', { class: 'cs-locknote' }, 'More Commanders join in later seasons. Each will bring its own ability and an upgrade look of its own.')),

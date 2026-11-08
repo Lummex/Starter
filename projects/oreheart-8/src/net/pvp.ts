@@ -7,6 +7,7 @@ import './pvp.css';
 import './dashboard.css';
 import { applyAction, legalActions as engineLegal, brewActions, hasMovesLeft, COMMANDERS, STARTER_DECK_LIST, warbandOf, deckProblems, CARDS, mulliganActions } from '../engine';
 import { net } from './state';
+import { deckArt, deckScroller, lastDeckFor, rememberDeck } from '../ui/deck-tiles';
 import { getPlayerName } from '../ui/players';
 import { currentRegion, edgeOf, regionPanel, regionById } from './regions';
 import type { App } from '../ui/app';
@@ -542,6 +543,21 @@ function picker() {
     const mine = (net.decks || []).map((d, i) => ({ d, i })).filter(({ d }) => (!d.commander || d.commander === cmd) && d.cards.every((c) => CARDS[c]) && deckProblems(d.cards, cmd).length === 0);
     if (mine.length) { const g = h('optgroup', { label: 'My decks' }); for (const { d, i } of mine) g.append(h('option', { value: 'saved:' + i }, d.name)); sel.append(g); }
     sel.value = 'starter:' + warbandOf(fac);
+    // Nov 7 (Ken): the deck last used with this Commander
+    const last = lastDeckFor(cmd);
+    const want = last.startsWith('name:') ? Array.from(sel.querySelectorAll('option')).find((o) => o.value.startsWith('saved:') && o.textContent === last.slice(5))?.value : last;
+    if (want && sel.querySelector(`option[value="${want}"]`)) sel.value = want;
+    fillTiles();
+  };
+  // Nov 7 (Ken: "use graphic images to represent the decks with the names underneath"): the decks as picture tiles over the list
+  const tilesRow = h('div', { class: 'pvp-deck-tiles', role: 'listbox', 'aria-label': 'Deck pictures', 'data-testid': 'pvp-deck-tiles' });
+  const fillTiles = () => {
+    tilesRow.replaceChildren(...Array.from(sel.querySelectorAll('option')).map((o) => {
+      const v = o.value, name = o.textContent || '';
+      const cards = v.startsWith('saved:') ? (net.decks[+v.slice(6)]?.cards || []) : (STARTER_DECK_LIST.find((x) => 'starter:' + x.id === v)?.cards || []);
+      return h('button', { type: 'button', class: 'pvp-deck-tile', role: 'option', 'aria-selected': String(v === sel.value), 'data-deck': v, title: name,
+        onclick: () => { sel.value = v; showDeck(); fillTiles(); } }, deckArt(cards, cmd, null), h('span', { class: 'pvp-deck-tname' }, name), h('small', {}, `${cards.length} cards`));
+    }));
   };
   // Nov 6 (Ken): which Commander copy fights: the tiers the player owns (by_tier) as a row of choices under the Commanders; hidden with one copy
   const tierRow = h('div', { class: 'pvp-cmd-tiers', role: 'radiogroup', 'aria-label': 'Commander copy', 'data-testid': 'pvp-cmd-tiers', hidden: true });
@@ -573,7 +589,7 @@ function picker() {
   const deckMenu = h('div', { class: 'pvp-deck-menu', role: 'listbox', 'aria-label': 'Deck', hidden: true });
   const showDeck = () => { deckBtn.textContent = sel.selectedOptions[0]?.textContent || 'Pick a deck'; };
   const closeDeck = (focus = false) => { deckMenu.hidden = true; deckBtn.setAttribute('aria-expanded', 'false'); if (focus) deckBtn.focus(); };
-  const pickDeck = (v: string) => { sel.value = v; showDeck(); closeDeck(true); };
+  const pickDeck = (v: string) => { sel.value = v; showDeck(); closeDeck(true); fillTiles(); };
   const openDeck = () => {
     deckMenu.replaceChildren();
     for (const g of Array.from(sel.querySelectorAll('optgroup'))) {
@@ -595,13 +611,15 @@ function picker() {
   deckMenu.addEventListener('focusout', (e: FocusEvent) => { if (!deckMenu.hidden && !deckMenu.contains(e.relatedTarget as Node) && e.relatedTarget !== deckBtn) closeDeck(); });
   sel.addEventListener('deckschanged', showDeck);
   showDeck();
-  const el = h('div', { class: 'pvp-picker' }, cmdRow, tierRow, h('div', { class: 'pvp-deck-label' }, h('span', {}, 'Deck'), h('div', { class: 'pvp-deck-box' }, deckBtn, deckMenu, sel)));
+  const el = h('div', { class: 'pvp-picker' }, cmdRow, tierRow, deckScroller(tilesRow), h('div', { class: 'pvp-deck-label' }, h('span', {}, 'Deck'), h('div', { class: 'pvp-deck-box' }, deckBtn, deckMenu, sel)));
+  fillTiles();
   return {
     el,
     value(): { commander: string; deckId?: string; cards?: string[]; commanderTier?: number } {
       const v = sel.value || '';
       const commanderTier = chosenCommanderTier(cmd); // Nov 6: the Commander copy to fight as (the server checks he owns it)
       net.matchDeckName = (sel.selectedOptions[0]?.textContent || '').trim(); // Nov 7: shown bottom-left in the match
+      rememberDeck(cmd, v.startsWith('saved:') ? 'name:' + net.matchDeckName : v);
       // a saved deck goes by its server id (the server re-reads and re-checks it); its card list only if it has no id
       if (v.startsWith('saved:')) { const d = net.decks[+v.slice(6)]; if (d) return d.id ? { commander: cmd, deckId: d.id, commanderTier } : { commander: cmd, cards: d.cards.slice(), commanderTier }; }
       return { commander: cmd, deckId: v.startsWith('starter:') ? v.slice(8) : warbandOf((COMMANDERS as any)[cmd].faction), commanderTier };

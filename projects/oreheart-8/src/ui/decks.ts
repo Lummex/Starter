@@ -133,7 +133,7 @@ export function autoFill(deck: string[], faction?: string): string[] {
   return out;
 }
 
-export function showDecks(app: App, opts: { focus?: number } = {}) {
+export function showDecks(app: App, opts: { focus?: number; onBack?: () => void } = {}) {
   app.clear();
   let saved = loadDecks();
   let deck: string[] = [];
@@ -631,7 +631,7 @@ export function showDecks(app: App, opts: { focus?: number } = {}) {
   const saveBtn = h('button', { type: 'button', class: 'btn panel play db-save', 'aria-label': 'Save', onclick: save }, h('img', { src: '/art/ui/silver/icon-deck.webp', alt: '', draggable: 'false' }), 'Save deck');
   // the shell: top bar (online), header with Back / ‹ Dashboard, the phone tabs
   const title = h('h1', { class: 'h ttl db-title' }, 'Deck Builder');
-  const backBtn = btn(online ? '‹ Dashboard' : 'Back', 'panel back-btn db-back', () => app.showMenu());
+  const backBtn = btn(opts.onBack ? '\u2039 Back' : online ? '‹ Dashboard' : 'Back', 'panel back-btn db-back', () => (opts.onBack ? opts.onBack() : app.showMenu())); // Nov 7: from the deck picker, back to it
   const ptabs = h('div', { class: 'db-ptabs', role: 'group', 'aria-label': 'Deck Builder panels' }, ...[['decks', 'Decks'], ['cards', 'Cards'], ['list', 'List']].map(([k, l]) => h('button', { type: 'button', class: 'sbtn panel db-ptab', 'aria-pressed': String(k === 'cards'), 'data-tab': k, onclick: () => { mainEl.dataset.ptab = k; for (const b of ptabs.querySelectorAll('.db-ptab')) b.setAttribute('aria-pressed', String((b as HTMLElement).dataset.tab === k)); } }, l)));
   const top = h('div', { class: 'top', 'aria-hidden': 'true' });
   const mainEl = h('main', { class: 'screen dash deck-d' + (online ? '' : ' offline'), 'data-screen': 'deck-builder', 'data-ptab': 'cards' },

@@ -620,3 +620,45 @@ html body:not(#_a):not(#_b):not(#_c) #app .dash.setup-d .dslot{position:relative
 
 /* Nov 7: Find a match and Tutorial side by side in the Play tile */
 .dash .big .play-row{display:flex;gap:.6em;margin-top:.75em}.dash .big .play-row .play{flex:1 1 auto;margin-top:0}.dash .big .play-row .tut{flex:0 0 auto;height:3.4em;font-size:1em;padding:0 1.1em;display:flex;align-items:center;gap:.45em}.dash .big .play-row .tut img{width:1.4em;height:1.4em}
+
+/* Nov 7 (Ken: "use graphic images to represent the decks with the names underneath ... scroll through it"): picture tiles in a scroll row */
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dk-scroll{position:relative;display:flex;align-items:center;min-width:0;width:100%}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .deck-row{flex-direction:row!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;scroll-snap-type:x proximity;gap:.55em!important;padding:.35em .3em .5em!important;scrollbar-width:thin;scrollbar-color:#8d97ab #12141c;min-width:0;width:100%!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dslot{flex:0 0 auto!important;flex-direction:column!important;align-items:stretch!important;gap:.2em!important;width:clamp(78px,5.9vw,108px)!important;max-width:clamp(78px,5.9vw,108px)!important;scroll-snap-align:start}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack.dk-tile,html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack.newdeck{flex:none!important;display:flex!important;flex-direction:column!important;align-items:center!important;gap:.15em!important;min-height:0!important;padding:.25em .2em .3em!important;background:rgba(0,0,0,.25)!important;border-radius:10px!important;box-shadow:inset 0 0 0 1px #3a4254!important;cursor:pointer}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack.dk-tile[aria-pressed="true"]{box-shadow:inset 0 0 0 2px #e4e9f0,0 0 14px rgba(159,216,255,.55)!important;background:rgba(40,60,90,.45)!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack.dk-tile.bad{opacity:.55;filter:grayscale(.7)}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .dk-art{position:relative;display:block;width:100%;aspect-ratio:3/4}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .dk-art .deck-img.dk-box{display:block!important;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .dk-sleeve{position:absolute;left:4%;top:0;width:58%;aspect-ratio:2/3;rotate:-12deg;border-radius:5px;box-shadow:0 3px 8px #000a;z-index:1}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .dk-face{position:absolute;left:26%;top:20%;width:50%;height:46%;background:center 20%/cover no-repeat;border-radius:4px;box-shadow:0 0 0 2px #c9d1dc,0 2px 6px #000c;z-index:3}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .dk-cmd{position:absolute;right:-2%;bottom:2%;width:36%;aspect-ratio:1;border-radius:50%;background:center 18%/cover no-repeat;box-shadow:0 0 0 2px #cfd6e4,0 2px 6px #000;z-index:4}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .ds-name{display:block;width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.78em!important;line-height:1.15;color:#f3f6fa}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .ds-n{margin:0!important;font-size:.66em!important;opacity:.8}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .ds-why{display:block;font-size:.6em;line-height:1.1;color:#ffb3a3;text-align:center;max-height:2.3em;overflow:hidden}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .ds-rename{width:100%;font:inherit;font-size:.78em;padding:.1em .3em;border-radius:4px;border:1px solid #cfd6e4;background:#0b1020;color:#fff}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .ds-acts{display:flex!important;justify-content:center;gap:.2em;flex-wrap:wrap}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .ds-acts .tx-act{min-height:1.6em!important;padding:0 .35em!important;font-size:.62em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack.newdeck{justify-content:center!important;aspect-ratio:3/4.4;border:1px dashed #8d97ab;font-size:.8em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dk-arrow{position:absolute;top:38%;z-index:5;width:1.8em;height:1.8em;border-radius:50%;border:1px solid #cfd6e4;background:linear-gradient(#4a5368,#1d2130);color:#fff;font:700 1.1em/1 Arial,sans-serif;display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 6px #000a}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dk-arrow.prev{left:-.5em}html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dk-arrow.next{right:-.5em}html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dk-arrow[hidden]{display:none}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .cs-build{align-self:flex-start;min-height:1.9em;padding:0 .8em;font-size:.8em;margin-top:.2em}
+@media (max-width:900px){html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dslot{width:62px!important;max-width:62px!important}html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .ds-acts{display:none!important}html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dk-arrow{display:none}}
+/* Nov 7: room for the deck pictures: the deck panel grows, the Locked Commanders panel shows names only */
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .side{grid-template-rows:auto minmax(15.5em,1fr) auto auto!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .cs-locked .cs-lock .pic,html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .cs-locknote{display:none!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .cs-locked .cs-lock{min-height:0!important;padding:.3em .4em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .cs-deckbox{min-height:0;overflow:hidden}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .ds-name{white-space:normal!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.72em!important;line-height:1.1!important;min-height:2.2em}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .side{grid-template-rows:auto minmax(18em,1fr) auto auto!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack.dk-tile{position:relative}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .ds-why{position:absolute;left:4%;right:4%;top:34%;z-index:6;padding:.2em .25em;border-radius:5px;background:#200c0ce6;box-shadow:0 0 0 1px #ff8f7a}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack.newdeck{aspect-ratio:auto!important;border:0!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .dk-art.dk-new{display:grid!important;place-items:center;border:2px dashed #8d97ab;border-radius:8px;font:700 2em/1 Arial,sans-serif;color:#cfd6e4;box-sizing:border-box}
+/* the small Remove / Copy / pencil buttons sit UNDER the picture tile (an older rule pinned them over it), and every tile is the same height */
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dslot .ds-acts{position:static!important;transform:none!important;top:auto!important;right:auto!important;margin:0!important;display:flex!important;justify-content:center;flex-wrap:wrap;gap:.15em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dslot .ds-acts .btn,html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dslot .ds-acts .tx-act{min-height:1.5em!important;padding:0 .3em!important;font-size:.6em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .ds-name{height:2.2em!important;min-height:2.2em!important}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack .ds-n{height:1.3em!important;line-height:1.3em!important;overflow:hidden;white-space:nowrap}
+@media (max-width:900px){html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dslot .ds-acts{display:none!important}}
+html body:not(#_a):not(#_b):not(#_c):not(#_d) #app .dash.setup-d .dstack.newdeck{font-size:inherit!important}

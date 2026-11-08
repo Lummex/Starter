@@ -573,3 +573,18 @@ html body .shop-bundle .shop-art>.ohb-count.c27{right:-12%}
 .shard-bundle.shard-best{box-shadow:0 0 0 2px #ffd76a,0 0 26px rgba(255,215,106,.45)}
 .shard-bundle.shard-best .shard-art{transform:scale(1.12)}
 .shard-best-badge{position:absolute;top:-.9em;left:50%;transform:translateX(-50%);z-index:5;--w:clamp(120px,10vw,190px)}
+/* Nov 7 (Ken): deck pictures in the PvP lobby (the list stays under them) */
+.pvp-picker .dk-scroll{position:relative;display:flex;align-items:center;min-width:0;width:100%;margin:.3em 0}
+.pvp-deck-tiles{display:flex;gap:.5em;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;padding:.3em .2em .5em;scrollbar-width:thin;scrollbar-color:#8d97ab #12141c;width:100%}
+.pvp-deck-tile{flex:0 0 auto;width:clamp(70px,6vw,104px);display:flex;flex-direction:column;align-items:center;gap:.15em;padding:.25em .2em .3em;border-radius:10px;border:0;background:rgba(0,0,0,.25);box-shadow:inset 0 0 0 1px #3a4254;color:#f3f6fa;cursor:pointer;scroll-snap-align:start;font:inherit}
+.pvp-deck-tile[aria-selected="true"]{box-shadow:inset 0 0 0 2px #e4e9f0,0 0 14px rgba(159,216,255,.55);background:rgba(40,60,90,.45)}
+.pvp-deck-tile .pvp-deck-tname{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-align:center;font-size:.72em;line-height:1.1;min-height:2.2em}
+.pvp-deck-tile small{font-size:.62em;opacity:.8}
+.dk-art{position:relative;display:block;width:100%;aspect-ratio:3/4}
+.dk-art .dk-box{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:2}
+.dk-art .dk-sleeve{position:absolute;left:4%;top:0;width:58%;aspect-ratio:2/3;rotate:-12deg;border-radius:5px;box-shadow:0 3px 8px #000a;z-index:1}
+.dk-art .dk-face{position:absolute;left:26%;top:20%;width:50%;height:46%;background:center 20%/cover no-repeat;border-radius:4px;box-shadow:0 0 0 2px #c9d1dc,0 2px 6px #000c;z-index:3}
+.dk-art .dk-cmd{position:absolute;right:-2%;bottom:2%;width:36%;aspect-ratio:1;border-radius:50%;background:center 18%/cover no-repeat;box-shadow:0 0 0 2px #cfd6e4,0 2px 6px #000;z-index:4}
+.dk-scroll .dk-arrow{position:absolute;top:38%;z-index:5;width:1.8em;height:1.8em;border-radius:50%;border:1px solid #cfd6e4;background:linear-gradient(#4a5368,#1d2130);color:#fff;font:700 1.1em/1 Arial,sans-serif;display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 6px #000a}
+.dk-scroll .dk-arrow.prev{left:-.4em}.dk-scroll .dk-arrow.next{right:-.4em}.dk-scroll .dk-arrow[hidden]{display:none}
+@media (max-height:500px){.pvp-picker .dk-scroll{display:none}} /* a phone keeps the deck list (Choose Your Commander keeps the pictures) */

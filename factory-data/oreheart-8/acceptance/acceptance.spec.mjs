@@ -15552,3 +15552,46 @@ test('AC708: the deck you play shows bottom-left in the match (a starter deck by
     }
   }
 });
+
+// ---------- Nov 7 (Ken): "a spot where you can choose your decks per the commander ... use graphic images ... names underneath ... a little pencil" ----------
+test('AC710: Choose Your Commander shows the decks as pictures with the names underneath in a scroll row; an unready deck is greyed with its reason; the pencil opens it in the Deck Builder and Back returns; a double-click renames; the last deck per Commander is remembered', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.goto('/?test=1');
+  await page.waitForFunction(() => !!window.oreheart && !!window.__app);
+  await page.evaluate(() => localStorage.setItem('oreheart.decks', JSON.stringify([{ name: 'Junk Lords', commander: 'grubnak', cards: [] }])));
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  const row = page.getByRole('group', { name: 'Deck choice' });
+  const tiles = row.locator('.dstack.dk-tile');
+  await expect(tiles.first()).toBeVisible();
+  expect(await tiles.count()).toBeGreaterThanOrEqual(4);
+  // pictures: the deck box with a card on its face and the Commander's coin; the name under the picture
+  const t0 = tiles.first();
+  await expect(t0.locator('.dk-art .dk-face')).toHaveCount(1);
+  await expect(t0.locator('.dk-art .dk-cmd')).toHaveCount(1);
+  const pic = await t0.locator('.dk-art').boundingBox(), nm = await t0.locator('.ds-name').boundingBox();
+  expect(nm.y, 'the name sits under the picture').toBeGreaterThanOrEqual(pic.y + pic.height - 2);
+  // the unready saved deck: greyed, its reason on it, not selectable
+  const junk = row.getByRole('button', { name: /^Junk Lords, 0 cards, not ready/ });
+  await expect(junk).toHaveClass(/\bbad\b/);
+  await expect(junk.locator('.ds-why')).not.toHaveText('');
+  // rename by double-clicking the name
+  await junk.dblclick({ force: true }); // a double-click renames (the tile is aria-disabled: not ready)
+  const inp = row.locator('.ds-rename');
+  await inp.fill('Scrap Kings'); await inp.press('Enter');
+  await expect(row.getByRole('button', { name: /^Scrap Kings, 0 cards/ })).toBeVisible();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('oreheart.decks'))[0].name)).toBe('Scrap Kings');
+  // the pencil opens it in the Deck Builder; Back comes back here
+  await row.getByRole('button', { name: 'Edit Scrap Kings' }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible();
+  await page.getByRole('button', { name: '‹ Back' }).click();
+  await expect(page.getByRole('group', { name: 'Deck choice' })).toBeVisible();
+  // the last deck per Commander: pick the second starter, start, come back: it is still picked
+  const second = page.getByRole('group', { name: 'Deck choice' }).locator('.dstack.dk-tile').nth(1);
+  const key = await second.getAttribute('data-key');
+  await second.click();
+  await page.getByRole('button', { name: 'Fight!' }).click();
+  await expect(page.locator('main.match')).toBeVisible({ timeout: 15000 });
+  await page.evaluate(() => window.__app.showSetup());
+  await expect(page.getByRole('group', { name: 'Deck choice' }).locator(`.dstack[data-key="${key}"]`)).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('oreheart.deckPerCmd')).grubnak)).toBe(key);
+});
