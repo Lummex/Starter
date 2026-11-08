@@ -6214,7 +6214,7 @@ async function dragTile(page, tile, to, steps = 10) {
 }
 const listDrop = async (page) => { const b = await box(deckList(page)); return { x: b.x + b.width / 2, y: b.y + Math.min(b.height / 2, 80) }; };
 
-test('AC203: dragging a card onto the deck list adds one copy; a plain click opens the close-up', async ({ page }) => {
+test('AC203: dragging a card onto the deck list adds one copy; a double-click opens the close-up (Nov 7: one click only picks)', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await openDecks(page);
   const tile = allCards(page).getByRole('button', { name: 'Shiv Rat', exact: true });
@@ -6223,7 +6223,7 @@ test('AC203: dragging a card onto the deck list adds one copy; a plain click ope
   await expect(deckList(page)).toContainText('1 × Shiv Rat');
   await expect(page.getByRole('dialog', { name: 'Shiv Rat' })).toHaveCount(0);
   await expect(page.locator('[data-drag-ghost]')).toHaveCount(0);
-  await tile.click();
+  await tile.dblclick();
   await expect(page.getByRole('dialog', { name: 'Shiv Rat' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Shiv Rat' })).toBeHidden();
