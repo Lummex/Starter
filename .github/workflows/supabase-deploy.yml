@@ -36,9 +36,14 @@ jobs:
           git fetch --depth=1 origin main
           git show origin/main:factory/scripts/secret-scan.mjs > "$RUNNER_TEMP/secret-scan.mjs"
           node "$RUNNER_TEMP/secret-scan.mjs"
-      - uses: supabase/setup-cli@v1
-        with:
-          version: 2.122.1 # Nov 2: v3.0.0 aims db push at the local copy and wants --yes; stay on 2.x until someone moves this on purpose
+      # Nov 8: GitHub release downloads gave 504s (setup-cli failed before anything ran), so the same pinned CLI comes from npm, whose
+      # supabase package carries the binary itself. Still 2.122.1: v3.0.0 aims db push at the local copy and wants --yes; stay on 2.x
+      # until someone moves this on purpose.
+      - name: Supabase CLI 2.122.1 (from npm)
+        run: |
+          npm install --prefix "$RUNNER_TEMP/sbcli" --no-audit --no-fund supabase@2.122.1
+          echo "$RUNNER_TEMP/sbcli/node_modules/.bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/sbcli/node_modules/.bin/supabase" --version
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client > /dev/null
       - name: Test the migrations on a throwaway local copy first
         run: |
