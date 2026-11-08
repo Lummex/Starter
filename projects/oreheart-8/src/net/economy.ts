@@ -138,7 +138,7 @@ async function retryOnce<T>(fn: () => Promise<T>): Promise<T> {
 }
 export const api = {
   async shopInfo(): Promise<ShopInfo> {
-    if (stubMode()) { stubInit(); return JSON.parse(JSON.stringify({ packs: STUB.packs, coins: STUB.coins, free_packs: STUB.free_packs, bundles: STUB.bundles, stash: stubStash(), pity: { limit: STUB.pityLimit, since: STUB.pitySince }, badges: { best_value: 99, most_popular: null }, card_backs: STUB.cardBacks })); }
+    if (stubMode()) { stubInit(); return JSON.parse(JSON.stringify({ packs: STUB.packs, coins: STUB.coins, free_packs: STUB.free_packs, bundles: STUB.bundles, stash: stubStash(), pity: { limit: STUB.pityLimit, since: STUB.pitySince }, badges: { best_value: 99, most_popular: 24 }, card_backs: STUB.cardBacks })); }
     return await rpc<ShopInfo>('shop_info');
   },
   async openPack(packType: string, idemKey: string, useFree: boolean, force?: string): Promise<OpenResult> {

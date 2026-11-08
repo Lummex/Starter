@@ -292,6 +292,7 @@ select pg_temp.refused('commander_names is not editable in the back counter', :A
 select pg_temp.works('admin can set pack_bundles (Nov 6)', :A1, 'aal2', $q$ select public.admin_set_setting('pack_bundles', '[{"size": 1, "bonus": 0}, {"size": 6, "bonus": 0}, {"size": 24, "bonus": 3}, {"size": 99, "bonus": 16}]', 'test: bundles') $q$);
 select pg_temp.refused('pack_bundles must keep the single pack', :A1, 'aal2', $q$ select public.admin_set_setting('pack_bundles', '[{"size": 6, "bonus": 1}]', 'test') $q$, 'size 1');
 select pg_temp.refused('pack_bundles takes whole numbers', :A1, 'aal2', $q$ select public.admin_set_setting('pack_bundles', '[{"size": 1, "bonus": "x"}]', 'test') $q$, 'whole numbers');
+select pg_temp.ok('Nov 7 (Ken: "most popular can stay in"): MOST POPULAR is on the 24 bundle by default', (private.setting('shop_badges') ->> 'most_popular') = '24', private.setting('shop_badges')::text);
 select pg_temp.works('admin can set shop_badges (Nov 6)', :A1, 'aal2', $q$ select public.admin_set_setting('shop_badges', '{"best_value": 99, "most_popular": null}', 'test: badges') $q$);
 select pg_temp.refused('shop_badges takes bundle sizes only', :A1, 'aal2', $q$ select public.admin_set_setting('shop_badges', '{"best_value": 7}', 'test') $q$, 'bundle size');
 select pg_temp.refused('shop_badges knows two badges only', :A1, 'aal2', $q$ select public.admin_set_setting('shop_badges', '{"cheapest": 1}', 'test') $q$, 'unknown badge');
