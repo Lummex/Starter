@@ -1,6 +1,7 @@
 // Testing deck builder: every card unlocked and unlimited; up to 5 decks saved on the device.
 import { CARDS, FACTIONS, COMMANDERS, CONFIG, isMiner, deckCounts, deckProblems, basicMiner } from '../engine';
 import { h, btn, combo, App, faceKids, rarityKey, FRAME, commanderPortrait, pictureOf } from './app';
+import { myCommanderPortrait } from '../net/cmd-tier';
 import { ohCardEl } from './cardfmt';
 import '../net/dashboard.css'; // the D kit (offline too)
 import './deck-d.css'; // the Deck Builder in design D (Ken approved Nov 5; built Nov 6)
@@ -352,7 +353,7 @@ export function showDecks(app: App, opts: { focus?: number; onBack?: () => void 
   const slider = h('input', { type: 'range', id: 'cards-per-row', min: '2', max: '8', step: '1', value: String(perRow) }) as HTMLInputElement;
   slider.addEventListener('input', () => setPerRow(+slider.value));
   const pickCmd = (id: string) => { cmdId = id; fCmd.set(CMD_NAMES[id]); if (!nameTouched && editing < 0) name = defaultName(); renderCards(); renderDeck(); };
-  const cmdBtns = ['grubnak', 'sproingle', 'borgo'].map((id) => h('button', { type: 'button', class: 'db-cmdcard', 'data-cmd': id, 'aria-label': COMMANDERS[id].name, 'aria-pressed': 'false', onclick: () => pickCmd(id), ondblclick: () => app.closeUp('cmd:' + id, true) }, h('img', { alt: '', draggable: 'false', src: commanderPortrait(id) })) as HTMLElement);
+  const cmdBtns = ['grubnak', 'sproingle', 'borgo'].map((id) => h('button', { type: 'button', class: 'db-cmdcard', 'data-cmd': id, 'aria-label': COMMANDERS[id].name, 'aria-pressed': 'false', onclick: () => pickCmd(id), ondblclick: () => app.closeUp('cmd:' + id, true) }, h('img', { alt: '', draggable: 'false', src: myCommanderPortrait(id) })) as HTMLElement);
   const cmdWrap = h('div', { class: 'db-cmdwrap', role: 'group', 'aria-label': 'Deck Commander' }, h('div', { class: 'db-cmdinner', role: 'group', 'aria-label': 'Commander card' }, ...cmdBtns)) as HTMLElement;
   const syncThumb = () => { for (const b of cmdBtns) { const on = b.dataset.cmd === cmdId; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); } };
   const searchInp = h('input', { type: 'search', id: 'card-search', role: 'searchbox', 'aria-label': 'Search cards', placeholder: 'Search: "cheap goblin miners", "ranged under 4"…', autocomplete: 'off' }) as HTMLInputElement;

@@ -13,7 +13,8 @@ export const hasUpgradeArt = (id: string) => UPG_IDS.has(id);
 /** The picture for a card at a tier: its upgrade art when painted, else the normal one. */
 export function tierArt(card: any, tier: number | undefined, normal: string | null): string | null {
   const t = Math.max(1, Math.min(5, Number(tier) || 1));
-  return t > 1 && card && UPG_IDS.has(card.id) ? `/art/upgrades/${card.id}/${t}.webp` : normal;
+  const id = card && typeof card.id === 'string' && card.id.startsWith('cmd:') ? 'commander-' + card.id.slice(4) : card && card.id; // Nov 7: Commander faces too
+  return t > 1 && id && UPG_IDS.has(id) ? `/art/upgrades/${id}/${t}.webp` : normal;
 }
 /** The star row for a tier (one dim star on an Original, 2-5 coloured ones), for the bottom edge of a card face. */
 export function tierStars(tier: number | undefined): HTMLElement {

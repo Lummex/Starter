@@ -2,7 +2,7 @@ import "./choose-v2.css"; // Nov 7: Choose Your Commander v2 (Brush, Ken approve
 import { arenaOpts } from './arena-fx';
 import { mineEmblemUrl, ohCardEl, ohBackEl, commanderCard, TIER_NAMES } from './cardfmt';
 import { paintBack } from '../content/card-backs';
-import { chosenCommanderTier, setChosenCommanderTier, setCommanderTiersOwned } from '../net/cmd-tier';
+import { chosenCommanderTier, setChosenCommanderTier, setCommanderTiersOwned, commanderPortraitAt, myCommanderTier } from '../net/cmd-tier';
 import { recapLines, type RecapTurn } from './recap';
 import { drawMenuScreen, menuScreens, ownerBox, freeBox } from './menus';
 import { applyOwnerHud, hasTheme } from './owner-hud';
@@ -811,6 +811,7 @@ export class App {
           const t = chosenCommanderTier(id);
           const tg = b.querySelector('.cmd-tier') as El | null; if (tg) { tg.dataset.tier = String(t); ((tg.firstElementChild as El | null) ?? tg).textContent = String(TIER_NAMES[t]).toUpperCase(); }
           (b.querySelector('.cmd-lkn') as El | null)!.textContent = TIER_NAMES[t];
+          const pic = b.querySelector('.cmd-pic') as HTMLImageElement | null; if (pic) { const src = commanderPortraitAt(id, t); if (pic.getAttribute('src') !== src) pic.src = src; pic.dataset.tier = String(t); } // Nov 7 (Ken): the upgraded picture, not the Original
           b.querySelectorAll('.cmd-look').forEach((l) => { const lt = Number((l as El).dataset.t); l.classList.toggle('on', lt <= best); l.classList.toggle('own', owned(lt)); l.classList.toggle('picked', lt === t); });
         };
         b.querySelectorAll('.cmd-look').forEach((l) => {
@@ -1308,7 +1309,7 @@ export class App {
   closeUp(cardId: string, withViewer = false, opts: { deck?: any; view3d?: boolean } = {}) {
     const isCmd = cardId.startsWith('cmd:');
     const c = isCmd ? ({ name: COMMANDERS[cardId.slice(4)].name, id: cardId, type: 'commander', faction: 'any' } as any) : CARDS[cardId];
-    const face = isCmd ? h('div', { class: 'cz-img oh-cmd', role: 'img', 'aria-label': c.name, 'data-card-id': cardId }, ohCardEl(commanderCard(COMMANDERS[cardId.slice(4)]), commanderPortrait(cardId.slice(4)))) : h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, c.type === 'crystal' ? 0 : c.cost));
+    const face = isCmd ? h('div', { class: 'cz-img oh-cmd', role: 'img', 'aria-label': c.name, 'data-card-id': cardId }, ohCardEl({ ...commanderCard(COMMANDERS[cardId.slice(4)]), tier: myCommanderTier(cardId.slice(4)) }, commanderPortrait(cardId.slice(4)))) : h('div', { class: `hand-card big static ${c.type} f-${c.faction}`, 'data-card-id': c.id, 'data-frame': frameKey(c), 'data-rarity': rarityKey(c) }, ...faceKids(c, c.type === 'crystal' ? 0 : c.cost));
     const ov = h('div', { class: 'cardzoom', role: 'dialog', 'aria-modal': 'true', 'aria-label': c.name }, face);
     let stopViewer: (() => void) | null = null, closed = false;
     const close = () => { closed = true; stopViewer?.(); ov.remove(); document.removeEventListener('keydown', onKey, true); };

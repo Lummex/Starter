@@ -6,6 +6,7 @@ import { economyMenu } from './economy';
 import { pvpMenu, bindPvpApp, resumePvp, isMockPvp } from './pvp';
 import { h, btn } from '../ui/app';
 import type { App } from '../ui/app';
+import { myCommanderPortrait } from './cmd-tier';
 import { loadBrowserDecks as loadLocalDecks } from '../ui/decks';
 import type { SavedDeck } from '../ui/decks';
 import { net } from './state';
@@ -561,7 +562,7 @@ function showProfile() {
   const best = h('div', { class: 'st2 life' }, ...[['…', 'Best rating'], ['…', 'Place'], ['…', 'Season'], ['…', 'Season ends']].map(([v, l]) => h('div', { class: 'stat' }, h('b', {}, v), h('small', {}, l))));
   const fav = (() => { try { const p = JSON.parse(localStorage.getItem('oreheart.picks') || '{}'); return p.cmd || null; } catch { return null; } })();
   const favCmd = fav ? (COMMANDERS as any)[fav] : null;
-  const por = (id: string) => (id === 'grubnak' ? '/art/owner/goblin/grubnak-on-throne-art.png' : id === 'sproingle' ? '/art/owner/gnome/sproingle-portrait.webp' : id === 'borgo' ? '/art/owner/dwarf/borgo-portrait.webp' : `/art/commanders/${id}.webp`);
+  const por = (id: string) => myCommanderPortrait(id); // Nov 7: the upgraded picture
   const topEl = h('div', { class: 'top', 'aria-hidden': 'true' });
   const root = h('main', { class: 'screen net-screen dash profile', 'data-screen': 'profile', 'aria-label': 'Profile' }, topEl, h('div', { class: 'logo', 'aria-hidden': 'true' }),
     h('div', { class: 'hdr' }, h('button', { type: 'button', class: 'btn panel back-btn', onclick: () => app.showMenu() }, '‹ Dashboard'), h('div', { class: 'h ttl' }, 'Profile'), h('div', { class: 'info' }, 'Public profile: friends see your name, avatar, rank and badges')),

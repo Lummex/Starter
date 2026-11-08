@@ -3,7 +3,8 @@
 // and the PvP lobby: the deck box with the deck's star card on its face, your card back peeking out behind and the Commander's coin;
 // the name and the card count under it. A scroll row with arrows (PC), the mouse wheel, drag or swipe.
 import { CARDS } from '../engine';
-import { h, pictureOf, commanderPortrait } from './app';
+import { h, pictureOf } from './app';
+import { myCommanderPortrait } from '../net/cmd-tier';
 import { backArt } from '../content/card-backs';
 
 type El = HTMLElement;
@@ -28,7 +29,7 @@ export function deckArt(cards: string[], commander: string, back?: string | null
     h('img', { class: 'dk-sleeve', src: backArt(back || 'default'), alt: '', draggable: 'false' }),
     h('img', { class: 'deck-img dk-box', src: '/art/deck/deck-menu.png', alt: '', draggable: 'false' }),
     pic ? h('span', { class: 'dk-face', style: `background-image:url(${pic})` }) : null,
-    h('span', { class: 'dk-cmd', style: `background-image:url(${commanderPortrait(commander)})` }));
+    h('span', { class: 'dk-cmd', style: `background-image:url(${myCommanderPortrait(commander)})` }));
 }
 
 /** a horizontal scroll row with arrows that show only when there is more to see; the wheel scrolls it sideways */

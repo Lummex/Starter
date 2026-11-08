@@ -11,7 +11,7 @@ import { deckArt, deckScroller, lastDeckFor, rememberDeck } from '../ui/deck-til
 import { getPlayerName } from '../ui/players';
 import { currentRegion, edgeOf, regionPanel, regionById } from './regions';
 import type { App } from '../ui/app';
-import { chosenCommanderTier, setChosenCommanderTier, setCommanderTiersOwned, commanderTiersOwned } from './cmd-tier';
+import { chosenCommanderTier, setChosenCommanderTier, setCommanderTiersOwned, commanderTiersOwned, myCommanderPortrait } from './cmd-tier';
 import { TIER_NAMES } from '../content/card-labels';
 
 type El = HTMLElement;
@@ -545,7 +545,7 @@ function picker() {
   let cmd = ids.includes('grubnak') ? 'grubnak' : ids[0];
   const sel = h('select', { class: 'net-input pvp-deck', 'aria-label': 'Deck', 'data-testid': 'pvp-deck' }) as HTMLSelectElement;
   const cmdRow = h('div', { class: 'pvp-cmds', role: 'radiogroup', 'aria-label': 'Commander' });
-  const portrait = (id: string) => (id === 'grubnak' ? '/art/owner/goblin/grubnak-on-throne-art.png' : id === 'sproingle' ? '/art/owner/gnome/sproingle-portrait.webp' : id === 'borgo' ? '/art/owner/dwarf/borgo-portrait.webp' : `/art/commanders/${id}.webp`);
+  const portrait = (id: string) => myCommanderPortrait(id); // Nov 7 (Ken): the upgraded picture of the copy that fights
   const fillDecks = () => {
     const fac = (COMMANDERS as any)[cmd].faction;
     sel.replaceChildren();
@@ -575,6 +575,7 @@ function picker() {
   const tierRow = h('div', { class: 'pvp-cmd-tiers', role: 'radiogroup', 'aria-label': 'Commander copy', 'data-testid': 'pvp-cmd-tiers', hidden: true });
   const fillTiers = () => {
     const have = commanderTiersOwned(cmd) || [1];
+    cmdRow.querySelectorAll('.pvp-cmd').forEach((x) => { const im = x.querySelector('img'); const s = portrait(String((x as El).dataset.commander)); if (im && im.getAttribute('src') !== s) im.src = s; });
     tierRow.replaceChildren();
     tierRow.hidden = have.length < 2;
     if (have.length < 2) return;
