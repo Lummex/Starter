@@ -24,7 +24,7 @@ select pg_temp.ok('the first beta_welcome says show it, with the Founder reward'
   (select (j ->> 'show')::boolean and (j ->> 'beta')::boolean and j ->> 'reward' = 'founder' from w1), (select j::text from w1));
 create temp table w2 as select pg_temp.json_as(:U1, 'aal1', 'select public.beta_welcome()') as j;
 select pg_temp.ok('the welcome shows only once, and the back is granted only once',
-  (select not (j ->> 'show')::boolean from w2) and (select count(*) from public.player_cosmetics where user_id = :U1 and item = 'founder') = 1, (select j::text from w2));
+  (select not (j ->> 'show')::boolean from w2) and (select count(*) from public.player_cosmetics where user_id = :U1 and kind = 'card_back' and item = 'founder') = 1, (select j::text from w2));
 create temp table c1 as select pg_temp.json_as(:U1, 'aal1', 'select public.my_cosmetics()') as j;
 select pg_temp.ok('my_cosmetics lists default and founder',
   (select exists (select 1 from jsonb_array_elements(j -> 'card_backs') e(x) where x ->> 'item' = 'founder' and x ->> 'ref' = 'beta') from c1), (select j::text from c1));
