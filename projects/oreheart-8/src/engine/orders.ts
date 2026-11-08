@@ -176,6 +176,13 @@ export function stanceAction(s: any, c: any, stance: Stance, watch?: Cell[], pos
   const foes = s.board.creatures.filter((x: any) => x.owner !== c.owner).sort((a: any, b: any) => Math.max(Math.abs(a.row - c.row), Math.abs(a.col - c.col)) - Math.max(Math.abs(b.row - c.row), Math.abs(b.col - c.col)));
   let best: Cell[] | null = null;
   for (const e of foes.slice(0, 6)) { const p = chasePath(s, c, e); if (p && p.length && (!best || p.length < best.length)) best = p; }
+  // Ken, Nov 7 ("later in the game ... they're not moving, they skip their turn"): on a crowded board the 6 nearest enemies can all be
+  // walled in; an aggressive unit then tries the rest, and with no enemy unit to reach it marches on the enemy Commander
+  if (!best && stance === 'aggressive') {
+    for (const e of foes.slice(6)) { const p = chasePath(s, c, e); if (p && p.length && (!best || p.length < best.length)) best = p; }
+    const side = c.owner === 'player' ? 'opponent' : 'player', sh = s.strongholds?.[side];
+    if (!best && sh && !s.winner) { const p = chasePath(s, c, { commander: side, owner: side, row: sh.row, col: sh.col }); if (p && p.length) best = p; }
+  }
   if (!best) return null;
   if (stance === 'guard' && best.length > 1) return null;
   const step = stance === 'guard' ? (acts.some((a: any) => a.type === 'move' && a.row === best![0].row && a.col === best![0].col) ? best[0] : null) : nextStep(s, c, best);

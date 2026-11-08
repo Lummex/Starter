@@ -51,7 +51,7 @@ export async function runOrders(game: Game, orders: Map<string, Order>, opts: Ru
       if (!c || c.owner !== 'player') { orders.delete(key); result.done.push(order.uid); changed(); continue; }
       let plan;
       try { plan = planOrder(game.state, order); } catch (e: any) { log('orders: plan failed for ' + order.uid + ': ' + (e?.message || e)); result.blocked.push(order.uid); continue; }
-      if (plan.done) { orders.delete(key); result.done.push(order.uid); changed(); continue; }
+      if (plan.done) { orders.delete(key); result.done.push(order.uid); if (order.kind === 'chase' && opts.stances && !opts.stances.has(order.uid)) opts.stances.set(order.uid, 'aggressive'); changed(); continue; } // Ken, Nov 7: a chaser whose targets are gone keeps fighting
 
       if (!first && opts.delayMs > 0) {
         await sleep(opts.delayMs);
@@ -68,7 +68,7 @@ export async function runOrders(game: Game, orders: Map<string, Order>, opts: Ru
       while (legs++ < 8 && canAct(game, turn, match)) {
         if (order.kind === 'chase') {
           const enemy = chaseTarget(game.state, order);
-          if (!enemy) { orders.delete(key); result.done.push(order.uid); changed(); break; }
+          if (!enemy) { orders.delete(key); result.done.push(order.uid); if (opts.stances && !opts.stances.has(order.uid)) opts.stances.set(order.uid, 'aggressive'); changed(); break; } // Ken, Nov 7: its targets are gone: it keeps fighting (Aggressive) instead of standing idle
           const attack = attackActionOn(game.state, cur, enemy);
           if (attack) {
             const r = game.act(attack);
