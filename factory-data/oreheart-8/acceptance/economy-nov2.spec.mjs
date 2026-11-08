@@ -1253,10 +1253,10 @@ test('AC705: Card Sleeves in the Shop (Ken, Nov 7): six sleeves with Oreshard pr
   const box = page.locator('[data-testid=shop-sleeves]');
   await expect(box.locator('.sl-item')).toHaveCount(6, { timeout: 10000 });
   await expect(box.locator('[data-testid=sl-balance]')).toHaveText('1000 Oreshards');
-  expect(await box.locator('.sl-item img').evaluateAll((els) => els.map((e) => e.getAttribute('src')))).toEqual(
+  expect(await box.locator('.sl-item .sl-art img').evaluateAll((els) => els.map((e) => e.getAttribute('src')))).toEqual(
     ['goblin-junkpile', 'gnome-arcane', 'dwarf-deepforge', 'crystal-mine', 'piglet-stampede', 'skullfang-arena'].map((id) => `/art/sleeves/${id}.webp`));
   // every picture really loads (Brush's art is in the build)
-  expect(await box.locator('.sl-item img').evaluateAll(async (els) => { await Promise.all(els.map((e) => (e.complete ? null : new Promise((r) => { e.onload = e.onerror = r; })))); return els.every((e) => e.naturalWidth > 0); })).toBe(true);
+  expect(await box.locator('.sl-item .sl-art img').evaluateAll(async (els) => { await Promise.all(els.map((e) => (e.complete ? null : new Promise((r) => { e.onload = e.onerror = r; })))); return els.every((e) => e.naturalWidth > 0); })).toBe(true);
   // preview
   await box.locator('[data-testid=sl-preview-piglet-stampede]').click();
   const pv = page.locator('[data-testid=sl-preview]');
@@ -1461,4 +1461,78 @@ test('AC714: the beta welcome also gives the Founder frame and 32 Founder avatar
   await expect.poll(() => page.evaluate(() => window.oreheart.cosmetics.equipped())).toBe('founder');
   await expect(page.locator('[data-testid=dash-who] .av-fw[data-frame=founder]')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('[data-testid=dash-who] img.av')).toHaveAttribute('src', /avatars\/founder-latino-girl\.webp$/);
+});
+
+// ---------- Nov 7 (Ken: "There should be no overlapping buttons. That's a fail. Buttons that don't have the text centered in them, that's a fail.")
+// Every visible, pressable button on the Shop (packs, bundles, Oreshards, sleeves, frames, emotes, My Packs) and the Dashboard: no two overlap, and every
+// label button has its label (with its icon) centred and inside its padding. PC 1920 / 1366, tablet 1024, phone 812x375; the whole screen, scrolled through.
+const LAYOUT_AUDIT = () => {
+  const vis = (e) => { const cs = getComputedStyle(e); if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) return null; let r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return null;
+    let box = { l: r.left, t: r.top, r: r.right, b: r.bottom };
+    for (let p = e.parentElement; p && p !== document.body; p = p.parentElement) { const ps = getComputedStyle(p); if (/(hidden|auto|scroll|clip)/.test(ps.overflow + ps.overflowX + ps.overflowY)) { const q = p.getBoundingClientRect(); box = { l: Math.max(box.l, q.left), t: Math.max(box.t, q.top), r: Math.min(box.r, q.right), b: Math.min(box.b, q.bottom) }; } }
+    return box.r - box.l > 2 && box.b - box.t > 2 ? box : null; };
+  const name = (e) => (e.getAttribute('data-testid') || e.getAttribute('aria-label') || e.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+  const btns = [...document.querySelectorAll('button, [role=button], a.btn, .net-btn')].filter((e) => !e.closest('[aria-hidden=true]') && !e.closest('.overlay[hidden]'));
+  const uniq = btns.filter((e) => !btns.some((o) => o !== e && o.contains(e)));
+  // only buttons a player can see and press: the topmost thing at some point of the button is the button (or inside it)
+  const onTop = (e, r) => { const pts = [[.5, .5], [.2, .5], [.8, .5], [.5, .25], [.5, .75]]; return pts.some(([fx, fy]) => { const x = r.l + (r.r - r.l) * fx, y = r.t + (r.b - r.t) * fy; if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return false; const at = document.elementFromPoint(x, y); return !!at && (at === e || e.contains(at) || at.contains(e)); }); };
+  const boxes = uniq.map((e) => ({ e, r: vis(e) })).filter((x) => x.r && onTop(x.e, x.r));
+  const overlaps = [];
+  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+    const a = boxes[i].r, c = boxes[j].r, w = Math.min(a.r, c.r) - Math.max(a.l, c.l), h = Math.min(a.b, c.b) - Math.max(a.t, c.t);
+    if (w > 1.5 && h > 1.5) overlaps.push(`${name(boxes[i].e)} x ${name(boxes[j].e)} (${Math.round(w)}x${Math.round(h)})`);
+  }
+  const br0 = (e) => e.getBoundingClientRect();
+  const offCentre = [];
+  for (const { e, r } of boxes) {
+    { const cs0 = getComputedStyle(e); const plain = (cs0.backgroundImage === 'none' && /rgba\(0, 0, 0, 0\)|transparent/.test(cs0.backgroundColor) && cs0.boxShadow === 'none' && !(parseFloat(cs0.borderTopWidth) > 0 && cs0.borderTopStyle !== 'none') && !(parseFloat(cs0.borderLeftWidth) > 0 && cs0.borderLeftStyle !== 'none')); if (plain && !getComputedStyle(e, '::before').backgroundImage.includes('url') ) continue; }
+    if (br0(e).height > 90 || [...e.querySelectorAll('img')].some((im) => im.getBoundingClientRect().height > 44)) continue; // picture tiles (cards, packs), not label buttons
+    const tn = [...e.querySelectorAll('*')].concat([e]).flatMap((n) => [...n.childNodes]).filter((n) => n.nodeType === 3 && n.textContent.trim());
+    if (!tn.length) continue;
+    const rg = document.createRange(); let L = 1e9, T = 1e9, R = -1e9, B = -1e9;
+    for (const n of tn) { rg.selectNodeContents(n); for (const q of rg.getClientRects()) { if (q.width < 1) continue; L = Math.min(L, q.left); T = Math.min(T, q.top); R = Math.max(R, q.right); B = Math.max(B, q.bottom); } }
+    if (L > R) continue;
+    const br = e.getBoundingClientRect(), cs = getComputedStyle(e);
+    const cl = br.left + parseFloat(cs.borderLeftWidth), cr = br.right - parseFloat(cs.borderRightWidth), ct = br.top + parseFloat(cs.borderTopWidth), cb = br.bottom - parseFloat(cs.borderBottomWidth);
+    // icons inside the button count as content too: centre the whole content (text + images) in the button
+    for (const im of [...e.querySelectorAll('*')].filter((k) => k.matches('img, svg, .ico, i') || (getComputedStyle(k).backgroundImage !== 'none' || !/rgba\(0, 0, 0, 0\)|transparent/.test(getComputedStyle(k).backgroundColor)))) { const q = im.getBoundingClientRect(); if (q.width > 1 && q.height > 1 && q.left >= br.left - 1 && q.right <= br.right + 1) { L = Math.min(L, q.left); R = Math.max(R, q.right); T = Math.min(T, q.top); B = Math.max(B, q.bottom); } }
+    const dx = (L + R) / 2 - (cl + cr) / 2, dy = (T + B) / 2 - (ct + cb) / 2;
+    const tolX = Math.max(3, (cr - cl) * 0.04), tolY = Math.max(3, (cb - ct) * 0.12);
+    const pl = cl + parseFloat(cs.paddingLeft), pr = cr - parseFloat(cs.paddingRight);
+    const clipped = R > Math.max(pr, cr - (cr - cl) * 0.5) + 1.5 || L < Math.min(pl, cl + (cr - cl) * 0.5) - 1.5; // the label stays inside the padding (where gem caps sit)
+    if (Math.abs(dx) > tolX || Math.abs(dy) > tolY || clipped) offCentre.push(`${name(e)} dx ${dx.toFixed(1)} dy ${dy.toFixed(1)}${clipped ? ' TEXT OUTSIDE' : ''}`);
+  }
+  return { buttons: boxes.length, overlaps, offCentre };
+};
+async function auditScrolled(page) {
+  return page.evaluate(async (fnSrc) => {
+    const fn = eval('(' + fnSrc + ')');
+    const sc = [...document.querySelectorAll('*')].filter((e) => e.scrollHeight > e.clientHeight + 20 && /(auto|scroll)/.test(getComputedStyle(e).overflowY)).sort((a, b) => b.clientHeight * b.clientWidth - a.clientHeight * a.clientWidth)[0] || document.scrollingElement;
+    const all = { buttons: 0, overlaps: new Set(), offCentre: new Set() };
+    for (let y = 0; y <= sc.scrollHeight; y += Math.max(200, sc.clientHeight * 0.8)) { sc.scrollTop = y; await new Promise((r) => setTimeout(r, 150)); const r = fn(); all.buttons = Math.max(all.buttons, r.buttons); r.overlaps.forEach((x) => all.overlaps.add(x)); r.offCentre.forEach((x) => all.offCentre.add(x)); }
+    sc.scrollTop = 0;
+    return { buttons: all.buttons, overlaps: [...all.overlaps], offCentre: [...all.offCentre] };
+  }, LAYOUT_AUDIT.toString());
+}
+test('AC715: Shop and Dashboard layout (Ken, Nov 7): no overlapping buttons and every button label centred, at 1920x1080, 1366x768, 1024x768 and 812x375, scrolled through the whole Shop; the Shop panel frame never cuts through its content', async ({ page }) => {
+  test.setTimeout(240000);
+  for (const [w, h] of [[1920, 1080], [1366, 768], [1024, 768], [812, 375]]) {
+    await page.setViewportSize({ width: w, height: h });
+    await signedInDashWith(page, '');
+    const dash = await auditScrolled(page);
+    expect(dash.overlaps, `${w}x${h} Dashboard: overlapping buttons`).toEqual([]);
+    expect(dash.offCentre, `${w}x${h} Dashboard: off-centre labels`).toEqual([]);
+    await page.locator('[data-testid=dash-coins]').first().evaluate((e) => e.click());
+    await expect(page.locator('[data-screen="econ-shop"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid=shop-frames] .cos-item')).toHaveCount(6, { timeout: 10000 });
+    await expect(page.locator('[data-testid=shop-emotes] .cos-pack')).toHaveCount(4, { timeout: 10000 });
+    await page.waitForTimeout(600);
+    const shop = await auditScrolled(page);
+    expect(shop.buttons, `${w}x${h}: the Shop's buttons were measured`).toBeGreaterThan(15);
+    expect(shop.overlaps, `${w}x${h} Shop: overlapping buttons`).toEqual([]);
+    expect(shop.offCentre, `${w}x${h} Shop: off-centre labels`).toEqual([]);
+    // the frame of the Shop panel is the panel's own border: nothing drawn inside the scrolling box can slice through the sleeves
+    const frameLayer = await page.evaluate(() => { const b = document.querySelector('.dash.skin .skin-body'); const cs = getComputedStyle(b, '::before'); return cs.content !== 'none' && cs.display !== 'none' && cs.position === 'absolute'; });
+    expect(frameLayer, `${w}x${h}: no frame layer scrolling inside the Shop panel`).toBe(false);
+  }
 });

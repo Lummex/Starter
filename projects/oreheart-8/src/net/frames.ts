@@ -7,7 +7,8 @@ import FOUNDERS from '../content/founder-avatars.json';
 import { h, type App } from '../ui/app';
 import { net } from './state';
 import { rpc } from './online';
-import { isTestPage, stubMode, toast } from './economy';
+import { isTestPage, stubMode, toast, coinIcon } from './economy';
+import { shardIcon } from './oreshards';
 import { api as emoteApi, emoteUrl, PACKS, DEFAULT_WHEEL, emoteLabel } from './emotes';
 
 type El = HTMLElement;
@@ -60,9 +61,11 @@ export async function loadMyFrame(): Promise<void> {
 export function stubGrantFounder() { STUB.owned.add('founder'); STUB.avatars = FOUNDER_AVATARS.map((a) => a.id); }
 
 // ------------------------------------------------------------------ pickers
+// Nov 7 (Ken: "The buttons on the coins are too long, too large ... overlapping each other"): small price pills, an icon and the number,
+// stacked in the tile (side by side only where there is room), never wider than their tile
 const pay2 = (c: number | null, s: number | null, buy: (p: 'coins' | 'oreshards') => void, tid: string) => h('div', { class: 'cos-pay' },
-  c != null ? h('button', { type: 'button', class: 'net-btn sbtn panel', 'data-testid': tid + '-coins', onclick: () => buy('coins') }, `${c.toLocaleString('en-US')} coins`) : null,
-  s != null ? h('button', { type: 'button', class: 'net-btn sbtn panel primary', 'data-testid': tid + '-shards', onclick: () => buy('oreshards') }, `${s.toLocaleString('en-US')} Oreshards`) : null);
+  c != null ? h('button', { type: 'button', class: 'cos-price cp-coins', 'data-testid': tid + '-coins', 'aria-label': `Buy for ${c.toLocaleString('en-US')} coins`, title: `${c.toLocaleString('en-US')} coins`, onclick: () => buy('coins') }, coinIcon('cos-ico'), h('span', {}, c.toLocaleString('en-US'))) : null,
+  s != null ? h('button', { type: 'button', class: 'cos-price cp-shards', 'data-testid': tid + '-shards', 'aria-label': `Buy for ${s.toLocaleString('en-US')} Oreshards`, title: `${s.toLocaleString('en-US')} Oreshards`, onclick: () => buy('oreshards') }, shardIcon('cos-ico'), h('span', {}, s.toLocaleString('en-US'))) : null);
 
 /** the Shop's Frames section: every frame on sale, preview round the player's avatar, buy (coins or Oreshards), wear */
 export function framesPanel(): El {
@@ -75,7 +78,7 @@ export function framesPanel(): El {
     box.replaceChildren(h('h3', { class: 'h' }, 'Avatar Frames'), h('p', { class: 'net-note' }, 'A frame around your avatar, where your opponents and friends see you. Looks only, never power.'),
       h('div', { class: 'cos-grid', role: 'list' }, ...m.frames.filter((f) => f.kind === 'store' || f.owned).map((f) => {
         const av = h('span', { class: 'cos-av', style: `background-image:url(${avPic})` }); decorate(av, f.id);
-        const acts = f.owned ? (m.equipped === f.id ? h('span', { class: 'cos-owned' }, 'Wearing') : h('button', { type: 'button', class: 'net-btn sbtn panel', 'data-testid': 'frame-wear-' + f.id, onclick: async () => { try { await api.setFrame(f.id); net.frame = f.id; void draw(`${f.name} is on.`); } catch (e: any) { note.textContent = String(e?.message || e); } } }, 'Wear'))
+        const acts = f.owned ? (m.equipped === f.id ? h('span', { class: 'cos-owned' }, 'Wearing') : h('button', { type: 'button', class: 'cos-price cp-wear', 'data-testid': 'frame-wear-' + f.id, onclick: async () => { try { await api.setFrame(f.id); net.frame = f.id; void draw(`${f.name} is on.`); } catch (e: any) { note.textContent = String(e?.message || e); } } }, 'Wear'))
           : pay2(f.price_coins, f.price_oreshards, async (p) => { try { await api.buy(f.id, p); toast(`${f.name} frame is yours!`, frameUrl(f.id)); void draw(`${f.name} is yours. Press Wear to put it on.`); } catch (e: any) { note.textContent = String(e?.message || e).replace(/^.*?: /, ''); } }, 'frame-buy-' + f.id);
         return h('div', { class: 'cos-item', role: 'listitem', 'data-frame': f.id }, av, h('b', {}, f.name), acts);
       })), note);

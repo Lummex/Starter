@@ -2108,7 +2108,8 @@ html body .overlay.e-discard-view>.dialog:not(.viewer3d):not([aria-label=Mulliga
 .emote-code b{letter-spacing:.12em}
 .emote-answer{position:fixed;z-index:59;transform:translateX(-50%);display:flex;gap:6px;padding:6px;border-radius:10px;background:#1a140df0;border:1px solid #c9a24e;box-shadow:0 4px 12px #000a}
 /* ---- the cosmetics panels (Shop, Collection, beta welcome) ---- */
-.cos-panel{margin-top:.8em}
+.cos-panel{margin-top:.8em;padding:.8em 1em;display:flex;flex-direction:column;gap:.4em}
+.cos-panel>.h{margin:0}
 .cos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(7.4em,1fr));gap:.7em;margin:.5em 0}
 .cos-grid.small{grid-template-columns:repeat(auto-fill,minmax(5.2em,1fr))}
 .cos-grid.founder{grid-template-columns:repeat(auto-fill,minmax(3.6em,1fr));max-height:13em;overflow:auto;padding:.9em .5em}
@@ -2119,14 +2120,24 @@ button.cos-item{cursor:pointer}
 .cos-item small{font-size:.72em}
 .cos-av{display:block;width:3.4em;height:3.4em;border-radius:50%;background:#2a2116 center/cover no-repeat;margin:.45em}
 .cos-grid.founder .cos-av{width:2.8em;height:2.8em;margin:0}
-.cos-pay{display:flex;flex-wrap:wrap;gap:.3em;justify-content:center}
-.cos-pay .net-btn{font-size:.72em;padding:.35em .6em}
+.cos-pay{display:flex;flex-direction:column;align-items:stretch;gap:.3em;width:100%;min-width:0}
+/* Nov 7 (Ken): small price pills, icon + number centred, never wider than the tile; side by side only in the wide pack header */
+:is(.cos-panel,.sl-panel,.overlay) .cos-price{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:.35em;min-width:0;width:100%;min-height:2em;padding:.2em .5em;border-radius:999px;cursor:pointer;
+  font:700 .78em/1 'Alegreya Sans',Arial,sans-serif;color:#fff;white-space:nowrap;text-align:center;background:linear-gradient(180deg,#3b4b66,#1d2638);box-shadow:inset 0 0 0 1px #8fa6c9,0 2px 4px rgba(0,0,0,.5)}
+:is(.cos-panel,.sl-panel,.overlay) .cos-price.cp-shards{background:linear-gradient(180deg,#5b3f8a,#2b1d47);box-shadow:inset 0 0 0 1px #b99be8,0 2px 4px rgba(0,0,0,.5)}
+:is(.cos-panel,.sl-panel,.overlay) .cos-price.cp-wear{background:linear-gradient(180deg,#3f6b3a,#1f3a1c);box-shadow:inset 0 0 0 1px #9fdc8c,0 2px 4px rgba(0,0,0,.5)}
+:is(.cos-panel,.sl-panel,.overlay) .cos-price:hover,:is(.cos-panel,.sl-panel,.overlay) .cos-price:focus-visible{filter:brightness(1.25)}
+:is(.cos-panel,.sl-panel,.overlay) .cos-price:focus-visible{outline:2px solid #ffd76a;outline-offset:2px}
+:is(.cos-panel,.sl-panel,.overlay) .cos-price .cos-ico{width:1.25em!important;height:1.25em!important;object-fit:contain;flex:none;margin:0}
+:is(.cos-panel,.sl-panel,.overlay) .cos-pack-head .cos-pay{flex-direction:row;width:auto;flex:none}
+:is(.cos-panel,.sl-panel,.overlay) .cos-pack-head .cos-price{width:auto;min-width:6.5em;font-size:.85em}
+.cos-item{min-width:0}
 .cos-owned{font-size:.74em;color:#9fdc8c}
 .cos-note{min-height:1.2em;font-size:.82em;color:#f3d48a}
 .cos-pack{border-top:1px solid #6b522866;padding:.5em 0}
 .cos-pack-head{display:flex;justify-content:space-between;align-items:center;gap:.6em;flex-wrap:wrap}
 .cos-emotes,.cos-wheel{display:flex;flex-wrap:wrap;gap:.5em;margin-top:.4em}
-.cos-emote{display:flex;flex-direction:column;align-items:center;gap:.2em;width:5.6em;padding:.3em;border-radius:8px;border:1px solid #6b522866;background:#120e09aa;color:#f3e3bf;font:inherit}
+.cos-emote{display:flex;flex-direction:column;align-items:center;gap:.2em;width:6.2em;min-width:0;padding:.3em;border-radius:8px;border:1px solid #6b522866;background:#120e09aa;color:#f3e3bf;font:inherit}
 .cos-emote img{width:3.6em;height:3.6em;object-fit:contain}
 .cos-emote small{font-size:.68em;text-align:center}
 .cos-wheel .cos-emote{width:auto;cursor:pointer;opacity:.55}
@@ -2136,3 +2147,16 @@ button.cos-item{cursor:pointer}
 @media (max-width:700px){.overlay .dialog .beta-founder{flex-direction:column;align-items:center}}
 /* Nov 7 (Ken): "the deck card count ... on the card deck image ... top center": a silver badge at the top centre of each draw pile */
 .match .o-deck .pile-n:not(#_w):not(#_x){border-radius:999px;background:linear-gradient(180deg,#9aa4ae 0%,#5d6772 45%,#3c444d 100%);border:max(1.5px,.22vh) solid #e9eef3;box-shadow:0 .25vh .8vh rgba(0,0,0,.75),0 0 0 max(1px,.1vh) #2a3037,inset 0 .2vh 0 rgba(255,255,255,.55);text-shadow:0 1px 2px #000,0 0 3px #000!important;line-height:1;box-sizing:border-box;z-index:3} /* white numbers (the owner text style) on a steel pill with a bright silver rim */
+/* Nov 7 (Ken: no overlapping buttons, labels centred): sleeve tiles stack their pills; the Dashboard logo never takes taps; header Back fits its bar */
+.sl-panel .sl-acts{flex-direction:column;flex-wrap:nowrap;align-items:stretch;width:100%;max-width:11em}
+.sl-panel .sl-acts .sl-ask{text-align:center}
+.sl-panel .sl-item{min-width:0}
+.dash .logo{pointer-events:none}
+html body:not(#_a):not(#_b):not(#_c) .dash.skin .hdr .back-btn{padding:0 1em!important;justify-content:center;text-align:center;max-height:100%;box-sizing:border-box}
+.dash .top .coins{padding-left:.8em;padding-right:.8em;justify-content:center}
+@media (max-width:900px){.dash .top .coins{padding-left:.55em;padding-right:.55em}}
+html body:not(#_a):not(#_b):not(#_c) :is(.shop-bundle,.shop-stash,.econ-panel) .net-btn{text-align:center!important}
+@media (max-width:900px){html body .dash.skin .skin-body{top:8.7em}}
+@media (min-width:901px) and (max-width:1180px){.dash.skin[data-screen="econ-shop"] .skin-body .shop-bundles:not(#_w){grid-template-columns:repeat(2,minmax(0,1fr))}} /* Nov 7: four bundles in a row left 88 px for a button label at 1024 wide; two by two they fit */
+@media (max-width:900px){.dash.skin[data-screen="econ-shop"] .skin-body .shop-bundles:not(#_w){grid-template-columns:repeat(4,minmax(12.5em,1fr))}}
+@media (max-width:900px){html body:not(#_a):not(#_b):not(#_c) .shop-bundle .shop-buy-shards .econ-shard-img{display:none}}

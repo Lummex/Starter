@@ -3,6 +3,7 @@
 // from the 99-pack chest, and the Founder back every account gets once during the beta. Equip one in the Collection; in PvP the
 // opponent's hand shows it. The server keeps what you own and what you wear (my_cosmetics, set_card_back, beta_welcome).
 // Art: the Founder back is a placeholder (art/ui/card-backs/founder.webp); Brush's painting replaces the file, no code change.
+import { shardIcon } from './oreshards';
 import { h } from '../ui/app';
 import type { App } from '../ui/app';
 import { rpc } from './online';
@@ -131,18 +132,18 @@ export function sleevesPanel(): El {
     try { s = await api.shop(); } catch { box.replaceChildren(h('h3', { class: 'h' }, 'Card Sleeves'), h('p', { class: 'net-note' }, 'The sleeves are not on sale right now.')); return; }
     note.textContent = msg;
     const grid = h('div', { class: 'sl-grid', role: 'list' }, ...s.sleeves.map((x) => {
-      const buy = h('button', { type: 'button', class: 'net-btn sbtn panel primary sl-buy', 'data-testid': 'sl-buy-' + x.id }, `${x.price} Oreshards`) as HTMLButtonElement;
+      const buy = h('button', { type: 'button', class: 'cos-price cp-shards sl-buy', 'data-testid': 'sl-buy-' + x.id, 'aria-label': `Buy for ${x.price} Oreshards`, title: `${x.price} Oreshards` }, shardIcon('cos-ico'), h('span', {}, `${x.price} Oreshards`)) as HTMLButtonElement; // Nov 7 (Ken): a small pill, not the big gem button
       const acts = h('div', { class: 'sl-acts' });
       const reset = () => {
         if (!x.owned) { acts.replaceChildren(buy); return; }
-        const wear = h('button', { type: 'button', class: 'net-btn sbtn panel', 'data-testid': 'sl-wear-' + x.id,
+        const wear = h('button', { type: 'button', class: 'cos-price cp-wear', 'data-testid': 'sl-wear-' + x.id,
           onclick: async () => { try { const r = await api.equip(x.id); equipped = r.equipped; void draw(`${x.name} is on.`); } catch (e: any) { note.textContent = String(e?.message || e); } } }, 'Wear');
         acts.replaceChildren(h('span', { class: 'sl-owned', 'data-testid': 'sl-owned-' + x.id }, equipped === x.id ? 'Wearing' : 'Owned'), ...(equipped === x.id ? [] : [wear]));
       };
       buy.addEventListener('click', () => {
         if (!s.enabled) { note.textContent = 'Oreshards are not on sale right now.'; return; }
-        const yes = h('button', { type: 'button', class: 'net-btn sbtn panel primary', 'data-testid': 'sl-confirm-' + x.id }, 'Buy') as HTMLButtonElement;
-        const no = h('button', { type: 'button', class: 'net-btn sbtn panel', onclick: reset }, 'Cancel');
+        const yes = h('button', { type: 'button', class: 'cos-price cp-shards', 'data-testid': 'sl-confirm-' + x.id }, 'Buy') as HTMLButtonElement;
+        const no = h('button', { type: 'button', class: 'cos-price', onclick: reset }, 'Cancel');
         acts.replaceChildren(h('span', { class: 'sl-ask' }, `${x.price} of your ${s.oreshards} Oreshards?`), yes, no);
         yes.addEventListener('click', async () => {
           yes.disabled = true;
