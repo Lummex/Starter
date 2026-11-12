@@ -2263,3 +2263,5 @@ html body:not(#_a):not(#_b):not(#_c):not(#_d) .tut2-layer .tut2-row .tut2-ok{bac
 html body:not(#_a):not(#_b):not(#_c):not(#_d) .tut2-layer .tut2-row .tut2-end{color:#d9dfe9}
 @media (max-width:900px){html body:not(#_a):not(#_b):not(#_c):not(#_d) .tut2-layer .tut2-row .btn{font-size:max(11px,3vh);padding:.35em .5em;min-height:1.9em}}
 .tut2-edge{position:absolute;left:0;top:0;z-index:6;font-size:max(34px,5vh);line-height:1;color:#ffe7a8;text-shadow:0 0 10px #000,0 0 18px #ffd76a;pointer-events:none;animation:tut2-blink 1s ease-in-out infinite}
+/* Nov 11: the bubble's words keep clear of its edges (the small-caps letters lean out) */
+html body:not(#_a):not(#_b):not(#_c) .tut2-layer .tut2-bubble .tut2-title,html body:not(#_a):not(#_b):not(#_c) .tut2-layer .tut2-bubble .tut2-do{padding:0 .35em;overflow-wrap:anywhere}

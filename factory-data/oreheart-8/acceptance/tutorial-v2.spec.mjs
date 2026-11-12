@@ -315,3 +315,36 @@ test('TUT2-13: a target off the screen gets an arrow at the edge instead of a fi
   await expect(page.getByTestId('tut-edge')).toBeVisible();
   await expect(page.getByTestId('tut-finger')).toBeHidden();
 });
+
+for (const vp of [{ width: 1920, height: 1080 }, { width: 1024, height: 768 }, { width: 812, height: 375, touch: true }]) {
+  test(`TUT2-14: the drag lesson before the first battle (Ken, Nov 11) on a REAL page at ${vp.width}x${vp.height}: real drags move and attack, the walk squares are marked, nothing is covered, then the first battle`, async ({ browser }) => {
+    test.setTimeout(150000);
+    const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: !!vp.touch });
+    const page = await ctx.newPage();
+    await openMenu(page);
+    await page.getByRole('button', { name: 'How to Play', exact: true }).click();
+    await page.getByRole('button', { name: 'Tutorial', exact: true }).click();
+    await page.getByTestId('tut-pick-drag').click();
+    await page.evaluate(() => document.querySelector('[data-testid=tut-go]').click());
+    const step = () => page.evaluate(() => document.querySelector('[data-testid=tut-bubble]')?.dataset.step || null);
+    await expect.poll(step, { timeout: 15000 }).toBe('drag-move');
+    await page.waitForTimeout(1200);
+    const geo = () => page.evaluate(() => { const R = (e) => { const q = e.getBoundingClientRect(); return { x: q.left, y: q.top, w: q.width, h: q.height }; }; return { bub: R(document.querySelector('[data-testid=tut-bubble]')), ring: R(document.querySelector('.tut2-ring:not(.extra)')), marks: [...document.querySelectorAll('.tut2-ring.extra')].filter((e) => e.style.display !== 'none').map(R) }; });
+    const ov = (a, c) => !(a.x + a.w <= c.x || c.x + c.w <= a.x || a.y + a.h <= c.y || c.y + c.h <= a.y);
+    let g = await geo();
+    expect(g.marks.length, 'the squares the Grunt can walk to are marked').toBeGreaterThan(4);
+    expect(ov(g.bub, g.ring), 'the bubble covers the target').toBe(false);
+    expect(g.marks.filter((m) => ov(g.bub, m)).length, 'marked squares under the bubble').toBe(0);
+    const ctr = (sel) => page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, sel);
+    async function drag(to) { const f = await ctr('.token.mine'); await page.mouse.move(f.x, f.y); await page.mouse.down(); await page.mouse.move(f.x + 6, f.y - 6, { steps: 2 }); await page.mouse.move(to.x, to.y, { steps: 14 }); await page.waitForTimeout(200); await page.mouse.up(); }
+    for (let k = 0; k < 3 && (await step()) === 'drag-move'; k++) { await drag(await ctr('.tut2-ring:not(.extra)')); await page.waitForTimeout(1500); }
+    expect(await step(), 'the move drag moves it on').toBe('drag-attack');
+    g = await geo();
+    expect(ov(g.bub, g.ring), 'the bubble covers the dwarf').toBe(false);
+    for (let k = 0; k < 3 && (await step()) === 'drag-attack'; k++) { await drag(await ctr('.tut2-ring:not(.extra)')); await page.waitForTimeout(2500); }
+    expect(await step(), 'the attack drag moves it on').toBe('drag-done');
+    await page.evaluate(() => document.querySelector('[data-testid=tut-ok]').click());
+    await expect(page.locator('[data-testid=tut2-card][data-chapter=ch4]')).toBeVisible({ timeout: 10000 });
+    await ctx.close();
+  });
+}

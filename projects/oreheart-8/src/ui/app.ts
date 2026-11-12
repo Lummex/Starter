@@ -1479,7 +1479,7 @@ export class App {
   tutorialFrom: 'dashboard' | 'menu' | 'settings' | 'welcome' | '' = '';
   beginTutorial(step?: string) {
     this.lastTutorial = true;
-    if (!step || /^ch[1-6]$/.test(step)) {
+    if (!step || /^ch[1-6]$/.test(step) || step === 'drag') { // Nov 11: 'drag' = the drag-to-move / drag-to-attack practice before the first battle
       this.tut?.stop(); this.tut = null;
       if (!this.tut2) this.tut2 = new Tutorial2(this);
       return this.tut2.begin(step || 'ch1');

@@ -368,6 +368,33 @@
     ]
    },
    {
+    "id": "drag",
+    "title": "Drag to move and attack",
+    "pic": "walk-move-points",
+    "say": "Drag to move. Drag to attack.",
+    "sub": "A little practice with your hands before the first battle.",
+    "steps": [
+     {
+      "id": "drag-move",
+      "title": "Drag to move!",
+      "do": "Press on your Grunt and drag him to the glowing square. The marked squares show everywhere he can walk.",
+      "hint": "Hold your Grunt, slide to the glowing square, and let go."
+     },
+     {
+      "id": "drag-attack",
+      "title": "Drag to attack!",
+      "do": "Now drag your Grunt onto the dwarf next to him. Dragging onto an enemy is an attack.",
+      "hint": "Hold your Grunt, slide him onto the dwarf, and let go."
+     },
+     {
+      "id": "drag-done",
+      "title": "That's all there is to it!",
+      "do": "Drag to walk. Drag onto an enemy to attack. Time for a real fight!",
+      "ok": "Let's fight!"
+     }
+    ]
+   },
+   {
     "id": "ch4",
     "title": "Your first battle",
     "pic": "swing-hit",
@@ -590,7 +617,7 @@
    "yes": "End tutorial",
    "no": "Keep learning"
   },
-  "bar": "Part {ch} of 6 · Step {n} of {of}",
+  "bar": "Part {ch} of {total} · Step {n} of {of}",
   "idleTitle": "Need a hand?"
  }
 }

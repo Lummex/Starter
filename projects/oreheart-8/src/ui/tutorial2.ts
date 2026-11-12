@@ -140,6 +140,21 @@ function chapters(): Chapter[] {
     { id: 'stances', target: (t) => t.app.stanceBar || null, advance: 'ok', place: 'below', placePhone: 'below', card: 'goblin-scrapper', veil: false },
     { id: 'card-again', target: (t) => tokenOf(t, brawler(t)), advance: 'ok', place: 'above', placePhone: 'above', card: 'goblin-scrapper', enter: (t) => t.app.closeStanceBar?.() },
   ];
+  // Nov 11 (Ken: "show them the dragging moves before they actually play ... the dragging and the attacking, with the where you drag it"):
+  // a hands-on drag lesson before the first battle. Drag the Grunt to the glowing square (every square he can walk to is marked), then
+  // drag him onto the dwarf beside it. Each step goes on only when the drag really happened.
+  const DRAG_TO = { row: 5, col: 6 }, DRAG_FOE = { row: 4, col: 7 };
+  const dGrunt = (t: Tutorial2) => unitOf(t, 'player', 'goblin-grunt');
+  const dFoe = (t: Tutorial2) => unitOf(t, 'opponent');
+  const walkSquares = (t: Tutorial2) => { const g = dGrunt(t); if (!g) return []; const seen = new Set<string>(); return (t.app.game.legalActions?.() || []).filter((a: any) => a.type === 'move' && a.creatureUid === g.uid && !(a.row === DRAG_TO.row && a.col === DRAG_TO.col) && !seen.has(a.row + ',' + a.col) && seen.add(a.row + ',' + a.col)).slice(0, 24).map((a: any) => t.square(a)); };
+  const dragSteps: Step[] = [
+    { id: 'drag-move', advance: 'goal', place: 'above', placePhone: 'above', card: 'goblin-grunt', veil: false, target: (t) => t.square(DRAG_TO), rings: walkSquares,
+      drag: (t) => ({ from: tokenOf(t, dGrunt(t)), to: t.square(DRAG_TO) }), goal: (t) => { const g = dGrunt(t); return !!g && g.row === DRAG_TO.row && g.col === DRAG_TO.col; } },
+    { id: 'drag-attack', advance: 'goal', place: 'above', placePhone: 'above', card: 'goblin-grunt', veil: false, target: (t) => { const f = dFoe(t); return f ? t.square(f) : null; },
+      drag: (t) => { const f = dFoe(t); return { from: tokenOf(t, dGrunt(t)), to: f ? t.square(f) : null }; },
+      enter: (_t, st) => { if (st.tutorial) st.tutorial.rolls = ['hit', 'hit', 'miss', 'miss']; }, goal: (t) => !!t.flags.attacked },
+    { id: 'drag-done', advance: 'ok', place: 'centre', enter: (_t, st) => { if (st.tutorial) st.tutorial.rolls = []; } },
+  ];
   // chapter 4: real turns. The Grunt costs what the card says; the dwarf stands at (4,7) and steps to (4,6) on the enemy turn.
   const grunt = (t: Tutorial2) => unitOf(t, 'player', 'goblin-grunt');
   const miner = (t: Tutorial2) => unitOf(t, 'player', 'goblin-scrounger');
@@ -177,6 +192,7 @@ function chapters(): Chapter[] {
     { id: 'ch1', veil: true, card: 'goblin-grunt', steps: tour, setup: () => base([], ['goblin-grunt'], 3) },
     { id: 'ch2', veil: true, card: 'goblin-grunt', steps: cardSteps, setup: () => base([], ['goblin-grunt'], 3) },
     { id: 'ch3', veil: true, card: 'goblin-scrapper', steps: unitSteps, setup: () => ({ ...base([P('goblin-scrapper', 5, 5), O('shield-cadet', 4, 7)], [], 0), _action: true }) },
+    { id: 'drag', veil: false, card: 'goblin-grunt', steps: dragSteps, setup: () => ({ ...base([P('goblin-grunt', 7, 4), O('dwarf-pickman', DRAG_FOE.row, DRAG_FOE.col)], [], 0), _action: true }) }, // the back row: the walk area stays short, so the bubble fits clear of it on a phone
     { id: 'ch4', veil: false, card: 'goblin-grunt', steps: battle,
       setup: () => ({ ...base([O('dwarf-pickman', 4, 7, { hp: 2 })], ['goblin-grunt'], 3, { playerDeck: ['goblin-scrounger', ...many('goblin-grunt', 5)], opponentHealth: 2 }) }) },
     { id: 'ch5', veil: false, card: 'goblin-scrapper', steps: [],
@@ -406,7 +422,7 @@ export class Tutorial2 {
   private bar(): El {
     const C = V2.chapters[this.ch] || {};
     const of = this.chapter?.steps.length || 0;
-    const t = String(V2.bar || '').replace('{ch}', String(this.ch + 1)).replace('{n}', String(Math.min(this.s + 1, of || 1))).replace('{of}', String(of || 1));
+    const t = String(V2.bar || '').replace('{ch}', String(this.ch + 1)).replace('{total}', String(this.chs.length + 1)).replace('{n}', String(Math.min(this.s + 1, of || 1))).replace('{of}', String(of || 1));
     const b = document.createElement('div'); b.className = 'tut2-bar'; b.setAttribute('data-testid', 'tut2-bar');
     const sp = document.createElement('span'); sp.textContent = `${C.title || ''} · ${t}`;
     b.append(sp, this.button('End tutorial', 'tut2-skipbar', () => this.askSkip(), { 'data-testid': 'tut-skip-bar' }));
@@ -451,7 +467,7 @@ export class Tutorial2 {
     const stp = this.step;
     if (!stp) return;
     const st0 = this.app.game.state;
-    if (this.chapter.id === 'ch4' && st0) {
+    if ((this.chapter.id === 'ch4' || this.chapter.id === 'drag') && st0) {
       for (let i = 0; i < 6; i++) {
         const st = this.app.game.state;
         if (stp.goal && stp.goal(this, st)) break;
@@ -528,7 +544,31 @@ export class Tutorial2 {
     const opp: Record<string, Place> = { above: 'below', below: 'above', left: 'right', right: 'left' };
     let order: Place[] = phone() ? [want, opp[want]] : [want, opp[want], ...(['above', 'below', 'left', 'right'] as Place[]).filter((p) => p !== want && p !== opp[want])];
     if (phone()) order = order.filter((p) => p === 'above' || p === 'below');
+    // Nov 11: squares a step marks (where a unit can walk) stay uncovered too: the bubble tries beside the target, then beside them all
+    const marks = (stp.rings?.(this, st) || []).map((x) => rectOf(x)).filter(Boolean) as Box[];
+    const U = marks.reduce((u, b) => { const x0 = Math.min(u.x, b.x), y0 = Math.min(u.y, b.y); return { x: x0, y: y0, w: Math.max(u.x + u.w, b.x + b.w) - x0, h: Math.max(u.y + u.h, b.y + b.h) - y0 }; }, R);
+    const ovl = (x: number, y: number, b: Box) => !(x + bw <= b.x || x >= b.x + b.w || y + bh <= b.y || y >= b.y + b.h);
+    const spotAt = (side: Place, A: Box) => {
+      const cx = A.x + A.w / 2, cy = A.y + A.h / 2;
+      let x = 0, y = 0;
+      if (side === 'above') { x = cx - bw / 2; y = A.y - F - bh; }
+      else if (side === 'below') { x = cx - bw / 2; y = A.y + A.h + F; }
+      else if (side === 'left') { x = A.x - F - bw; y = cy - bh / 2; }
+      else { x = A.x + A.w + F; y = cy - bh / 2; }
+      if (side === 'above' || side === 'below') x = Math.max(M, Math.min(W - M - bw, x)); else y = Math.max(M, Math.min(H - M - bh, y));
+      const fits = x >= M - 0.5 && y >= M - 0.5 && x + bw <= W - M + 0.5 && y + bh <= H - M + 0.5;
+      return { x, y, ok: fits && !ovl(x, y, R) && !marks.some((m) => ovl(x, y, m)) };
+    };
     const spot = (side: Place) => {
+      const a = spotAt(side, R);
+      if (a.ok || !marks.length) return a;
+      const b = spotAt(side, U);
+      if (b.ok) return b;
+      // no room clear of every mark on this side: at least keep the target and as many marks as possible uncovered
+      const fitsA = a.x >= M - 0.5 && a.y >= M - 0.5 && a.x + bw <= W - M + 0.5 && a.y + bh <= H - M + 0.5 && !ovl(a.x, a.y, R);
+      return { ...a, ok: false, soft: fitsA ? marks.filter((m) => ovl(a.x, a.y, m)).length : 999 } as any;
+    };
+    const spotOld = (side: Place) => {
       const cx = R.x + R.w / 2, cy = R.y + R.h / 2;
       let x = 0, y = 0;
       if (side === 'above') { x = cx - bw / 2; y = R.y - F - bh; }
@@ -541,8 +581,14 @@ export class Tutorial2 {
       const hits = !(x + bw <= R.x || x >= R.x + R.w || y + bh <= R.y || y >= R.y + R.h);
       return { x, y, ok: fits && !hits };
     };
+    void spotOld;
     let side: Place = order[0], at = spot(side);
-    for (const sd of order) { const p = spot(sd); if (p.ok) { side = sd; at = p; break; } }
+    let found = false;
+    for (const sd of order) { const p = spot(sd); if (p.ok) { side = sd; at = p; found = true; break; } }
+    if (!found && marks.length) { // the side that covers the fewest marks (never the target)
+      let best = 1e9;
+      for (const sd of (['above', 'below', 'left', 'right'] as Place[]).filter((x) => !phone() || x === 'above' || x === 'below')) { const p: any = spot(sd); if (p.soft < best) { best = p.soft; side = sd; at = { x: p.x, y: p.y, ok: true }; } }
+    }
     if (!at.ok) { // nothing fits fully: the side with the most room, kept on screen
       const room: Record<string, number> = { above: R.y, below: H - R.y - R.h, left: R.x, right: W - R.x - R.w };
       side = order.slice().sort((a, b) => room[b] - room[a])[0]; at = spot(side);
@@ -586,7 +632,7 @@ export class Tutorial2 {
     const v = document.createElement('div'); v.className = 'tut2-veil full'; v.style.cssText = 'left:0;top:0;width:100vw;height:100vh';
     const card = document.createElement('div'); card.className = 'tut-card tut2-card'; card.setAttribute('role', 'dialog'); card.setAttribute('data-testid', 'tut2-card'); card.dataset.chapter = C.id;
     const dots = document.createElement('div'); dots.className = 'tut-dots';
-    for (let i = 0; i < 6; i++) { const d = document.createElement('i'); d.className = i < this.ch ? 'done' : i === this.ch ? 'now' : ''; dots.append(d); }
+    for (let i = 0; i < this.chs.length + 1; i++) { const d = document.createElement('i'); d.className = i < this.ch ? 'done' : i === this.ch ? 'now' : ''; dots.append(d); }
     const img = document.createElement('img'); img.className = 'tut-pic tut-big-pic'; img.src = PIC(C.pic || 'hand-pointing'); img.alt = ''; img.draggable = false;
     const say = document.createElement('p'); say.className = 'tut-say'; say.textContent = C.say || '';
     const sub = document.createElement('p'); sub.className = 'tut-sub'; sub.textContent = C.sub || '';
@@ -678,7 +724,9 @@ export class Tutorial2 {
   }
   /** what the events said happened (attacks, spells, the ability, a dig, a walk) */
   noteEvents(events: any[]) {
-    if (!this.active || this.chapter?.id !== 'ch5') return;
+    if (!this.active) return;
+    if (this.chapter?.id === 'drag') { for (const e of events || []) if (e.type === 'attack' && this.app.game.state?.board.creatures.some((c: any) => c.uid === e.uid && c.owner === 'player')) this.flags.attacked = true; return; }
+    if (this.chapter?.id !== 'ch5') return;
     const st = this.app.game.state;
     const kind = (uid: string) => st.board.creatures.find((c: any) => c.uid === uid)?.cardId || this.flags['u:' + uid];
     for (const e of events || []) {
@@ -808,6 +856,13 @@ export class Tutorial2 {
     if (st.priority !== 'player' || st.activePlayer !== 'player') return null;
     const legal: any[] = this.app.game.legalActions();
     if (this.chapter?.id === 'ch4') return this.battleAction(st, legal);
+    if (this.chapter?.id === 'drag') {
+      const g = st.board.creatures.find((c: any) => c.owner === 'player'), id = this.step?.id;
+      if (!g) return null;
+      if (id === 'drag-move') return legal.find((x: any) => x.type === 'move' && x.creatureUid === g.uid && x.row === 5 && x.col === 6) || null;
+      if (id === 'drag-attack') return legal.find((x: any) => x.type === 'attack' && x.creatureUid === g.uid && x.target && !x.target.commander) || null;
+      return null;
+    }
     const me = (k: string) => st.board.creatures.find((c: any) => c.owner === 'player' && c.cardId === k);
     const foes = st.board.creatures.filter((c: any) => c.owner === 'opponent');
     const card = (k: string) => st.players.player.hand.find((x: any) => x.cardId === k);
