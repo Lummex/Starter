@@ -244,12 +244,74 @@ test('TUT2-10: Skip asks once, then goes back where the tutorial started (the fr
   await expect(page.getByTestId('tut-picker')).toBeVisible();
   await page.getByTestId('tut-pick-all').click();
   await page.getByTestId('tut-go').click();
-  await page.getByTestId('tut-skip').first().click();
+  await page.getByTestId('tut-end').first().click(); // Nov 11: End tutorial leaves; Skip goes to the next step
   await expect(page.getByTestId('tut-skip-ask')).toBeVisible();
   await page.getByTestId('tut-skip-no').click();
   await expect(page.getByTestId('tut-skip-ask')).toHaveCount(0);
-  await page.getByTestId('tut-skip').first().click();
+  await page.getByTestId('tut-end').first().click();
   await page.getByTestId('tut-skip-yes').click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
   await expect(page.locator('.tut2-layer')).toHaveCount(0);
+});
+
+test('TUT2-11: on a REAL page (no test hooks) the emote step goes on when "Hello!" is sent (Ken, Nov 11: it got stuck)', async ({ page }) => {
+  test.setTimeout(120000);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openMenu(page);
+  await page.evaluate(() => localStorage.removeItem('oreheart.tutorialSeen'));
+  await page.getByRole('button', { name: 'How to Play', exact: true }).click();
+  await page.getByRole('button', { name: 'Tutorial', exact: true }).click();
+  await page.getByTestId('tut-pick-all').click();
+  await page.getByTestId('tut-go').click();
+  const step = () => page.evaluate(() => document.querySelector('[data-testid=tut-bubble]')?.dataset.step || null);
+  for (let i = 0; i < 12 && (await step()) !== 'tour-emote'; i++) {
+    if (await page.getByTestId('tut-ok').count()) await page.evaluate(() => document.querySelector('[data-testid=tut-ok]').click());
+    else { const r = await page.evaluate(() => { const q = document.querySelector('.tut2-ring:not(.extra)')?.getBoundingClientRect(); return q ? { x: q.left + q.width / 2, y: q.top + q.height / 2 } : null; }); if (r) await page.mouse.click(r.x, r.y); }
+    await page.waitForTimeout(500);
+  }
+  expect(await step()).toBe('tour-emote');
+  await page.locator('[data-testid=emote-avatar]').click();
+  await expect.poll(step).toBe('tour-emote-send');
+  await page.locator('.emote-pick[data-emote="free-starter/hello"]').click({ force: true });
+  await expect.poll(step, { timeout: 8000 }).toBe('tour-emote-mute');
+});
+
+test('TUT2-12: every bubble has Skip and End tutorial: Skip goes to the next step (all of part 1), End asks once and leaves; the buttons never overlap and their words are centred', async ({ page }) => {
+  test.setTimeout(150000);
+  for (const vp of [{ width: 1920, height: 1080 }, { width: 812, height: 375 }]) {
+    await page.setViewportSize(vp);
+    await openTest(page);
+    await chapter(page, 'ch1');
+    const seen = [];
+    for (let i = 0; i < 30; i++) {
+      const s = await info(page);
+      if (!s || s.chapter !== 'ch1') break;
+      seen.push(s.step);
+      const btns = await page.evaluate(() => [...document.querySelectorAll('[data-testid=tut-bubble] .tut2-row .btn')].map((b) => { const r = b.getBoundingClientRect(); const t = document.createRange(); t.selectNodeContents(b); const tr = t.getBoundingClientRect(); return { id: b.dataset.testid, x: r.left, y: r.top, w: r.width, h: r.height, tx: tr.left + tr.width / 2 - (r.left + r.width / 2), ty: tr.top + tr.height / 2 - (r.top + r.height / 2), fits: tr.width <= r.width + 1 }; }));
+      expect(btns.map((b) => b.id), s.step).toEqual(expect.arrayContaining(['tut-skip', 'tut-end']));
+      for (let a = 0; a < btns.length; a++) {
+        expect(Math.abs(btns[a].tx) <= 3 && Math.abs(btns[a].ty) <= 3 && btns[a].fits, `${vp.width} ${s.step} ${btns[a].id}: words centred and inside`).toBe(true);
+        for (let c = a + 1; c < btns.length; c++) { const A = btns[a], B = btns[c]; expect(A.x + A.w <= B.x + 0.5 || B.x + B.w <= A.x + 0.5 || A.y + A.h <= B.y + 0.5 || B.y + B.h <= A.y + 0.5, `${vp.width} ${s.step}: ${A.id} / ${B.id} overlap`).toBe(true); }
+      }
+      await page.evaluate(() => document.querySelector('[data-testid=tut-skip]').click());
+      await page.waitForTimeout(250);
+    }
+    expect(seen.length, `${vp.width}: Skip walked every part-1 step: ${seen.join(',')}`).toBeGreaterThanOrEqual(19);
+    await expect.poll(async () => (await info(page))?.chapter).toBe('ch2');
+  }
+  await page.getByTestId('tut-end').first().click();
+  await expect(page.getByTestId('tut-skip-ask')).toBeVisible();
+  await page.getByTestId('tut-skip-yes').click();
+  await expect(page.locator('.tut2-layer')).toHaveCount(0);
+});
+
+test('TUT2-13: a target off the screen gets an arrow at the edge instead of a finger', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openTest(page);
+  await chapter(page, 'ch1');
+  await page.evaluate(() => document.querySelector('[data-testid=tut-ok]').click());
+  await expect.poll(async () => (await info(page)).step).toBe('tour-menu');
+  await page.evaluate(() => { const m = window.__app.r.menuBtn; m.style.transform = 'translate(-4000px, -4000px)'; });
+  await expect(page.getByTestId('tut-edge')).toBeVisible();
+  await expect(page.getByTestId('tut-finger')).toBeHidden();
 });

@@ -1344,7 +1344,7 @@ test('AC25: Tutorial button opens the guided lessons: a part picker, a picture c
   const bub = page.getByTestId('tut-bubble');
   await expect(bub).toBeVisible();
   await expect(bub).toContainText(/Welcome to the Skullfang Arena/i, { timeout: 10000 });
-  await page.getByTestId('tut-skip').first().click();
+  await page.getByTestId('tut-end').first().click(); // Nov 11: End tutorial leaves (Skip goes to the next step)
   await page.getByTestId('tut-skip-yes').click();
   await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
 });

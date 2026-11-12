@@ -89,7 +89,7 @@ export function bindAvatar(): void {
   const theirs = ctx?.theirAv(); if (theirs) theirs.classList.add('emote-av-them');
 }
 
-function closeDial() { dial?.remove(); dial = null; document.removeEventListener('pointerdown', outside, true); }
+export function closeDial() { dial?.remove(); dial = null; document.removeEventListener('pointerdown', outside, true); }
 const outside = (e: Event) => { if (dial && !dial.contains(e.target as Node) && !(ctx?.myAv()?.contains(e.target as Node))) closeDial(); };
 
 function openDial(): void {

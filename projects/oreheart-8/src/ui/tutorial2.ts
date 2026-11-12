@@ -357,10 +357,14 @@ export class Tutorial2 {
   watchEmote() {
     this.flags.emoted = false;
     const m = this.app.emoteMod;
+    const before = (this.app.emoteMod?.shownLog || []).length;
     const check = () => {
       if (!this.active) return;
-      const log = m?.emoteHooks?.().shown?.() || m?.shownLog || [];
-      if ((Array.isArray(log) && log.some((x: any) => x.from === 'me')) || q('[data-testid=emote-pop][data-from=me]')) {
+      // Nov 11 (Ken: "you click the emote saying hello ... and it doesn't continue"): read the module's own log. The old line asked
+      // emoteHooks(), which is null outside test pages, and `.shown` on null threw, so the watch stopped for good on the real site.
+      let sent = false;
+      try { const mm = this.app.emoteMod || m; const log = (mm && mm.shownLog) || []; sent = log.slice(before).some((x: any) => x && x.from === 'me'); } catch { sent = false; }
+      if (sent || q('[data-testid=emote-pop][data-from=me]')) {
         this.flags.emoted = true;
         this.later(this.fast ? 50 : 900, () => { try { m?.pop?.('them', 'free-starter/hello'); } catch { /* no emotes */ } });
         return;
@@ -405,7 +409,7 @@ export class Tutorial2 {
     const t = String(V2.bar || '').replace('{ch}', String(this.ch + 1)).replace('{n}', String(Math.min(this.s + 1, of || 1))).replace('{of}', String(of || 1));
     const b = document.createElement('div'); b.className = 'tut2-bar'; b.setAttribute('data-testid', 'tut2-bar');
     const sp = document.createElement('span'); sp.textContent = `${C.title || ''} · ${t}`;
-    b.append(sp, this.button('Skip ✕', 'tut2-skipbar', () => this.askSkip(), { 'data-testid': 'tut-skip-bar' }));
+    b.append(sp, this.button('End tutorial', 'tut2-skipbar', () => this.askSkip(), { 'data-testid': 'tut-skip-bar' }));
     return b;
   }
   button(label: string, cls: string, on: () => void, attrs: Record<string, string> = {}) {
@@ -430,7 +434,8 @@ export class Tutorial2 {
     const line = document.createElement('p'); line.className = 'tut2-do'; line.textContent = this.words(idle ? tx.hint : tx.do || '', stp.card || this.chapter.card);
     const row = document.createElement('div'); row.className = 'tut2-row';
     if (stp.advance === 'ok') row.append(this.button(tx.ok || 'OK', 'primary tut2-ok', () => this.okPressed(), { 'data-testid': 'tut-ok' }));
-    row.append(this.button('Skip ✕', 'tut2-skip', () => this.askSkip(), { 'data-testid': 'tut-skip' }));
+    row.append(this.button('Skip', 'tut2-skipstep', () => this.skipStep(), { 'data-testid': 'tut-skip' })); // Ken, Nov 11: "skip this ... to the next tutorial item"
+    row.append(this.button('End tutorial', 'tut2-end', () => this.askSkip(), { 'data-testid': 'tut-end' }));
     bub.append(title, line);
     if (stp.id === 'dice') bub.append(this.swingKey());
     bub.append(row);
@@ -440,6 +445,29 @@ export class Tutorial2 {
     if (stp.advance === 'ok') (row.querySelector('.tut2-ok') as El | null)?.focus?.({ preventScroll: true });
   }
   okPressed() { const stp = this.step; if (stp && stp.advance === 'ok') this.next(); this.refresh(); }
+  /** Ken, Nov 11: "Skip ... which will skip it to the next tutorial item". In the first battle the step is played for you first (a few
+   *  actions), so the next step finds the board it expects; elsewhere it simply goes on. */
+  skipStep() {
+    const stp = this.step;
+    if (!stp) return;
+    const st0 = this.app.game.state;
+    if (this.chapter.id === 'ch4' && st0) {
+      for (let i = 0; i < 6; i++) {
+        const st = this.app.game.state;
+        if (stp.goal && stp.goal(this, st)) break;
+        const a = this.autoAction();
+        if (!a) break;
+        const r = this.app.game.act(a);
+        if (!r || !r.ok) break;
+      }
+    }
+    if (stp.id === 'tour-emote' || stp.id === 'tour-emote-send') { try { this.app.emoteMod?.closeDial?.(); } catch { /* none */ } document.querySelector('.emote-dial')?.remove(); }
+    if (stp.id === 'tour-menu-panel' || stp.id === 'tour-menu') { this.app.menuPinned = false; this.app.menuOpen?.(false); }
+    this.next();
+    this.refresh();
+  }
+  /** the chapter card's Skip: on to the next part */
+  skipChapter() { this.mode = 'step'; this.s = this.chapter.steps.length; this.endChapter(); }
   swingKey(): El {
     const w = document.createElement('div'); w.className = 'tut-swings tut2-swings';
     for (const [pic, word, odds] of [['swing-hit', 'HIT', '8 in 10'], ['swing-miss', 'MISS', '1 in 10'], ['block', 'BLOCK', '1 in 10']]) {
@@ -465,6 +493,21 @@ export class Tutorial2 {
       veils.forEach((v, i) => { v.style.cssText = i === 0 ? 'left:0;top:0;width:100vw;height:100vh' : 'display:none'; });
       return;
     }
+    // the target is off screen (the camera moved, the hand scrolled): an arrow at the edge points toward it, the bubble says "look here"
+    const off = tgt.x + tgt.w < 0 || tgt.y + tgt.h < 0 || tgt.x > W || tgt.y > H;
+    let arrow = l.querySelector('.tut2-edge') as El | null;
+    if (off) {
+      if (!arrow) { arrow = document.createElement('div'); arrow.className = 'tut2-edge'; arrow.setAttribute('data-testid', 'tut-edge'); arrow.textContent = '\u27a4'; l.append(arrow); }
+      const cx = Math.max(28, Math.min(W - 28, tgt.x + tgt.w / 2)), cy = Math.max(28, Math.min(H - 28, tgt.y + tgt.h / 2));
+      const ang = Math.atan2(tgt.y + tgt.h / 2 - H / 2, tgt.x + tgt.w / 2 - W / 2) * 180 / Math.PI;
+      arrow.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%) rotate(${ang}deg)`;
+      if (ring) ring.style.display = 'none'; if (finger) finger.style.display = 'none';
+      veils.forEach((v, i) => { v.style.cssText = i === 0 ? 'left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,.35)' : 'display:none'; });
+      bub.style.left = `${Math.round(Math.max(M, Math.min(W - M - bw, cx - bw / 2)))}px`; bub.style.top = `${Math.round(Math.max(M, Math.min(H - M - bh, cy < H / 2 ? cy + 40 : cy - 40 - bh)))}px`;
+      bub.dataset.side = 'edge';
+      return;
+    }
+    arrow?.remove();
     const pad = stp.tight ? 4 : 8;
     const R = { x: tgt.x - pad, y: tgt.y - pad, w: tgt.w + pad * 2, h: tgt.h + pad * 2 };
     if (ring) { ring.style.display = ''; Object.assign(ring.style, { left: `${R.x}px`, top: `${R.y}px`, width: `${R.w}px`, height: `${R.h}px` }); }
@@ -549,7 +592,8 @@ export class Tutorial2 {
     const sub = document.createElement('p'); sub.className = 'tut-sub'; sub.textContent = C.sub || '';
     const row = document.createElement('div'); row.className = 'tut-row';
     row.append(this.button('Try it!', 'primary tut-go', () => { this.mode = 'step'; this.stepKey = ''; this.idleMs = 0; this.step?.enter?.(this, this.app.game.state); this.refresh(); }, { 'data-testid': 'tut-go' }),
-      this.button('Skip Tutorial', 'tut-skip', () => this.askSkip(), { 'data-testid': 'tut-skip' }));
+      this.button('Skip', 'tut-skip tut2-skippart', () => this.skipChapter(), { 'data-testid': 'tut-skip-part', title: 'Skip this part' }),
+      this.button('End tutorial', 'tut-skip tut2-end', () => this.askSkip(), { 'data-testid': 'tut-end' }));
     card.append(dots, img, say, sub, row);
     l.append(v, card);
     (row.querySelector('.tut-go') as El | null)?.focus?.({ preventScroll: true });
@@ -704,7 +748,9 @@ export class Tutorial2 {
       }
       bub.append(title, ul);
       if (idle && cur) { const p = document.createElement('p'); p.className = 'tut2-do'; p.textContent = this.words(cur.hint); bub.append(p); }
-      const row = document.createElement('div'); row.className = 'tut2-row'; row.append(this.button('Skip ✕', 'tut2-skip', () => this.askSkip(), { 'data-testid': 'tut-skip' })); bub.append(row);
+      const row = document.createElement('div'); row.className = 'tut2-row';
+      row.append(this.button('Skip', 'tut2-skipstep', () => { if (cur) { this.goals.add(cur.id); this.idleMs = 0; this.stepKey = ''; } }, { 'data-testid': 'tut-skip' }), this.button('End tutorial', 'tut2-end', () => this.askSkip(), { 'data-testid': 'tut-end' }));
+      bub.append(row);
       l.append(bub, this.bar());
       if (idle && cur) { const f = document.createElement('img'); f.className = 'tut2-finger'; f.src = PIC('hand-pointing'); f.alt = ''; f.draggable = false; f.setAttribute('data-testid', 'tut-finger'); const r = document.createElement('div'); r.className = 'tut2-ring'; const gh = document.createElement('div'); gh.className = 'tut2-ghost'; l.append(r, f, gh); }
     }

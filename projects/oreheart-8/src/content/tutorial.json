@@ -586,8 +586,8 @@
    "whole": "Whole tutorial"
   },
   "skip": {
-   "ask": "Skip the tutorial? You can play it again any time from the Dashboard.",
-   "yes": "Yes, skip",
+   "ask": "End the tutorial? You can play it again any time from the Dashboard.",
+   "yes": "End tutorial",
    "no": "Keep learning"
   },
   "bar": "Part {ch} of 6 · Step {n} of {of}",
