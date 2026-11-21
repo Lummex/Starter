@@ -1,6 +1,6 @@
 // Emotes (Ken, Nov 7: "emotes ... that come out of your little character bubble. Your avatar"; "when you click your avatar, it'll pop up
 // the emote dial where you can click and select which emote you want"). Sketch's stickers (src/content/emotes.json): ten free for
-// everyone, three faction packs for coins or Oreshards. In a match: click your own avatar for the dial (your equipped wheel, up to 8);
+// everyone, three faction packs for Oreshards (Nov 21: Oreshards only). In a match: click your own avatar for the dial (your equipped wheel, up to 8);
 // the sticker pops out of your avatar, the opponent's out of theirs; one every 2 s; the opponent's can be muted.
 // Friend-ask (Ken): "Friends?" puts Yes! / No thanks under the other player's avatar for 15 s. Yes! shows their friend code on a plate
 // under the Yes sticker AND sends a friend request; the asker's game sends one back, which makes them friends. No thanks: no more asks
@@ -36,16 +36,16 @@ export const api = {
   },
   async shop(): Promise<EmoteShop> {
     if (stubMode() || !net.active) {
-      return { coins: STUB.coins, oreshards: STUB.shards, packs: PACKS.map((p) => ({ ...p, price_coins: p.free ? null : 800, price_oreshards: p.free ? null : 400, owned: p.emotes.every((e) => STUB.owned.has(e.id)),
-        emotes: p.emotes.map((e) => ({ ...e, price_coins: p.free ? null : 200, price_oreshards: p.free ? null : 100, owned: STUB.owned.has(e.id) })) })) };
+      return { coins: STUB.coins, oreshards: STUB.shards, packs: PACKS.map((p) => ({ ...p, price_coins: null, price_oreshards: p.free ? null : 400, owned: p.emotes.every((e) => STUB.owned.has(e.id)),
+        emotes: p.emotes.map((e) => ({ ...e, price_coins: null, price_oreshards: p.free ? null : 100, owned: STUB.owned.has(e.id) })) })) };
     }
     return await rpc('emote_shop');
   },
   async buy(what: 'pack' | 'emote', id: string, pay: 'coins' | 'oreshards'): Promise<any> {
     if (stubMode() || !net.active) {
       const ids = what === 'pack' ? (PACKS.find((p) => p.id === id)?.emotes.map((e) => e.id) || []) : [id];
-      const cost = what === 'pack' ? (pay === 'coins' ? 800 : 400) : (pay === 'coins' ? 200 : 100);
-      if (pay === 'coins') { if (STUB.coins < cost) throw new Error(`Not enough coins (this costs ${cost}).`); STUB.coins -= cost; } else { if (STUB.shards < cost) throw new Error(`Not enough Oreshards (this costs ${cost}, you have ${STUB.shards}).`); STUB.shards -= cost; }
+      if (pay !== 'oreshards') throw new Error('Emotes are sold for Oreshards only.'); const cost = what === 'pack' ? 400 : 100;
+      if (STUB.shards < cost) throw new Error(`Not enough Oreshards (this costs ${cost}, you have ${STUB.shards}).`); STUB.shards -= cost;
       ids.forEach((x) => STUB.owned.add(x)); return { ok: true, got: ids };
     }
     return await rpc('buy_emote', { p_what: what, p_id: id, p_pay: pay, p_idem_key: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10) });

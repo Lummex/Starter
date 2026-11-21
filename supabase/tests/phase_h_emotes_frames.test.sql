@@ -38,19 +38,31 @@ create temp table pk as select (select id from public.emote_packs where not free
   (select e.id from public.emotes e join public.emote_packs p on p.id = e.pack where not p.free order by p.sort, e.sort limit 1) as one;
 select pg_temp.refused('an emote you don''t own can''t go on the wheel', :U1, 'aal1', format('select public.set_emote_wheel(array[%L])', (select one from pk)), 'don''t have that emote');
 create temp table sh1 as select pg_temp.json_as(:U1, 'aal1', 'select public.emote_shop()') as j;
-select pg_temp.ok('the shop lists the free set and three packs for sale',
-  (select jsonb_array_length(j -> 'packs') = 4 and (select count(*) from jsonb_array_elements(j -> 'packs') e(x) where not (x ->> 'free')::boolean and (x ->> 'price_coins')::int > 0) = 3 from sh1), (select left(j::text, 300) from sh1));
+select pg_temp.ok('the shop lists the free set and three packs for sale, for Oreshards only (Nov 21)',
+  (select jsonb_array_length(j -> 'packs') = 4 and (select count(*) from jsonb_array_elements(j -> 'packs') e(x) where not (x ->> 'free')::boolean and (x ->> 'price_oreshards')::int > 0 and x -> 'price_coins' = 'null'::jsonb) = 3 from sh1), (select left(j::text, 300) from sh1));
+-- Nov 21 (Ken): frames, emotes and emote packs are sold for Oreshards only
+select pg_temp.ok('every frame, emote and pack price is in Oreshards (each keeps its Oreshard price: emote 100, pack 400, frame 500); no coin price is left',
+  not exists (select 1 from public.emotes where price_coins is not null) and not exists (select 1 from public.emote_packs where price_coins is not null) and not exists (select 1 from public.frames where price_coins is not null)
+  and not exists (select 1 from public.emotes e join public.emote_packs p on p.id = e.pack where not p.free and e.price_oreshards is distinct from 100)
+  and not exists (select 1 from public.emote_packs where not free and price_oreshards is distinct from 400)
+  and not exists (select 1 from public.frames where kind = 'store' and price_oreshards is distinct from 500)
+  and not exists (select 1 from public.frames where kind <> 'store' and price_oreshards is not null),
+  (select string_agg(id || '=' || coalesce(price_oreshards::text, '-'), ' ') from public.frames));
+do $$ begin update public.emotes set price_coins = 100 where id = 'goblin-grumbles/belch'; exception when check_violation then null; end $$;
+select pg_temp.ok('a coin price can''t be stored on a cosmetic any more', not exists (select 1 from public.emotes where price_coins is not null));
 select private.ledger_apply(:U1, 5000, 'admin_grant', 'test', 'test-e7-coins-u1', null);
-create temp table b1 as select pg_temp.json_as(:U1, 'aal1', format('select public.buy_emote(''emote'', %L, ''coins'', ''emo-buy-0001'')', (select one from pk))) as j;
-select pg_temp.ok('buying one emote with coins: paid once, owned',
-  (select (j ->> 'ok')::boolean and j ->> 'paid_with' = 'coins' from b1) and exists (select 1 from public.player_cosmetics where user_id = :U1 and kind = 'emote' and item = (select one from pk))
-  and (select count(*) from public.transactions where user_id = :U1 and reason = 'cosmetic') = 1, (select j::text from b1));
-create temp table b2 as select pg_temp.json_as(:U1, 'aal1', format('select public.buy_emote(''emote'', %L, ''coins'', ''emo-buy-0001'')', (select one from pk))) as j;
-select pg_temp.ok('the same click twice is one purchase', (select (j ->> 'repeat')::boolean from b2) and (select count(*) from public.transactions where user_id = :U1 and reason = 'cosmetic') = 1, (select j::text from b2));
-select pg_temp.refused('an emote you own can''t be bought again', :U1, 'aal1', format('select public.buy_emote(''emote'', %L, ''coins'', ''emo-buy-0002'')', (select one from pk)), 'already have');
-select pg_temp.refused('the free set is not for sale', :U1, 'aal1', $q$ select public.buy_emote('pack', 'free-starter', 'coins', 'emo-buy-0003') $q$, 'not for sale');
-select pg_temp.refused('no Oreshards, no pack', :U1, 'aal1', format('select public.buy_emote(''pack'', %L, ''oreshards'', ''emo-buy-0004'')', (select pack from pk)), 'Not enough Oreshards');
+select pg_temp.refused('an emote can''t be bought with coins (Oreshards only)', :U1, 'aal1', format('select public.buy_emote(''emote'', %L, ''coins'', ''emo-buy-0000'')', (select one from pk)), 'Oreshards only');
+select pg_temp.refused('no Oreshards, no emote', :U1, 'aal1', format('select public.buy_emote(''emote'', %L, ''oreshards'', ''emo-buy-000a'')', (select one from pk)), 'Not enough Oreshards');
 select private.oreshard_apply(:U1, 1000, 'admin_grant', 'test', 'test-e7-shards-u1');
+create temp table b1 as select pg_temp.json_as(:U1, 'aal1', format('select public.buy_emote(''emote'', %L, ''oreshards'', ''emo-buy-0001'')', (select one from pk))) as j;
+select pg_temp.ok('buying one emote with Oreshards: paid once (100), owned, no coins taken',
+  (select (j ->> 'ok')::boolean and j ->> 'paid_with' = 'oreshards' and (j ->> 'price')::int = 100 from b1) and exists (select 1 from public.player_cosmetics where user_id = :U1 and kind = 'emote' and item = (select one from pk))
+  and (select count(*) from public.oreshard_ledger where user_id = :U1 and reason = 'cosmetic') = 1 and (select count(*) from public.transactions where user_id = :U1 and reason = 'cosmetic') = 0, (select j::text from b1));
+create temp table b2 as select pg_temp.json_as(:U1, 'aal1', format('select public.buy_emote(''emote'', %L, ''oreshards'', ''emo-buy-0001'')', (select one from pk))) as j;
+select pg_temp.ok('the same click twice is one purchase', (select (j ->> 'repeat')::boolean from b2) and (select count(*) from public.oreshard_ledger where user_id = :U1 and reason = 'cosmetic') = 1, (select j::text from b2));
+select pg_temp.refused('an emote you own can''t be bought again', :U1, 'aal1', format('select public.buy_emote(''emote'', %L, ''oreshards'', ''emo-buy-0002'')', (select one from pk)), 'already have');
+select pg_temp.refused('the free set is not for sale', :U1, 'aal1', $q$ select public.buy_emote('pack', 'free-starter', 'oreshards', 'emo-buy-0003') $q$, 'not for sale');
+select pg_temp.refused('a pack can''t be bought with coins either', :U1, 'aal1', format('select public.buy_emote(''pack'', %L, ''coins'', ''emo-buy-0004'')', (select pack from pk)), 'Oreshards only');
 create temp table b3 as select pg_temp.json_as(:U1, 'aal1', format('select public.buy_emote(''pack'', %L, ''oreshards'', ''emo-buy-0005'')', (select pack from pk))) as j;
 select pg_temp.ok('a pack for Oreshards gives the rest of the pack',
   (select j ->> 'paid_with' = 'oreshards' from b3) and (select count(*) from public.player_cosmetics c join public.emotes e on e.id = c.item where c.user_id = :U1 and c.kind = 'emote' and e.pack = (select pack from pk))
@@ -69,12 +81,14 @@ create temp table f0 as select pg_temp.json_as(:U2, 'aal1', 'select public.my_fr
 select pg_temp.ok('the frames list shows the six store frames, never Founder or Producer to a new player',
   (select jsonb_array_length(j -> 'frames') = 6 and not exists (select 1 from jsonb_array_elements(j -> 'frames') e(x) where x ->> 'kind' <> 'store') and j -> 'equipped' = 'null'::jsonb from f0), (select left(j::text, 300) from f0));
 select pg_temp.refused('a frame you don''t own can''t be worn', :U2, 'aal1', $q$ select public.set_frame('skullfang') $q$, 'don''t have that frame');
-select pg_temp.refused('the Producer frame is never for sale', :U2, 'aal1', $q$ select public.buy_frame('producer', 'coins', 'frame-buy-0001') $q$, 'not for sale');
+select pg_temp.refused('the Producer frame is never for sale', :U2, 'aal1', $q$ select public.buy_frame('producer', 'oreshards', 'frame-buy-0001') $q$, 'not for sale');
 select pg_temp.refused('the Founder frame is never for sale', :U2, 'aal1', $q$ select public.buy_frame('founder', 'oreshards', 'frame-buy-0002') $q$, 'not for sale');
 select private.ledger_apply(:U2, 5000, 'admin_grant', 'test', 'test-e7-coins-u2', null);
-create temp table fb as select pg_temp.json_as(:U2, 'aal1', $q$ select public.buy_frame('skullfang', 'coins', 'frame-buy-0003') $q$) as j;
+select pg_temp.refused('a frame can''t be bought with coins (Oreshards only)', :U2, 'aal1', $q$ select public.buy_frame('skullfang', 'coins', 'frame-buy-000c') $q$, 'Oreshards only');
+select private.oreshard_apply(:U2, 1000, 'admin_grant', 'test', 'test-e7-shards-u2');
+create temp table fb as select pg_temp.json_as(:U2, 'aal1', $q$ select public.buy_frame('skullfang', 'oreshards', 'frame-buy-0003') $q$) as j;
 create temp table fw as select pg_temp.json_as(:U2, 'aal1', $q$ select public.set_frame('skullfang') $q$) as j;
-select pg_temp.ok('buy a frame with coins and wear it', (select (j ->> 'ok')::boolean from fb) and (select frame from public.profiles where id = :U2) = 'skullfang', (select j::text from fb));
+select pg_temp.ok('buy a frame with Oreshards (500) and wear it', (select (j ->> 'ok')::boolean and (j ->> 'price')::int = 500 from fb) and (select frame from public.profiles where id = :U2) = 'skullfang', (select j::text from fb));
 create temp table g1 as select pg_temp.json_as(:U2, 'aal1', 'select public.pvp_gate()') as j;
 select pg_temp.ok('the PvP gate carries the frame (the opponent sees it)', (select j ->> 'frame' = 'skullfang' and j ? 'title' from g1), (select j::text from g1));
 create temp table fn as select pg_temp.json_as(:U2, 'aal1', $q$ select public.set_frame(null) $q$) as j;
@@ -92,11 +106,12 @@ select pg_temp.works('now a Founder avatar can be worn', :U2, 'aal1', $q$ select
 select pg_temp.works('and the Founder frame', :U2, 'aal1', $q$ select public.set_frame('founder') $q$);
 
 -- ========== 4. Admin: prices and grants (Producer) ==========
-select pg_temp.works('admin sets an emote pack price', :A1, 'aal2', format('select public.admin_set_cosmetic_price(''emote_pack'', %L, 900, 450, true, ''test: price'')', (select pack from pk)));
-select pg_temp.ok('the new price is stored and audited', (select price_coins = 900 and price_oreshards = 450 from public.emote_packs where id = (select pack from pk))
+select pg_temp.works('admin sets an emote pack price', :A1, 'aal2', format('select public.admin_set_cosmetic_price(''emote_pack'', %L, null, 450, true, ''test: price'')', (select pack from pk)));
+select pg_temp.refused('the admin can''t set a coin price (Oreshards only)', :A1, 'aal2', format('select public.admin_set_cosmetic_price(''emote_pack'', %L, 900, 450, true, ''test: price'')', (select pack from pk)), 'Oreshards only');
+select pg_temp.ok('the new price is stored and audited', (select price_coins is null and price_oreshards = 450 from public.emote_packs where id = (select pack from pk))
   and exists (select 1 from public.admin_audit where action = 'set_cosmetic_price'), 'pack price');
-select pg_temp.refused('the Producer frame can''t get a price', :A1, 'aal2', $q$ select public.admin_set_cosmetic_price('frame', 'producer', 10, null, true, 'test') $q$, 'can''t be sold');
-select pg_temp.refused('the free emotes can''t get a price', :A1, 'aal2', $q$ select public.admin_set_cosmetic_price('emote_pack', 'free-starter', 10, null, true, 'test') $q$, 'can''t be sold');
+select pg_temp.refused('the Producer frame can''t get a price', :A1, 'aal2', $q$ select public.admin_set_cosmetic_price('frame', 'producer', null, 10, true, 'test') $q$, 'can''t be sold');
+select pg_temp.refused('the free emotes can''t get a price', :A1, 'aal2', $q$ select public.admin_set_cosmetic_price('emote_pack', 'free-starter', null, 10, true, 'test') $q$, 'can''t be sold');
 select pg_temp.refused('players can''t grant cosmetics', :U1, 'aal1', format('select public.admin_grant_cosmetic(%L, ''frame'', ''producer'', ''Producer'', ''test'')', :U1));
 create temp table gr as select pg_temp.json_as(:A1, 'aal2', format('select public.admin_grant_cosmetic(%L, ''frame'', ''producer'', ''Producer'', ''test: producer'')', :U1)) as j;
 select pg_temp.ok('admin grants the Producer frame and title; the avatar is untouched',

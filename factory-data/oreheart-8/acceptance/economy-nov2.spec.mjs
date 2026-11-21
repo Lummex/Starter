@@ -1412,7 +1412,7 @@ test('AC711: the emote dial against the computer (Ken, Nov 7): a click on your a
   }
 });
 
-test('AC713: Frames and Emotes in the Shop (Ken, Nov 7): six frames for coins or Oreshards, never Founder or Producer; the free set plus three packs with singles; buying a frame and a pack works; Collection "Frames & emotes" wears the frame and sets the wheel', async ({ page }) => {
+test('AC713: Frames and Emotes in the Shop (Ken, Nov 7): six frames for Oreshards only (Nov 21: no coin price anywhere), never Founder or Producer; the free set plus three packs with singles; buying a frame and a pack works; Collection "Frames & emotes" wears the frame and sets the wheel', async ({ page }) => {
   test.setTimeout(90000);
   await signedInDashWith(page, '');
   await page.locator('[data-testid=dash-coins]').click();
@@ -1422,7 +1422,11 @@ test('AC713: Frames and Emotes in the Shop (Ken, Nov 7): six frames for coins or
   expect(await fr.locator('.cos-item').evaluateAll((els) => els.map((e) => e.dataset.frame))).not.toContain('producer');
   expect(await fr.locator('.cos-item').evaluateAll((els) => els.map((e) => e.dataset.frame))).not.toContain('founder');
   await expect(fr.locator('.av-frame').first()).toHaveAttribute('src', /\/art\/avatar-frames\/[a-z-]+\.webp$/);
-  await fr.locator('[data-testid="frame-buy-skullfang-coins"]').click();
+  // Nov 21 (Ken): Oreshards only, so no coin button on any frame, pack or single emote, and the prices are 500 / 400 / 100
+  await expect(page.locator('[data-screen="econ-shop"] .cp-coins')).toHaveCount(0);
+  await expect(fr.locator('[data-testid="frame-buy-skullfang-shards"]')).toContainText('500');
+  await expect(page.locator('[data-testid="emote-pack-goblin-grumbles-shards"]')).toContainText('400');
+  await fr.locator('[data-testid="frame-buy-skullfang-shards"]').click();
   await expect(fr.locator('[data-testid="frame-wear-skullfang"]')).toBeVisible({ timeout: 10000 });
   await fr.locator('[data-testid="frame-wear-skullfang"]').click();
   await expect(fr.locator('.cos-item[data-frame=skullfang] .cos-owned')).toHaveText('Wearing');
@@ -1573,7 +1577,7 @@ test('AC715: Shop and Dashboard layout (Ken, Nov 7): no overlapping buttons, no 
     await expect(page.locator('[data-testid=shop-emotes] .cos-pack')).toHaveCount(4, { timeout: 10000 });
     await page.waitForTimeout(600);
     const shop = await auditScrolled(page);
-    expect(shop.buttons, `${w}x${h}: the Shop's buttons were measured`).toBeGreaterThan(15);
+    expect(shop.buttons, `${w}x${h}: the Shop's buttons were measured`).toBeGreaterThan(10); // Nov 21: no coin buttons on frames/emotes any more
     expect(shop.overlaps, `${w}x${h} Shop: overlapping buttons`).toEqual([]);
     expect(shop.offCentre, `${w}x${h} Shop: off-centre labels`).toEqual([]);
     const sc = await page.evaluate(() => { const b = document.querySelector('.dash.skin .skin-body'); return b ? b.scrollHeight : 0; });

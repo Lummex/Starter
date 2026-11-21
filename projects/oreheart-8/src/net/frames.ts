@@ -7,7 +7,7 @@ import FOUNDERS from '../content/founder-avatars.json';
 import { h, type App } from '../ui/app';
 import { net } from './state';
 import { rpc } from './online';
-import { isTestPage, stubMode, toast, coinIcon } from './economy';
+import { isTestPage, stubMode, toast } from './economy';
 import { shardIcon } from './oreshards';
 import { api as emoteApi, emoteUrl, PACKS, DEFAULT_WHEEL, emoteLabel } from './emotes';
 
@@ -33,7 +33,7 @@ const STUB = { owned: new Set<string>(), equipped: null as string | null, coins:
 export const api = {
   async mine(): Promise<MyFrames> {
     if (stubMode() || !net.active) return { equipped: STUB.equipped, title: null, coins: STUB.coins, oreshards: STUB.shards, avatars: STUB.avatars.slice(),
-      frames: FRAME_LIST.filter((f) => f.kind === 'store' || STUB.owned.has(f.id)).map((f) => ({ ...f, price_coins: f.kind === 'store' ? 1000 : null, price_oreshards: f.kind === 'store' ? 500 : null, owned: STUB.owned.has(f.id) })) };
+      frames: FRAME_LIST.filter((f) => f.kind === 'store' || STUB.owned.has(f.id)).map((f) => ({ ...f, price_coins: null, price_oreshards: f.kind === 'store' ? 500 : null, owned: STUB.owned.has(f.id) })) };
     return await rpc('my_frames');
   },
   async setFrame(id: string | null): Promise<{ equipped: string | null }> {
@@ -42,8 +42,8 @@ export const api = {
   },
   async buy(id: string, pay: 'coins' | 'oreshards'): Promise<any> {
     if (stubMode() || !net.active) {
-      const cost = pay === 'coins' ? 1000 : 500;
-      if (pay === 'coins') { if (STUB.coins < cost) throw new Error(`Not enough coins (this costs ${cost}).`); STUB.coins -= cost; } else { if (STUB.shards < cost) throw new Error(`Not enough Oreshards (this costs ${cost}, you have ${STUB.shards}).`); STUB.shards -= cost; }
+      if (pay !== 'oreshards') throw new Error('Frames are sold for Oreshards only.'); const cost = 500;
+      if (STUB.shards < cost) throw new Error(`Not enough Oreshards (this costs ${cost}, you have ${STUB.shards}).`); STUB.shards -= cost;
       STUB.owned.add(id); return { ok: true, frame: id };
     }
     return await rpc('buy_frame', { p_id: id, p_pay: pay, p_idem_key: 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10) });
@@ -63,11 +63,11 @@ export function stubGrantFounder() { STUB.owned.add('founder'); STUB.avatars = F
 // ------------------------------------------------------------------ pickers
 // Nov 7 (Ken: "The buttons on the coins are too long, too large ... overlapping each other"): small price pills, an icon and the number,
 // stacked in the tile (side by side only where there is room), never wider than their tile
-const pay2 = (c: number | null, s: number | null, buy: (p: 'coins' | 'oreshards') => void, tid: string) => h('div', { class: 'cos-pay' },
-  c != null ? h('button', { type: 'button', class: 'cos-price cp-coins', 'data-testid': tid + '-coins', 'aria-label': `Buy for ${c.toLocaleString('en-US')} coins`, title: `${c.toLocaleString('en-US')} coins`, onclick: () => buy('coins') }, coinIcon('cos-ico'), h('span', {}, c.toLocaleString('en-US'))) : null,
+// Nov 21 (Ken: "I only want you to be able to buy them with Oreshards ... no coins"): one Oreshard price pill, never a coin button
+const pay2 = (s: number | null, buy: (p: 'oreshards') => void, tid: string) => h('div', { class: 'cos-pay' },
   s != null ? h('button', { type: 'button', class: 'cos-price cp-shards', 'data-testid': tid + '-shards', 'aria-label': `Buy for ${s.toLocaleString('en-US')} Oreshards`, title: `${s.toLocaleString('en-US')} Oreshards`, onclick: () => buy('oreshards') }, shardIcon('cos-ico'), h('span', {}, s.toLocaleString('en-US'))) : null);
 
-/** the Shop's Frames section: every frame on sale, preview round the player's avatar, buy (coins or Oreshards), wear */
+/** the Shop's Frames section: every frame on sale, preview round the player's avatar, buy (Oreshards only, Nov 21), wear */
 export function framesPanel(): El {
   const box = h('section', { class: 'econ-panel cos-panel', 'data-testid': 'shop-frames', 'aria-label': 'Avatar frames' }, h('h3', { class: 'h' }, 'Avatar Frames'), h('p', { class: 'net-note' }, 'Polishing the frames…'));
   const note = h('p', { class: 'cos-note', role: 'status' });
@@ -79,7 +79,7 @@ export function framesPanel(): El {
       h('div', { class: 'cos-grid', role: 'list' }, ...m.frames.filter((f) => f.kind === 'store' || f.owned).map((f) => {
         const av = h('span', { class: 'cos-av', style: `background-image:url(${avPic})` }); decorate(av, f.id);
         const acts = f.owned ? (m.equipped === f.id ? h('span', { class: 'cos-owned' }, 'Wearing') : h('button', { type: 'button', class: 'cos-price cp-wear', 'data-testid': 'frame-wear-' + f.id, onclick: async () => { try { await api.setFrame(f.id); net.frame = f.id; void draw(`${f.name} is on.`); } catch (e: any) { note.textContent = String(e?.message || e); } } }, 'Wear'))
-          : pay2(f.price_coins, f.price_oreshards, async (p) => { try { await api.buy(f.id, p); toast(`${f.name} frame is yours!`, frameUrl(f.id)); void draw(`${f.name} is yours. Press Wear to put it on.`); } catch (e: any) { note.textContent = String(e?.message || e).replace(/^.*?: /, ''); } }, 'frame-buy-' + f.id);
+          : pay2(f.price_oreshards, async (p) => { try { await api.buy(f.id, p); toast(`${f.name} frame is yours!`, frameUrl(f.id)); void draw(`${f.name} is yours. Press Wear to put it on.`); } catch (e: any) { note.textContent = String(e?.message || e).replace(/^.*?: /, ''); } }, 'frame-buy-' + f.id);
         return h('div', { class: 'cos-item', role: 'listitem', 'data-frame': f.id }, av, h('b', {}, f.name), acts);
       })), note);
   };
@@ -97,10 +97,10 @@ export function emotesPanel(): El {
     const buy = async (what: 'pack' | 'emote', id: string, name: string, p: 'coins' | 'oreshards') => { try { await emoteApi.buy(what, id, p); toast(`${name} ${what === 'pack' ? 'are' : 'is'} yours!`, what === 'emote' ? emoteUrl(id) : '/art/emotes/free-starter/wow.webp'); void draw(`${name}: put them on your wheel in Collection.`); } catch (e: any) { note.textContent = String(e?.message || e).replace(/^.*?: /, ''); } };
     box.replaceChildren(h('h3', { class: 'h' }, 'Emotes'), h('p', { class: 'net-note' }, 'Click your avatar in a match to send one.'),
       ...s.packs.map((p: any) => h('div', { class: 'cos-pack', 'data-pack': p.id },
-        h('div', { class: 'cos-pack-head' }, h('b', {}, p.name), p.free ? h('span', { class: 'cos-owned' }, 'Free for everyone') : p.owned ? h('span', { class: 'cos-owned' }, 'All yours') : pay2(p.price_coins, p.price_oreshards, (pay) => buy('pack', p.id, p.name, pay), 'emote-pack-' + p.id)),
+        h('div', { class: 'cos-pack-head' }, h('b', {}, p.name), p.free ? h('span', { class: 'cos-owned' }, 'Free for everyone') : p.owned ? h('span', { class: 'cos-owned' }, 'All yours') : pay2(p.price_oreshards, (pay) => buy('pack', p.id, p.name, pay), 'emote-pack-' + p.id)),
         h('div', { class: 'cos-emotes' }, ...p.emotes.map((e: any) => h('div', { class: 'cos-emote' + (e.owned ? ' owned' : ''), 'data-emote': e.id, title: e.label },
           h('img', { src: emoteUrl(e.id), alt: e.label, draggable: 'false' }), h('small', {}, e.label),
-          e.owned || p.free ? null : pay2(e.price_coins, e.price_oreshards, (pay) => buy('emote', e.id, e.label, pay), 'emote-buy-' + e.id.replace('/', '-'))))))),
+          e.owned || p.free ? null : pay2(e.price_oreshards, (pay) => buy('emote', e.id, e.label, pay), 'emote-buy-' + e.id.replace('/', '-'))))))),
       note);
   };
   void draw();
