@@ -304,6 +304,8 @@ export function isActionButton(b: El): boolean {
 export class App {
   root: El;
   menuHook?: (s: El) => void;
+  /** Nov 21 (Ken: no play without an account): set by the online flow; true = not signed in, the sign-in screen is shown instead */
+  signInGate?: () => boolean;
   game: Game;
   /** Nov 2 (PvP): the match against a friend (src/net/pvp.ts NetGame) while one is on screen; `offGame` keeps the computer-match Game meanwhile */
   netGame: NetGame | null = null;
@@ -632,6 +634,7 @@ export class App {
     go.focus();
   }
   showMenu() {
+    if (this.signInGate?.()) return;
     this.leaveNet();
     if (this.tut2?.active) this.tut2.stop(); // Nov 8: leaving a tutorial board takes its pointer layer with it
     document.querySelectorAll('.tut2-layer').forEach((x) => x.remove());
@@ -674,15 +677,15 @@ export class App {
     const paint = () => {
       const s = offlineStatus(); line.dataset.offline = s.status;
       const size = s.coreMB + s.fullMB;
-      line.textContent = s.status === 'off' ? 'Offline play: install the app from your browser menu to play without internet.'
-        : s.status === 'installing' ? 'Offline play: getting the game ready…'
-        : s.status === 'full' ? `Offline play: ready, everything is on this device (${size} MB).`
-        : s.downloading ? `Offline play: ready. Fetching the models, music and voices… ${s.haveMB} of ${s.fullMB} MB${s.failed ? ` (${s.failed} failed, will retry)` : ''}.`
-        : `Offline play: ready. Models, music and voices are kept as you meet them (${s.haveMB} of ${s.fullMB} MB so far).`;
+      line.textContent = s.status === 'off' ? 'Game files: install the app from your browser menu for a faster start.'
+        : s.status === 'installing' ? 'Game files: getting the game ready…'
+        : s.status === 'full' ? `Game files: ready, everything is on this device (${size} MB).`
+        : s.downloading ? `Game files: ready. Fetching the models, music and voices… ${s.haveMB} of ${s.fullMB} MB${s.failed ? ` (${s.failed} failed, will retry)` : ''}.`
+        : `Game files: ready. Models, music and voices are kept as you meet them (${s.haveMB} of ${s.fullMB} MB so far).`;
       dl.hidden = s.status !== 'core' || s.downloading; up.hidden = !s.updateReady;
     };
     paint(); const off = onOffline(paint);
-    const sec = h('section', { class: 'fx-panel offline-panel', role: 'region', 'aria-label': 'Offline play' }, h('h2', { class: 'section' }, 'Offline play'), line, dl, up);
+    const sec = h('section', { class: 'fx-panel offline-panel', role: 'region', 'aria-label': 'Game files' }, h('h2', { class: 'section' }, 'Game files'), line, dl, up);
     (sec as any)._off = off;
     return sec;
   }
@@ -748,6 +751,7 @@ export class App {
   }
 
   showSetup() {
+    if (this.signInGate?.()) return;
     this.clear();
     let picks: any = {};
     try { picks = JSON.parse(localStorage.getItem('oreheart.picks') || '{}') || {}; } catch { picks = {}; }
@@ -1478,6 +1482,7 @@ export class App {
   tut2: Tutorial2 | null = null;
   tutorialFrom: 'dashboard' | 'menu' | 'settings' | 'welcome' | '' = '';
   beginTutorial(step?: string) {
+    if (this.signInGate?.()) return;
     this.lastTutorial = true;
     if (!step || /^ch[1-6]$/.test(step) || step === 'drag') { // Nov 11: 'drag' = the drag-to-move / drag-to-attack practice before the first battle
       this.tut?.stop(); this.tut = null;

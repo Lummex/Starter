@@ -92,7 +92,11 @@ export async function startOnline(a: App, opts: { page?: boolean } = {}) {
   void opts;
   const sb = client();
   if (/type=recovery/.test(location.hash)) recovering = true; // the link's own hash tells us, even if the event fired before we listened
-  sb.auth.onAuthStateChange((ev) => { if (ev === 'PASSWORD_RECOVERY') { recovering = true; if (!setPwShown) showSetPassword(); } });
+  sb.auth.onAuthStateChange((ev) => {
+    if (ev === 'PASSWORD_RECOVERY') { recovering = true; if (!setPwShown) showSetPassword(); }
+    if (ev === 'SIGNED_OUT' && net.active) { net.active = false; status = null; setMatureAllowed(false); if (checkTimer) { clearInterval(checkTimer); checkTimer = null; } signInGate(); } // Nov 21: an ended session never keeps playing
+  });
+  a.signInGate = signInGate; // Nov 21: no game without a signed-in account
   menuShow('wait', h('h1', {}, 'Oreheart'), noteEl());
   await serverCheck();
 }
@@ -115,19 +119,30 @@ async function serverCheck() {
   if (data.session) await afterSignIn(); else showLogin();
 }
 
-function offline() {
-  net.active = false; net.offlineChosen = true; net.ageGroup = null; status = null; setMatureAllowed(false);
+// Nov 21 (Ken: "I want the play offline off. I don't want you to be able to play the game without signing in and registering"):
+// no guest or offline play. Offline, or with no server, the game shows this screen with Retry instead of a playable game.
+function needOnline() {
+  net.active = false; net.offlineChosen = false; status = null; setMatureAllowed(false);
   if (checkTimer) { clearInterval(checkTimer); checkTimer = null; }
-  app.showMenu();
+  menuShow('no-server', h('h1', {}, 'You need to be online and signed in to play'), h('p', {}, 'Check your internet connection, then press Retry.'),
+    h('div', { class: 'net-actions' }, nbtn('Retry', () => { void serverCheck(); }, 'primary')));
 }
-const offlineBtn = () => nbtn('Play offline (practice)', offline);
+/** The game's own entry points ask this first (menu, practice, tutorial): true = blocked, and the sign-in or Retry screen is shown. */
+let wrongServerShown = false;
+function signInGate(): boolean {
+  if (net.active) return false;
+  if (wrongServerShown) { wrongServer(); return true; }
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) needOnline();
+  else showLogin();
+  return true;
+}
 
 function wrongServer() {
-  menuShow('wrong-server', h('h1', {}, 'Wrong server'), h('p', {}, 'This copy of the game is connected to the wrong server, so signing in is switched off to keep practice and real accounts apart.'), offlineBtn());
+  wrongServerShown = true;
+  menuShow('wrong-server', h('h1', {}, 'Wrong server'), h('p', {}, 'This copy of the game is connected to the wrong server, so signing in is switched off to keep practice and real accounts apart.'));
 }
 function cantReach() {
-  menuShow('no-server', h('h1', {}, "Can't reach the server"), h('p', {}, 'Check your internet connection and try again.'),
-    h('div', { class: 'net-actions' }, nbtn('Try again', () => { void serverCheck(); }, 'primary'), offlineBtn()));
+  needOnline();
 }
 
 // ------------------------------------------------------------------ login
@@ -163,7 +178,7 @@ function showLogin(prefill = '') {
     email.wrap, pw.wrap, cap.el, err, note, extra,
     signIn);
   menuShow('login', h('h1', {}, 'Sign in'), form,
-    h('div', { class: 'net-grid' }, nbtn('Create account', showAge), nbtn('Forgot password?', showForgot), offlineBtn(), nbtn('Contact us', () => showContact({ back: () => showLogin() }))));
+    h('div', { class: 'net-grid' }, nbtn('Create account', showAge), nbtn('Forgot password?', showForgot), nbtn('Contact us', () => showContact({ back: () => showLogin() }))));
 }
 
 // ------------------------------------------------------------------ create account
@@ -337,7 +352,7 @@ function banScreen(s: Status) {
   menuShow('banned',
     h('h1', {}, until ? `Your account is banned until ${until.toLocaleString()}.` : 'Your account is banned.'),
     s.ban_reason ? h('p', { class: 'net-reason' }, s.ban_reason) : null,
-    h('div', { class: 'net-actions' }, nbtn('Sign out', () => { void signOut(); }), offlineBtn()));
+    h('div', { class: 'net-actions' }, nbtn('Sign out', () => { void signOut(); })));
 }
 
 function waitingScreen(s: Status) {
@@ -350,12 +365,12 @@ function waitingScreen(s: Status) {
         err.textContent = ''; note.textContent = '';
         try { await rpc('resend_parent_consent'); note.textContent = 'We sent the email again.'; } catch (e: any) { err.textContent = e.message; }
       }),
-      nbtn('Sign out', () => { void signOut(); }), offlineBtn()));
+      nbtn('Sign out', () => { void signOut(); })));
 }
 
 function revokedScreen() {
   menuShow('revoked', h('h1', {}, 'A parent withdrew approval for this account.'),
-    h('div', { class: 'net-actions' }, nbtn('Sign out', () => { void signOut(); }), offlineBtn()));
+    h('div', { class: 'net-actions' }, nbtn('Sign out', () => { void signOut(); })));
 }
 
 /** A legal text (eula.json, privacy.json, conduct.json) as readable elements; a DRAFT banner while the version says -draft. */
@@ -395,7 +410,7 @@ function eulaGate(s: Status) {
   menuShow('eula-gate', h('h1', {}, eula.title), h('p', {}, 'Please read this and agree to keep playing online.'), ...eulaBody(),
     h('p', {}, 'It includes our Privacy Policy and Code of Conduct:'), h('div', { class: 'net-actions' }, ...docButtons(() => eulaGate(s)).slice(1)),
     h('label', { class: 'net-check', for: 'eula-agree' }, box, h('span', {}, 'I agree to the End User License Agreement')),
-    err, h('div', { class: 'net-actions' }, ok, nbtn('Sign out', () => { void signOut(); }), offlineBtn()));
+    err, h('div', { class: 'net-actions' }, ok, nbtn('Sign out', () => { void signOut(); })));
 }
 
 function avatarScreen(s: Status, back?: () => void) {
@@ -547,7 +562,6 @@ export function menuExtras(el: El) {
     try { pvpMenu(side); } catch (e) { console.warn('pvpMenu', e); }
     try { economyMenu(side); } catch (e) { console.warn('economyMenu', e); }
   }
-  else if (net.offlineChosen) el.append(h('button', { type: 'button', class: 'net-chip', onclick: () => { void signOut(); } }, 'Offline — Sign in'));
 }
 
 /** Nov 6 (design D, Brush's Profile): identity with Change avatar, this season's stats from the rank card, lifetime / recent matches /

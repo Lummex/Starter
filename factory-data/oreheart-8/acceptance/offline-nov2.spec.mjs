@@ -75,7 +75,7 @@ test('AC581: Settings has the Offline play line, the download button, and a "Res
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const line = page.locator('.offline-panel .offline-line');
   await expect(line).toBeVisible();
-  await expect(line).toContainText(/Offline play: ready/);
+  await expect(line).toContainText(/Game files: ready/);
   await expect(page.locator('.offline-panel .offline-update')).toBeHidden();
   const dl = page.locator('.offline-panel .offline-dl');
   if (await dl.isVisible()) { await dl.click(); await expect(line).toContainText(/Fetching|everything is on this device/, { timeout: 60000 }); }

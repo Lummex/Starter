@@ -14072,24 +14072,21 @@ test('AC501: ?test=1 without online=1 goes straight to the menu with hooks and n
   expect(errors).toEqual([]);
 });
 
-test('AC503: Play offline (practice) opens the menu and a vs-computer match makes no /rest/v1/ request', async ({ page }) => {
+test('AC503: no play without an account (Ken, Nov 21): the login screen has no "Play offline", and the menu, practice and tutorial refuse until signed in', async ({ page }) => {
   needDb();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(ONLINE);
-  await page.getByRole('button', { name: 'Play offline (practice)', exact: true }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
-  await expect(page.getByText('Offline — Sign in')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
-  // Owner (Oct 31): start the match like every other match test (openTest, then newMatch), then press Done;
-  // the point is that no /rest/v1/ request happens while playing offline
-  const rest = [];
-  page.on('request', (r) => { if (r.url().includes('/rest/v1/')) rest.push(r.url()); });
-  await openTest(page, 5);
-  const s = await newMatch(page);
-  expect(s.players.length).toBe(2);
-  await done(page);
-  expect(rest).toEqual([]);
+  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: /offline/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Play', exact: true })).toHaveCount(0);
+  await page.waitForFunction(() => !!window.__app);
+  for (const fn of ['showMenu', 'showSetup', 'beginTutorial']) {
+    await page.evaluate((f) => window.__app[f](), fn);
+    await expect(page.getByRole('heading', { name: 'Sign in', exact: true }), fn).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Play', exact: true }), fn).toHaveCount(0);
+    expect(await page.locator('.match, .screen.setup').count(), fn + ' opens no game').toBe(0);
+  }
   expect(errors).toEqual([]);
 });
 
@@ -14103,7 +14100,7 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }, {
       await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible({ timeout: 15000 });
       await expect(page.getByRole('button', { name: 'Play', exact: true })).toHaveCount(0);
       await expect(page.getByText('TEST SERVER — practice accounts only')).toBeVisible();
-      for (const n of ['Sign in', 'Create account', 'Forgot password?', 'Play offline (practice)']) {
+      for (const n of ['Sign in', 'Create account', 'Forgot password?']) {
         const b = page.getByRole('button', { name: n, exact: true });
         await b.scrollIntoViewIfNeeded();
         const box = await b.boundingBox();
@@ -14334,8 +14331,7 @@ test('AC533: waiting child sees the waiting screen; server refuses play actions;
   await expect(page.getByRole('heading', { name: 'Waiting for your parent or guardian' })).toBeVisible({ timeout: 15000 });
   await expect(page.getByRole('button', { name: 'Send the email again', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Play offline (practice)', exact: true }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /offline/i }), 'Nov 21: no playing without an approved account').toHaveCount(0);
 });
 
 test('AC534: parent consent page approves once; the child can then save; confirmation queued', async ({ page }) => {
@@ -14371,7 +14367,8 @@ test('AC535: withdraw link blocks the child again', async ({ page }) => {
   expect(error && error.message).toMatch(/withdrew approval/);
   await gameSignIn(page, u);
   await expect(page.getByRole('heading', { name: 'A parent withdrew approval for this account.' })).toBeVisible({ timeout: 15000 });
-  await expect(page.getByRole('button', { name: 'Play offline (practice)', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /offline/i }), 'Nov 21: no playing without an account').toHaveCount(0);
 });
 
 test('AC536: under-13 deck names are plain and the builder has no Rename', async ({ page }) => {
@@ -14720,7 +14717,7 @@ test('AC523: ban for 3 days blocks saving and shows the ban message; unban resto
   await gameSignIn(page, u);
   await expect(page.getByRole('heading', { name: /^Your account is banned until / })).toBeVisible({ timeout: 15000 });
   await expect(page.getByText('rude names test')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Play offline (practice)', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /offline/i }), 'Nov 21: a banned account cannot play offline either').toHaveCount(0);
   expect((await ad.c.rpc('admin_unban', { p_user: u.id, p_reason: 'served time' })).error).toBeNull();
   expect((await c.rpc('save_deck', { p_id: null, p_name: 'A', p_commander: 'grubnak', p_cards: GOBLIN_DECK })).error).toBeNull();
   const reasons = (await auditRows(u.id)).map((r) => r.reason);
@@ -14916,7 +14913,7 @@ async function offlinePlateCheck(page) {
   expect(typeof r.rank.points, 'ranks saved locally').toBe('number');
 }
 
-test('AC547: with no server the game opens on the menu (no login); offline practice starts a normal match with "Player", the goblin-goggle-rogue avatar and a rank charm; with a server, "Play offline (practice)" does the same', async ({ page }) => {
+test('AC547: with no server the game opens on the menu (no login); offline practice starts a normal match with "Player", the goblin-goggle-rogue avatar and a rank charm; with a server there is no offline play (Nov 21)', async ({ page }) => {
   test.setTimeout(120000);
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -14930,14 +14927,11 @@ test('AC547: with no server the game opens on the menu (no login); offline pract
   await expect(page.getByRole('button', { name: 'Profile', exact: true })).toHaveCount(0);
   await offlinePlateCheck(page);
   expect(rest, 'offline makes no server request').toEqual([]);
-  // a build with a server shows the login first; "Play offline (practice)" must lead to the same offline match
+  // a build with a server shows the login first and (Nov 21, Ken) offers no offline play at all
   if (SB_URL && SB_ANON) {
     await page.goto(ONLINE);
-    await page.getByRole('button', { name: 'Play offline (practice)', exact: true }).click({ timeout: 15000 });
-    await expect(page.getByRole('heading', { level: 1, name: 'Oreheart' })).toBeVisible();
-    rest.length = 0;
-    await offlinePlateCheck(page);
-    expect(rest.filter((u) => u.includes('/rest/v1/')), 'offline practice makes no /rest/v1/ request').toEqual([]);
+    await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: /offline/i })).toHaveCount(0);
   }
   expect(errors).toEqual([]);
 });
