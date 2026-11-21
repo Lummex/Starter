@@ -27,3 +27,6 @@ npm run dev       # http://127.0.0.1:5174
 
 ## Test hooks
 Stable `data-testid`s for the factory's browser checks: `login-email`, `login-password`, `login-submit`, `captcha`, `mfa-qr`, `mfa-secret`, `mfa-code`, `mfa-submit`, `not-admin`, `not-configured`, `admin-main`, `player-search`, `player-total`, `player-table`, `player-link`, `player-name`, `player-coins`, `player-state`, `ban-form`, `ban-duration`, `ban-reason`, `ban-submit`, `unban-form`, `unban-submit`, `grant-form`, `grant-amount`, `grant-reason`, `grant-submit`, `deck-table`, `coin-table`, `audit-table`, `notice`, `page-error`, `sign-out`, `player-money`, `consent-state`, `consent-card`, `revoke-consent-form`/`-reason`/`-submit`, `rename-form`, `rename-name`, `rename-reason`, `rename-submit`, `cards-filter`, `card-table`, `card-link`, `card-search`, `card-result`, `card-owner`, `card-first-owner`, `card-history`, `set-signup-coins`, `set-max-decks`, `inbox-message`, `inbox-reply`, `inbox-note`, `inbox-mark`, `inbox-total`, `set-blocked-words`, `set-reserved-names`, `set-reserved-parts`, `set-<key>-reason`, `set-<key>-save`, `server-kind`, `test-banner`, `wrong-server`.
+
+## Hosting
+Vercel project: oreheart-admin, production branch pvp-nov2 (root directory projects/oreheart-admin).
