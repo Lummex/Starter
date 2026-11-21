@@ -248,9 +248,9 @@ export const api = {
     return { ...r, rank: r && r.rank && r.rank.label ? { ...rankOfRating(Number(r.rating) || 0, ladder), ...r.rank, divFloor: Number(r.rank.div_floor), divNext: r.rank.div_next == null ? null : Number(r.rank.div_next), progress: Number(r.rank.progress) || 0 } : rankOfRating(Number(r?.rating) || 1000, ladder), ladder };
   },
   /** Nov 6 (regions): the enabled servers with live counts, the caller's choice, the fallback time; calling it is the heartbeat */
-  async regionsInfo(): Promise<import('./regions').RegionsInfo> {
+  async regionsInfo(here: string | null = null): Promise<import('./regions').RegionsInfo> { /* Nov 21: `here` = where this player plays now (counts them online there) */
     if (stubMode()) { stubInit(); return { regions: [{ id: 'us-east', name: 'US East', edge: 'us-east-1', online: 14, playing: 6, waiting: 2 }, { id: 'us-central', name: 'US Central', edge: 'us-east-1', online: 5, playing: 2, waiting: 0 }, { id: 'us-west', name: 'US West', edge: 'us-west-1', online: 9, playing: 4, waiting: 1 }], mine: STUB.region, fallback_seconds: 45, counts: true }; }
-    return await rpc('regions_info');
+    return await rpc('regions_info', here ? { p_here: here } : {});
   },
   async setRegion(id: string | null): Promise<import('./regions').RegionsInfo> {
     if (stubMode()) { STUB.region = id; return await this.regionsInfo(); }

@@ -1583,3 +1583,40 @@ test('AC715: Shop and Dashboard layout (Ken, Nov 7): no overlapping buttons, no 
     expect(frameLayer, `${w}x${h}: no frame layer scrolling inside the Shop panel`).toBe(false);
   }
 });
+
+test('AC760: the chosen play mode stands out (Ken, Nov 21: "It\'s hard to see which one it\'s on. Maybe change the color of the button"): a crystal-blue glowing fill with white text, the others dimmer dark glass; labels centred, nothing overlapping, at PC, laptop and phone sizes', async ({ page }) => {
+  await openEcon(page, 'shop');
+  await page.getByRole('button', { name: 'Back' }).click();
+  expect(await page.evaluate(() => window.oreheart.packs.setOwned({ 'goblin-grunt': 4 }, [{ name: 'Junk Pile', cards: Array(4).fill('goblin-grunt'), commander: 'grubnak' }]))).toBe(true);
+  await page.evaluate(() => window.__app.showMenu());
+  const play = page.locator('main.dash[data-dash="1"]').getByTestId('dash-play');
+  await expect(play).toBeVisible({ timeout: 10000 });
+  for (const [w, h] of [[1920, 1080], [1366, 768], [812, 375]]) {
+    await page.setViewportSize({ width: w, height: h });
+    for (const mode of ['ranked', 'unranked', 'friend', 'computer']) {
+      await play.locator(`.chip[data-mode="${mode}"]`).evaluate((b) => b.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+      await expect(play.locator('.chip.on')).toHaveAttribute('data-mode', mode);
+      const r = await play.evaluate((root) => {
+        const chips = [...root.querySelectorAll('.mode .chip')];
+        const info = chips.map((c) => {
+          const cs = getComputedStyle(c), b = c.getBoundingClientRect();
+          const rg = document.createRange(); rg.selectNodeContents(c); const t = rg.getBoundingClientRect();
+          return { on: c.classList.contains('on'), bg: cs.backgroundImage, color: cs.color, opacity: +cs.opacity, b: { l: b.left, r: b.right, t: b.top, bo: b.bottom },
+            off: Math.max(Math.abs((t.left + t.right) / 2 - (b.left + b.right) / 2), Math.abs((t.top + t.bottom) / 2 - (b.top + b.bottom) / 2)), fits: t.width <= b.width + 1 && t.height <= b.height + 1 };
+        });
+        const overlaps = [];
+        for (let i = 0; i < info.length; i++) for (let j = i + 1; j < info.length; j++) { const a = info[i].b, c = info[j].b; if (a.l < c.r - 1 && c.l < a.r - 1 && a.t < c.bo - 1 && c.t < a.bo - 1) overlaps.push(i + '/' + j); }
+        return { info, overlaps };
+      });
+      const on = r.info.filter((x) => x.on), off = r.info.filter((x) => !x.on);
+      expect(on.length, `${w}x${h} ${mode}: one chosen`).toBe(1);
+      const blue = /rgb\((\d+), (\d+), (\d+)\)/.exec(on[0].bg);
+      expect(blue && +blue[3] > 200 && +blue[3] > +blue[1] + 60, `${w}x${h} ${mode}: the chosen one has a bright blue fill (${on[0].bg.slice(0, 80)})`).toBeTruthy();
+      expect(on[0].color, `${w}x${h} ${mode}: white text`).toBe('rgb(255, 255, 255)');
+      expect(on[0].opacity).toBe(1);
+      for (const x of off) { expect(x.opacity, `${w}x${h} ${mode}: the others are dimmer`).toBeLessThan(0.9); expect(x.bg.includes('rgb(95, 180, 255)'), 'no bright blue on the others').toBe(false); }
+      for (const x of r.info) { expect(x.off, `${w}x${h} ${mode}: label centred`).toBeLessThan(3); expect(x.fits, `${w}x${h} ${mode}: label inside its button`).toBe(true); }
+      expect(r.overlaps, `${w}x${h} ${mode}: no buttons overlap`).toEqual([]);
+    }
+  }
+});

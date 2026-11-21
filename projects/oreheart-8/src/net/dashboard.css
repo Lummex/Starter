@@ -29,6 +29,10 @@
 .dash .mode{display:flex;gap:.6em;flex-wrap:wrap}
 .dash .chip{flex:1 1 40%;white-space:nowrap;height:2.7em;display:flex;align-items:center;justify-content:center;font-family:Cinzel,serif;font-weight:700;font-size:1em;letter-spacing:.08em;text-transform:uppercase;color:var(--soft)}
 .dash .chip.on{color:#fff;box-shadow:0 0 0 1px #000,0 0 16px rgba(124,200,255,.4),inset 0 0 20px rgba(124,200,255,.15)}
+/* Nov 21 (Ken: "It's hard to see which one it's on. Maybe change the color of the button"): the chosen mode is a bright crystal-blue glowing fill with a silver edge and white text; the others are dimmer dark glass */
+html body .dash .mode .chip:not(.on){opacity:.72;filter:saturate(.7)}html body .dash .mode .chip:not(.on):hover{opacity:1;filter:none}
+html body .dash .mode .chip.on{background:linear-gradient(180deg,#5fb4ff 0%,#2f7fe0 48%,#1c4fa8 100%)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 2px #062048,0 0 8px rgba(190,230,255,.7);box-shadow:0 0 0 1px #000,0 0 22px 4px rgba(90,175,255,.75),inset 0 1px 0 rgba(255,255,255,.55),inset 0 0 18px rgba(170,220,255,.35)!important;opacity:1;filter:none}
+html body .dash .mode .chip.on::before{background:linear-gradient(160deg,#ffffff,#d9e1ec 35%,#9aa6b8 60%,#f2f5fa 85%)!important}
 /* top bar */
 .dash .top{position:absolute;left:0;right:0;top:0;height:5.4em;display:flex;align-items:center;gap:1.1em;padding:0 1.8em;background:linear-gradient(180deg,rgba(6,7,12,.92),rgba(6,7,12,.55) 70%,transparent);z-index:3}
 .dash .who{display:flex;align-items:center;gap:.9em;height:3.9em;padding:0 1.2em 0 .5em}

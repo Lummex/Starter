@@ -52,7 +52,7 @@ export async function loadRegions(force = false): Promise<RegionsInfo> {
     try { const r = await t.transport().call('regions', {}); if (r && r.ok && Array.isArray(r.regions) && r.regions.length) list = r.regions; } catch { /* the list below */ }
     next = { regions: list.map((r, i) => ({ ...r, online: [3, 1, 2][i] ?? 0, playing: [2, 0, 0][i] ?? 0, waiting: [1, 0, 1][i] ?? 0 })), mine: chosen, fallback_seconds: 4, counts: true };
   } else {
-    next = await api.regionsInfo();
+    next = await api.regionsInfo(hereNow());
   }
   info = next; loadedAt = Date.now();
   return next;
@@ -85,6 +85,28 @@ export async function chooseRegion(id: string | null): Promise<void> {
   try { if (id) localStorage.setItem(KEY, id); else localStorage.removeItem(KEY); } catch { /* fine */ }
   if (isMock() || stubMode() || !net.active) { if (info) info.mine = id; return; }
   try { info = await api.setRegion(id); loadedAt = Date.now(); } catch { /* the choice still holds for this visit */ }
+}
+
+/** Nov 21 (Ken: "it's not showing the people online"): where this player plays now, for the heartbeat: their choice, else the
+ *  account's, else the nearest by ping once measured (null before that: the server then keeps what it had). */
+function hereNow(): string | null {
+  if (chosen && regionById(chosen)) return chosen;
+  if (info && info.mine && regionById(info.mine)) return info.mine;
+  return pinged && Object.values(pings).some((p) => p != null) ? nearestRegion() : null;
+}
+
+/** Nov 21: the app-wide heartbeat while signed in (every screen, not only the Dashboard and Lobby): measure the pings once, then
+ *  regions_info() every 30 s while the tab is visible, skipped when a screen's own heartbeat just ran. Started once per sign-in. */
+let globalBeat: ReturnType<typeof setInterval> | null = null;
+export function startGlobalHeartbeat(): void {
+  if (globalBeat || isMock() || stubMode()) return;
+  const beat = async () => {
+    if (!net.active) return;
+    if (document.visibilityState !== 'visible' || Date.now() - loadedAt < 25_000) return;
+    try { await pingRegions(); await loadRegions(true); } catch { /* next time */ }
+  };
+  globalBeat = setInterval(() => { void beat(); }, 30_000);
+  void pingRegions().then(() => loadRegions(true)).catch(() => {});
 }
 
 /** The heartbeat: while `el` is on screen and the tab is visible, regions_info() every 30 s (this player counts as online; the counts refresh). */

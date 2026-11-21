@@ -513,6 +513,7 @@ async function proceed(s: Status) {
     }
   }
   void import('./friends').then((m) => m.startInviteWatch()).catch(() => {}); // Nov 7: friend challenges pop up from here on
+  void import('./regions').then((m) => m.startGlobalHeartbeat()).catch(() => {}); // Nov 21: counted as online on every screen
   if (await resumePvp()) return; // Nov 2 (PvP): a friend match still running? Straight back into it.
   app.showMenu();
 }

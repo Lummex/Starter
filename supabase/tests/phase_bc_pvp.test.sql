@@ -423,6 +423,13 @@ select pg_temp.ok('regions: choosing US West is remembered on the account and co
   and (select region from public.profiles where id = :PA) = 'us-west', (select j::text from ri2));
 select pg_temp.works('regions: null clears the choice (back to nearest by ping)', :PA, 'aal1', $q$ select public.set_region(null) $q$);
 select pg_temp.ok('regions: ... and the profile forgets it', (select region is null from public.profiles where id = :PA));
+-- Nov 21 (Ken: "it's not showing the people online"): a player on "nearest" (no home region) still counts as online where they play
+create temp table ri2b as select pg_temp.json_as(:PA, 'aal1', $q$ select public.regions_info('us-central') $q$) as j;
+select pg_temp.ok('regions: the heartbeat with "I am in US Central" counts a player with no home region as online there, and keeps the home region empty',
+  (select (select x ->> 'online' from jsonb_array_elements(j -> 'regions') x where x ->> 'id' = 'us-central')::int >= 1 and j -> 'mine' = 'null'::jsonb from ri2b)
+  and (select region is null and seen_region = 'us-central' from public.profiles where id = :PA), (select j::text from ri2b));
+create temp table ri2c as select pg_temp.json_as(:PA, 'aal1', $q$ select public.regions_info('moon') $q$) as j;
+select pg_temp.ok('regions: a heartbeat naming a closed or made-up region changes nothing', (select seen_region = 'us-central' from public.profiles where id = :PA), (select j::text from ri2c));
 -- the queue is per region
 select public.pvp_queue_join(:PA, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000021"}', '{"commander": "grubnak"}', false, 'us-west', false);
 create temp table rq1 as select public.pvp_queue_join(:PB, 'unranked', '{"userId": "c0000000-0000-4000-8000-000000000022"}', '{"commander": "borgo"}', false, 'us-east', false) as j;
