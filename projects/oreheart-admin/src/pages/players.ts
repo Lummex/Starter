@@ -7,6 +7,21 @@ export interface PlayerRow {
   id: string; username: string; email: string; created_at: string; last_seen_at: string;
   coins: number; money_spent_cents: number; banned: boolean; ban_expires_at: string | null;
   age_group: string; consent_status: string; is_admin: boolean; total: number;
+  games?: number; play_seconds?: number; // Nov 21 (Ken): games and time played
+}
+
+/** Seconds -> "12 h 5 min" / "45 min" / "under 1 min". */
+export function fmtPlay(sec: number | null | undefined): string {
+  if (sec == null) return '—';
+  const m = Math.floor(sec / 60), hrs = Math.floor(m / 60);
+  if (m < 1) return sec > 0 ? 'under 1 min' : '0';
+  return hrs ? `${fmtNum(hrs)} h ${m % 60} min` : `${m} min`;
+}
+const SORTS: [string, string][] = [['new', 'Newest'], ['seen', 'Last seen'], ['games', 'Most games'], ['time', 'Most time played']];
+
+interface PlayStats {
+  games: { total: number } & Record<'ranked' | 'unranked' | 'friend' | 'computer', { games: number; wins: number; losses: number }>;
+  seconds: number; last_beat: string | null; time_since: string | null; pvp_since: string | null; computer_since: string | null; computer_results_since: string | null;
 }
 
 const PAGE = 25;
@@ -35,21 +50,25 @@ export function consentLabel(status: string) {
 export async function playersPage(root: HTMLElement, params: URLSearchParams) {
   const q = params.get('q') ?? '';
   const page = Math.max(1, parseInt(params.get('p') ?? '1', 10) || 1);
+  const sort = SORTS.some(([k]) => k === params.get('s')) ? params.get('s')! : 'new';
   const search = h('input', { type: 'search', value: q, placeholder: 'Username or email', 'aria-label': 'Search players', 'data-testid': 'player-search' });
   const form = h('form', { class: 'row' }, search, h('button', { type: 'submit' }, 'Search'));
-  form.addEventListener('submit', (e) => { e.preventDefault(); location.hash = `#/players?q=${encodeURIComponent(search.value.trim())}`; });
+  form.addEventListener('submit', (e) => { e.preventDefault(); location.hash = `#/players?q=${encodeURIComponent(search.value.trim())}&s=${sort}`; });
   root.replaceChildren(h('h1', {}, 'Players'), form, h('p', { class: 'small' }, 'Loading…'));
 
-  const rows = await rpc<PlayerRow[]>('admin_list_players', { p_search: q, p_page: page, p_page_size: PAGE });
+  const rows = await (sort === 'new' ? rpc<PlayerRow[]>('admin_list_players', { p_search: q, p_page: page, p_page_size: PAGE })
+    : rpc<PlayerRow[]>('admin_list_players', { p_search: q, p_page: page, p_page_size: PAGE, p_sort: sort })
+        .catch(() => rpc<PlayerRow[]>('admin_list_players', { p_search: q, p_page: page, p_page_size: PAGE }))); // a database from before Nov 21 has no sort yet
   const total = rows[0]?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE));
-  const link = (p: number) => `#/players?q=${encodeURIComponent(q)}&p=${p}`;
+  const link = (p: number, s = sort) => `#/players?q=${encodeURIComponent(q)}&p=${p}&s=${s}`;
   root.replaceChildren(
     h('h1', {}, 'Players'), form,
     h('p', { class: 'small', 'data-testid': 'player-total' }, `${fmtNum(total)} player${total === 1 ? '' : 's'}${q ? ` matching “${q}”` : ''}`),
-    table(['Username', 'Email', 'Joined', 'Last seen', 'Coins', 'Money spent', 'Age / parent', 'State'], rows.map((r) => [
+    h('p', { class: 'small', 'data-testid': 'player-sort' }, 'Sort: ', ...SORTS.flatMap(([k, t], i) => [i ? ' · ' : '', k === sort ? h('b', {}, t) : h('a', { href: link(1, k), 'data-sort': k }, t)])),
+    table(['Username', 'Email', 'Joined', 'Last seen', 'Games', 'Time played', 'Coins', 'Money spent', 'Age / parent', 'State'], rows.map((r) => [
       h('a', { href: `#/player/${r.id}`, 'data-testid': 'player-link' }, r.username, r.is_admin ? h('span', { class: 'pill gold' }, 'admin') : null),
-      r.email, fmtDate(r.created_at, false), fmtDate(r.last_seen_at), fmtNum(r.coins), fmtMoney(r.money_spent_cents),
+      r.email, fmtDate(r.created_at, false), fmtDate(r.last_seen_at), fmtNum(r.games), fmtPlay(r.play_seconds), fmtNum(r.coins), fmtMoney(r.money_spent_cents),
       consentLabel(r.consent_status), banLabel(r.banned, r.ban_expires_at),
     ]), 'player-table'),
     h('nav', { class: 'pager' },
@@ -110,12 +129,13 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
   root.replaceChildren(h('p', { class: 'small' }, 'Loading…'));
   const cardFilter = (params.get('card') ?? '').trim();
   const cardPage = Math.max(1, parseInt(params.get('cp') ?? '1', 10) || 1);
-  const [d, audit, cards, shards, friends] = await Promise.all([
+  const [d, audit, cards, shards, friends, play] = await Promise.all([
     rpc<Detail>('admin_player_detail', { p_user: id }),
     rpc<AuditRow[]>('admin_audit_log', { p_page: 1, p_page_size: 50, p_target: id }),
     rpc<CardRow[]>('admin_player_cards', { p_user: id, p_card_id: cardFilter || null, p_page: cardPage, p_page_size: 100 }),
     rpc<Shards>('admin_oreshards', { p_user: id }).catch(() => null), // Nov 6 (Stripe): Oreshards and purchases
     rpc<FriendsAdmin>('admin_friends', { p_user: id }).catch(() => null), // Nov 7: friends and blocks
+    rpc<PlayStats>('admin_player_play', { p_user: id }).catch(() => null), // Nov 21: games and time played
   ]);
   const reload = () => void playerPage(root, id, params);
   const isAdmin = d.roles.includes('admin');
@@ -204,6 +224,7 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
       h('section', { class: 'card' }, h('h2', {}, 'Grant coins'), grantForm),
       h('section', { class: 'card' }, h('h2', {}, 'Rename'), renameForm)),
     ...(consentCard ? [consentCard] : []),
+    playCard(play),
     h('section', { class: 'card' }, h('h2', {}, `Decks (${d.decks.length})`),
       table(['Name', 'Commander', 'Cards', 'From', 'Updated'], d.decks.map((x) => [x.name, x.commander ?? '—', fmtNum(x.cards), x.source, fmtDate(x.updated_at)]), 'deck-table')),
     h('section', { class: 'card', 'data-testid': 'friends-card' }, h('h2', {}, `Friends (${friends ? friends.friends.length : 0})`),
@@ -233,4 +254,22 @@ export async function playerPage(root: HTMLElement, id: string, params: URLSearc
     h('section', { class: 'card' }, h('h2', {}, 'Admin actions on this player'),
       table(['When', 'Admin', 'Action', 'Before', 'After', 'Reason'], audit.map((a) => [fmtDate(a.created_at), a.admin_name ?? '—', a.action, changeView(a.before), changeView(a.after), a.reason]))));
   root.append(h('details', { class: 'small', 'data-testid': 'age-group-details' }, h('summary', {}, 'Age group (support only)'), ageForm));
+}
+
+/** Nov 21 (Ken: "how many games they played and how many hours they played"): games by mode and time played, each with since when it is counted. */
+function playCard(p: PlayStats | null) {
+  if (!p) return h('section', { class: 'card', 'data-testid': 'play-card' }, h('h2', {}, 'Games and time played'), h('p', { class: 'small' }, 'Not available yet.'));
+  const since = (v: string | null) => (v ? `since ${fmtDate(v, false)}` : 'nothing yet');
+  const wl = (x: { games: number; wins: number; losses: number }) => `${fmtNum(x.wins)} won · ${fmtNum(x.losses)} lost`;
+  const row = (name: string, x: { games: number; wins: number; losses: number }, note: string) => [name, h('b', { 'data-mode': name }, fmtNum(x.games)), wl(x), note];
+  return h('section', { class: 'card', 'data-testid': 'play-card' }, h('h2', {}, 'Games and time played'),
+    h('dl', { class: 'facts' },
+      h('dt', {}, 'Games played'), h('dd', { 'data-testid': 'player-games' }, fmtNum(p.games.total)),
+      h('dt', {}, 'Time played'), h('dd', { 'data-testid': 'player-time' }, fmtPlay(p.seconds), h('span', { class: 'small' }, ` (${since(p.time_since)}; counts while the game is open and on screen)`))),
+    table(['Mode', 'Games', 'Result', 'Counted'], [
+      row('Ranked', p.games.ranked, since(p.pvp_since)),
+      row('Unranked', p.games.unranked, since(p.pvp_since)),
+      row('Friend', p.games.friend, `${since(p.pvp_since)} (friend and practice codes)`),
+      row('Practice vs computer', p.games.computer, `${since(p.computer_since)}; signed in, 3+ turns; won/lost ${since(p.computer_results_since)}`),
+    ], 'play-table'));
 }

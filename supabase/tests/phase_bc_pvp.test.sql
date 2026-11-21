@@ -486,6 +486,33 @@ select pg_temp.ok('regions: with the counts off the regions come without numbers
 select pg_temp.ok('regions: the dashboard counts switch is a true/false setting too (it had no shape check before)', pg_temp.json_as(:PC, 'aal2', $q$ select public.admin_set_setting('dashboard_counts', 'false', 'test') $q$) = 'false'::jsonb);
 select pg_temp.ok('regions: every admin change is in the audit', (select count(*) from public.admin_audit where action = 'set_setting' and (after ->> 'key') in ('regions', 'region_fallback_seconds', 'region_counts')) >= 3);
 
+-- ========== Games and time played in the Back Counter (Ken, Nov 21) ==========
+select pg_temp.works('play: a vs-computer report still works and keeps the game', :PA, 'aal1', $q$ select public.quest_report('{"turns": 12, "won": true, "battles": 1, "wins": 1}', 'practice:6a6a6a6a-0000-4000-8000-0000000000a1') $q$);
+select pg_temp.works('play: a lost vs-computer game', :PA, 'aal1', $q$ select public.quest_report('{"turns": 9, "won": false, "battles": 1, "wins": 0}', 'practice:6a6a6a6a-0000-4000-8000-0000000000a2') $q$);
+select pg_temp.ok('play: both vs-computer games are kept with their results', (select count(*) = 2 and count(*) filter (where won) = 1 and count(*) filter (where won = false) = 1 from public.ai_games where user_id = :PA and ref like 'practice:6a6a6a6a-%'));
+select pg_temp.refused('play: a player cannot read the game list', :PA, 'aal1', $q$ select * from public.ai_games $q$);
+select pg_temp.refused('play: a player cannot read time played', :PA, 'aal1', $q$ select * from public.play_time $q$);
+select pg_temp.refused('play: a player cannot open the admin play page', :PA, 'aal1', format('select public.admin_player_play(%L)', :PA), 'not admin');
+select pg_temp.refused('play: an admin without 2-step cannot either', :PC, 'aal1', format('select public.admin_player_play(%L)', :PA), '2-step');
+-- time: each heartbeat adds the gap since the last one (30 s here), a gap over 90 s adds nothing
+select pg_temp.works('play: a first heartbeat starts the clock', :PA, 'aal1', $q$ select public.regions_info() $q$);
+update public.play_time set seconds = 0, last_beat = now() - interval '30 seconds' where user_id = :PA;
+select pg_temp.works('play: a heartbeat 30 s later', :PA, 'aal1', $q$ select public.regions_info('us-east') $q$);
+select pg_temp.ok('play: ... adds 30 seconds', (select seconds = 30 from public.play_time where user_id = :PA), (select seconds::text from public.play_time where user_id = :PA));
+update public.play_time set last_beat = now() - interval '5 minutes' where user_id = :PA;
+select pg_temp.works('play: a heartbeat after 5 minutes away', :PA, 'aal1', $q$ select public.regions_info() $q$);
+select pg_temp.ok('play: ... adds nothing (a new session)', (select seconds = 30 from public.play_time where user_id = :PA), (select seconds::text from public.play_time where user_id = :PA));
+create temp table pp1 as select pg_temp.json_as(:PC, 'aal2', format('select public.admin_player_play(%L)', :PA)) as j;
+select pg_temp.ok('play: the admin page shows the games by mode (PvP from the matches, 1 won and 1 lost vs the computer) and the time',
+  (select (j -> 'games' -> 'computer' ->> 'wins')::int >= 1 and (j -> 'games' -> 'computer' ->> 'losses')::int >= 1 and (j ->> 'seconds')::int = 30
+     and (j -> 'games' ->> 'total')::int = (j -> 'games' -> 'ranked' ->> 'games')::int + (j -> 'games' -> 'unranked' ->> 'games')::int + (j -> 'games' -> 'friend' ->> 'games')::int + (j -> 'games' -> 'computer' ->> 'games')::int
+     and (j -> 'games' -> 'ranked' ->> 'games')::int + (j -> 'games' -> 'unranked' ->> 'games')::int + (j -> 'games' -> 'friend' ->> 'games')::int
+         = (select count(*) from public.matches m where m.status = 'finished' and :PA in (m.player_a, m.player_b))
+     and j ->> 'time_since' is not null and j ->> 'computer_since' is not null from pp1), (select j::text from pp1));
+create temp table pl1 as select pg_temp.json_as(:PC, 'aal2', $q$ select coalesce(jsonb_agg(to_jsonb(r)), '[]') from public.admin_list_players('', 1, 100, 'time') r $q$) as j;
+select pg_temp.ok('play: the Players list carries games and time, and sorts by time played', (select (j -> 0 ->> 'id')::uuid = :PA and (j -> 0 ->> 'play_seconds')::int = 30 and (j -> 0 ->> 'games')::int >= 2 from pl1), (select left(j::text, 400) from pl1));
+select pg_temp.ok('play: the old three-argument call still works (an older admin site)', pg_temp.count_as(:PC, 'aal2', $q$ select * from public.admin_list_players('', 1, 100) $q$) = (select count(*) from public.profiles));
+
 select n, case when ok then 'PASS' else 'FAIL' end as result, name, case when ok then '' else detail end as detail
 from results order by n;
 
